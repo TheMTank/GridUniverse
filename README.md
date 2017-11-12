@@ -1,7 +1,7 @@
 # RL_problems
 
 Repository created with the goal of developing reinforcement learning algorithms and be able to reproduce 
-experiments for different environments. Currently working exclusively on openAI gym.
+experiments for different environments. Currently working exclusively on OpenAI gym.
 
 ## Example of use
 Currently no example available only a test example is available to check if the environment works correctly. You can run
@@ -9,7 +9,7 @@ it by going to the main directory of the repository and entering the command:
 
 `python atari_example.py`
 
-You should see a small window that automatically plays "Space Invaders" if everything goes right.
+You should see a small window that automatically plays "Space Invaders" if everything is working correctly.
 
 ## Installation
 
@@ -29,7 +29,7 @@ To install them you can follow the explanations given in the official repository
 https://github.com/openai/gym#installation
 
 If you already have them you can skip this step. An explanation on how to set up your virtual environment is given
-provided that you use Anaconda.
+provided that you are using Anaconda.
 
 ### Create conda environment
 
@@ -42,20 +42,19 @@ You can check that the installation was successful by opening a terminal and ent
 
 ```
 conda --help
-conda -h
 ```
 
 ### If it is your first time using this repository, or you would like to create a new environment for using it:
 
-open a terminal, go to the main directory of the repository and enter one of the following commands:
+Open a terminal, go to the main directory of the repository and enter one of the following commands:
 
-For installation on default path (/home/<username>/anaconda3/envs/<new_environment_name>):
-`conda env create --name <new_environment_name> --file repository_dir/requirements.yml`
+For installation on default path (/home/<username>/anaconda3/envs/<new_environment_name>):  
+`conda env create -n <new_environment_name> -f repository_dir/requirements.yml`
 
-For installation on another path:
+For installation on another path:  
 `conda env create -p c:/path/to/installation/folder/<new_environment_name> -f repository_dir/requirements.yml`
 
-For more information on this command, please check the official documentation.
+For more information on this command, please check the official documentation:  
 https://conda.io/docs/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file
 
 ### If you already have an existing conda environment and only want to update the corresponding packages:
@@ -65,7 +64,7 @@ https://conda.io/docs/user-guide/tasks/manage-environments.html#creating-an-envi
 For more information on this command, please check the official documentation.
 https://conda.io/docs/commands/env/conda-env-update.html
 
-## Installation of openAI gym
+## Installation of OpenAI gym
 
 Currently OpenAI Gym is supported only in Linux distributions.
 
