@@ -53,7 +53,7 @@ For installation on default path (/home/<username>/anaconda3/envs/<new_environme
 `conda env create --name <new_environment_name> --file repository_dir/requirements.yml`
 
 For installation on another path:
-`conda create -p c:/path/to/installation/folder/<new_environment_name> -f repository_dir/requirements.yml`
+`conda env create -p c:/path/to/installation/folder/<new_environment_name> -f repository_dir/requirements.yml`
 
 For more information on this command, please check the official documentation.
 https://conda.io/docs/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file
@@ -75,7 +75,7 @@ Currently OpenAI Gym is supported only in Linux distributions.
 
 ### Activate the conda environment and install the required packages entering the following commands:
 
-`activate <name_of_environment>`
+`source activate <name_of_environment>`
 
 ### Open a terminal on the main directory of the repository and enter this command:
 
