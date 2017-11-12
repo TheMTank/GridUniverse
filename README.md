@@ -50,7 +50,7 @@ conda -h
 open a terminal, go to the main directory of the repository and enter one of the following commands:
 
 For installation on default path (/home/<username>/anaconda3/envs/<new_environment_name>):
-`conda create -n <new_environment_name> -f repository_dir/requirements.yml`
+`conda env create --name <new_environment_name> --file repository_dir/requirements.yml`
 
 For installation on another path:
 `conda create -p c:/path/to/installation/folder/<new_environment_name> -f repository_dir/requirements.yml`
