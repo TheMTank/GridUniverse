@@ -1,7 +1,6 @@
 import gym
 from gym import error, spaces, utils
 from gym.utils import seeding
-from random import randint
 
 
 class GridWorldEnv(gym.Env):
@@ -9,30 +8,24 @@ class GridWorldEnv(gym.Env):
 
     def __init__(self, x_y_dim=3):
         self.action_space = spaces.Discrete(4)
-        """
-        UP = 0
-        RIGHT = 1
-        DOWN = 2
-        LEFT = 3
-        """
-        self.observation_space = None
-        self.reward_range = None # by default [-inf, inf]
+        self.observation_space = spaces.Tuple((spaces.Discrete(x_y_dim), spaces.Discrete(x_y_dim)))
+        # self.reward_range = None  # by default [-inf, inf]
 
         self.x_y_dim = x_y_dim
         self.done = False
         self.curr_state = [0, 0]
         self.terminal_state = (self.x_y_dim, self.x_y_dim)
-        self.info = 'No info'
+        self.info = {}
 
     def _step(self, action):
-
-        if action == self.UP:
+        action_str = ACTION_MEANING[action]
+        if action_str == "UP":
             self.curr_state[0] -= 1
-        elif action == self.DOWN:
+        elif action_str == "DOWN":
             self.curr_state[0] += 1
-        elif action == self.LEFT:
+        elif action_str == "LEFT":
             self.curr_state[1] -= 1
-        elif action == self.RIGHT:
+        elif action_str == "RIGHT":
             self.curr_state[1] += 1
 
         if self.curr_state[0] < 0:
@@ -59,6 +52,7 @@ class GridWorldEnv(gym.Env):
         return self.curr_state
 
     def _render(self, mode='human', close=False):
+        # TODO: must RETURN either a display, terminal or array. It shouldn't print or render inside the function
         if mode == 'human':
             grid = [['o', 'o', 'o', 'o'], ['o', 'o', 'o', 'o'], ['o', 'o', 'o', 'o'], ['o', 'o', 'o', 'o']]
 
@@ -83,8 +77,16 @@ class GridWorldEnv(gym.Env):
         raise NotImplementedError
 
 
+ACTION_MEANING = {
+    0: "UP",
+    1: "RIGHT",
+    2: "DOWN",
+    3: "LEFT",
+}
+
 if __name__ == '__main__':
     pass
+    # from random import randint
     # env = GridWorld()
     # for i_episode in range(1):
     #     observation = env.reset()
