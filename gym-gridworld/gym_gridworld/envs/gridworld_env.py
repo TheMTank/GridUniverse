@@ -12,7 +12,7 @@ class GridWorldEnv(gym.Env):
 
     def __init__(self, x_y_dim=4):
         self.action_space = spaces.Discrete(4)
-        self.observation_space = spaces.Tuple((spaces.Discrete(x_y_dim), spaces.Discrete(x_y_dim)))
+        self.observation_space = spaces.Box(spaces.Discrete(x_y_dim), spaces.Discrete(x_y_dim))
         # self.reward_range = None  # by default [-inf, inf]
 
         self.x_y_dim = x_y_dim
@@ -34,15 +34,15 @@ class GridWorldEnv(gym.Env):
 
         if self.curr_state[0] < 0:
             self.curr_state[0] = 0
-        elif self.curr_state[0] > self.x_y_dim:
-            self.curr_state[0] = self.x_y_dim
+        elif self.curr_state[0] > self.x_y_dim-1:
+            self.curr_state[0] = self.x_y_dim-1
         if self.curr_state[1] < 0:
             self.curr_state[1] = 0
-        elif self.curr_state[1] > self.x_y_dim:
-            self.curr_state[1] = self.x_y_dim
+        elif self.curr_state[1] > self.x_y_dim-1:
+            self.curr_state[1] = self.x_y_dim-1
 
         observation = self.curr_state
-        reward = 0
+        reward = -1
         if self.curr_state[0] == self.terminal_state[0] and self.curr_state[1] == self.terminal_state[1]:
             reward = 10
             self.done = True
@@ -66,6 +66,7 @@ class GridWorldEnv(gym.Env):
                 for cell in row:
                     outfile.write((cell + ' '))
                 outfile.write('\n')
+            outfile.write('\n')
             return outfile
 
         elif mode == 'graphic':
@@ -83,22 +84,18 @@ class GridWorldEnv(gym.Env):
 ACTION_MEANING = ["UP", "RIGHT", "DOWN", "LEFT"]
 
 if __name__ == '__main__':
+    from random import randint
     env = GridWorldEnv()
-    _, _, _, _ = env.step(1)
-    out = env.render()
-    print(out)
-    pass
-    # from random import randint
-    # env = GridWorld()
-    # for i_episode in range(1):
-    #     observation = env.reset()
-    #     for t in range(100):
-    #         env.render()
-    #         # print(observation)
-    #         action = randint(0, 3)
-    #         observation, reward, done, info = env.step(action)
-    #
-    #         if done:
-    #             print("Episode finished after {} timesteps".format(t + 1))
-    #             env.render()
-    #             break
+    for i_episode in range(1):
+        observation = env.reset()
+        for t in range(100):
+            env.render()
+            # print(observation)
+            action = env.action_space.sample()
+            action = randint(0, 3)
+            print(ACTION_MEANING[action])
+            observation, reward, done, info = env.step(action)
+
+            if done:
+                print("Episode finished after {} timesteps".format(t + 1))
+                break
