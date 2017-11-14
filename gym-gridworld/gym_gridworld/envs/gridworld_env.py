@@ -2,11 +2,15 @@ import gym
 from gym import error, spaces, utils
 from gym.utils import seeding
 
+import numpy as np
+import sys
+from six import StringIO
+
 
 class GridWorldEnv(gym.Env):
-    metadata = {'render.modes': ['human', 'graphic']}
+    metadata = {'render.modes': ['human', 'ansi', 'graphic']}
 
-    def __init__(self, x_y_dim=3):
+    def __init__(self, x_y_dim=4):
         self.action_space = spaces.Discrete(4)
         self.observation_space = spaces.Tuple((spaces.Discrete(x_y_dim), spaces.Discrete(x_y_dim)))
         # self.reward_range = None  # by default [-inf, inf]
@@ -14,7 +18,7 @@ class GridWorldEnv(gym.Env):
         self.x_y_dim = x_y_dim
         self.done = False
         self.curr_state = [0, 0]
-        self.terminal_state = (self.x_y_dim, self.x_y_dim)
+        self.terminal_state = (self.x_y_dim-1, self.x_y_dim-1)
         self.info = {}
 
     def _step(self, action):
@@ -48,43 +52,41 @@ class GridWorldEnv(gym.Env):
     def _reset(self):
         self.done = False
         self.curr_state = [0, 0]
-        self.terminal_state = (self.x_y_dim, self.x_y_dim)
+        self.terminal_state = (self.x_y_dim-1, self.x_y_dim-1)
         return self.curr_state
 
     def _render(self, mode='human', close=False):
-        # TODO: must RETURN either a display, terminal or array. It shouldn't print or render inside the function
-        if mode == 'human':
-            grid = [['o', 'o', 'o', 'o'], ['o', 'o', 'o', 'o'], ['o', 'o', 'o', 'o'], ['o', 'o', 'o', 'o']]
+        if mode == 'human' or mode == 'ansi':
+            world = [['o' for _ in range(self.x_y_dim)] for _ in range(self.x_y_dim)]
+            world[self.curr_state[0]][self.curr_state[1]] = 'x'
+            world[self.terminal_state[0]][self.terminal_state[1]] = 'T'
 
-            grid[self.curr_state[0]][self.curr_state[1]] = 'x'
-            grid[self.terminal_state[0]][self.terminal_state[1]] = 'T'
+            outfile = StringIO() if mode == 'ansi' else sys.stdout
+            for row in world:
+                for cell in row:
+                    outfile.write((cell + ' '))
+                outfile.write('\n')
+            return outfile
 
-            for row in grid:
-                for el in row:
-                    print(el, end=' ')
-                print()
-            print()
         elif mode == 'graphic':
-            #TODO: Rendering of the GridWorld in a window
             raise NotImplementedError
         else:
-            super(GridWorld, self).render(mode=mode)
+            super(GridWorldEnv, self).render(mode=mode)
 
     def _close(self):
-        raise NotImplementedError
+        pass
 
     def _seed(self, seed=None):
         raise NotImplementedError
 
 
-ACTION_MEANING = {
-    0: "UP",
-    1: "RIGHT",
-    2: "DOWN",
-    3: "LEFT",
-}
+ACTION_MEANING = ["UP", "RIGHT", "DOWN", "LEFT"]
 
 if __name__ == '__main__':
+    env = GridWorldEnv()
+    _, _, _, _ = env.step(1)
+    out = env.render()
+    print(out)
     pass
     # from random import randint
     # env = GridWorld()
