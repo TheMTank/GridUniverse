@@ -68,17 +68,11 @@ https://conda.io/docs/commands/env/conda-env-update.html
 
 Currently OpenAI Gym is supported only in Linux distributions.
 
-### First you need to clone the repository from the following URL:
-
-`https://github.com/openai/gym.git`
-
 ### Activate the conda environment and install the required packages entering the following commands:
 
 `source activate <name_of_environment>`
 
-### Open a terminal on the main directory of the repository and enter this command:
-
-`pip install gym`
+`pip install 'gym[all]'`
 
 Now you should be able to run `atari_example.py`.
 
