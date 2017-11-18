@@ -20,7 +20,7 @@ class GridWorldEnv(gym.Env):
         self.done = False
         self.prev_state = [0, 0]
         self.curr_state = [0, 0]
-        self.terminal_state = (self.x_max-1, self.y_max-1)
+        self.terminal_states = [(self.x_max-1, self.y_max-1), (self.x_max-1, 0)]
         self.info = {}
         self.world = self._generate_world()
 
@@ -33,13 +33,23 @@ class GridWorldEnv(gym.Env):
             return True
         return False
 
+    def _is_terminal(self, state):
+        """
+        Check if the input state is terminal.
+        """
+        for t_state in self.terminal_states:
+            if tuple(state) == t_state:
+                return True
+        return False
+
     def _generate_world(self):
         """
         Creates the gridworld map and places the agent and goal in their corresponding locations.
         """
         new_world = [['o' for _ in range(self.x_max)] for _ in range(self.y_max)]
         new_world[self.curr_state[0]][self.curr_state[1]] = 'x'
-        new_world[self.terminal_state[0]][self.terminal_state[1]] = 'T'
+        for t_state in self.terminal_states:
+            new_world[t_state[0]][t_state[1]] = 'T'
         return new_world
 
     def _update_world(self):
@@ -68,7 +78,8 @@ class GridWorldEnv(gym.Env):
 
         observation = self.curr_state
         reward = -1
-        if self.curr_state[0] == self.terminal_state[0] and self.curr_state[1] == self.terminal_state[1]:
+
+        if self._is_terminal(self.curr_state):
             reward = 10
             self.done = True
 
