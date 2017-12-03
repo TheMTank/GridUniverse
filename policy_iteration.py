@@ -79,10 +79,11 @@ def single_policy_evaluation(value_function, new_transition_matrix, terminal_sta
             for transition_row in range(transition_matrix1.shape[0]):
                 for transition_col in range(transition_matrix1.shape[1]):
                     new_value_function[state_row, state_col] += np.multiply(new_transition_matrix[state_row,
-                                                                                              state_col,
-                                                                                              transition_row,
-                                                                                              transition_col],
-                                                                        value_function[transition_row, transition_col])
+                                                                                                  state_col,
+                                                                                                  transition_row,
+                                                                                                  transition_col],
+                                                                            value_function[transition_row,
+                                                                                           transition_col])
     new_value_function += reward_matrix
     for terminal_state in terminal_states:
         new_value_function[terminal_state[0], terminal_state[1]] = 0
@@ -90,6 +91,12 @@ def single_policy_evaluation(value_function, new_transition_matrix, terminal_sta
 
 
 def greedy_policy_from_value_function(value_function):
+    """
+    Generates a transition matrix based on the policy of picking always the best possible action under the input value
+    function.
+    If more than one action leads to the maximum expected reward (value function) the policy would be to choose it
+    equiprobabilistcaly.
+    """
     transition_matrix = np.zeros((4, 4, 4, 4))
     for state_row in range(transition_matrix.shape[0]):
         for state_col in range(transition_matrix.shape[1]):
@@ -122,22 +129,33 @@ def greedy_policy_from_value_function(value_function):
 And we continue iterating until satisfied
 """
 print("Policy iteration algorithm")
-print("Initial value function:")
-print(v0)
 n_iterations = 3
-v_n = v0
+v_n = np.zeros((4, 4))
+print("Initial value function:")
+print(v_n)
 for iteration in range(n_iterations):
     transition_matrix_n = greedy_policy_from_value_function(v_n)
     v_n = single_policy_evaluation(v_n, transition_matrix_n)
-    print("Iteration" + str(iteration))
+    print("Iteration", str(iteration + 1))
     print(v_n)
 """
 On the contrary, policy evaluation would always iterate on the same policy
 """
 print("Policy evaluation algorithm:")
 transition_matrix = transition_matrix0  # same probability of going anywhere nearby
-n_evaluations = 10
-v_n = v0
-for iteration in range(1, n_evaluations):
+n_evaluations = 3
+v_n = np.zeros((4, 4))
+print("Initial value function:")
+print(v_n)
+for evaluation in range(n_evaluations):
     v_n = single_policy_evaluation(v_n, transition_matrix)
+    print("Evaluation", str(evaluation + 1))
     print(v_n)
+
+"""
+Value iteration would be the same as policy evaluation (fixed policy) but instead of updating the value function
+by the sum of (probability of transition * value of transition) for all possible states it only computes that for the
+optimal transition.
+
+Notes: What if all have the same value (starting condition)? still unclear to me 
+"""
