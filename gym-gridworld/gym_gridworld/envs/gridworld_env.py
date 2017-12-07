@@ -10,29 +10,24 @@ from six import StringIO
 class GridWorldEnv(gym.Env):
     metadata = {'render.modes': ['human', 'ansi', 'graphic']}
 
-    def __init__(self, grid_shape=(4, 4), initial_state=(0, 0), **kwargs):
+    def __init__(self, grid_shape=(4, 4), initial_state=0, **kwargs):
         # set state space params
-        self.state_space_size = int(np.prod(grid_shape))
-        self.state_space = np.arange(self.state_space_size)  # .reshape(grid_shape)
         self.x_max = grid_shape[0]
         self.y_max = grid_shape[1]
+        self.world = self._generate_world()
         # set action space params
         self.action_space = spaces.Discrete(4)
-        self.action_space_size = int(np.prod(self.action_space.shape))
-        self.ACTION_MEANING = ['UP', 'RIGHT', 'DOWN', 'LEFT']
+        self.actions_list = np.array([(0, 1), (1, 0), (0, -1), (-1, 0)], dtype='int16, int16')
+        self.action_descriptors = ['up', 'right', 'down', 'left']
         # set observed params: [current state, world state]
-        self.observation_space = spaces.Box(spaces.Discrete(self.state_space_size),
-                                            spaces.Box(spaces.Discrete(self.y_max), spaces.Discrete(self.y_max)))
+        self.observation_space = spaces.Box(spaces.Discrete(self.world.size),
+                                            spaces.Box(spaces.Discrete(self.x_max), spaces.Discrete(self.y_max)))
         # set initial state for the agent
-        self.prev_state = list(initial_state)
-        self.curr_state = self.prev_state[:]
+        self.previous_state = self.current_state = initial_state
         # set terminal state(s)
-        if 'terminal_states' in kwargs:
-            self.terminal_states = kwargs['terminal_states']
-        else:
-            self.terminal_states = [self.state_space[-1]]
+        self.terminal_states = kwargs['terminal_states'] if 'terminal_states' in kwargs else [self.world.size - 1]
         # set reward matrix
-        self.reward_matrix = np.full(self.state_space_size, -1)
+        self.reward_matrix = np.full(self.world.shape, -1)
         for terminal_state in self.terminal_states:
             self.reward_matrix[terminal_state] = 0
         # self.reward_range = [-inf, inf] # default values already
@@ -40,23 +35,29 @@ class GridWorldEnv(gym.Env):
         self.done = False
         self.info = {}
         # create first render with the initial status of the world
-        self.world = self._generate_world_render()
+
+        # np.nditer(grid, flags=['multi_index'])
 
     def look_step_ahead(self, state, action):
         if self._is_terminal(state):
             next_state = state
         else:
-            # TODO: change by actually looking for the next step. Extract reward from reward matrix
-            next_state = 0
+            state_x, state_y = self.world[self.current_state]
+            movement_x, movement_y = self.actions_list[action]
+            next_location = np.array((state_x + movement_x, state_y + movement_y), dtype='int16, int16')
+            next_state = np.where(self.world == next_location)[0][0]
 
-        return next_state, self.reward_matrix[state]
+        if not self._is_valid(next_state):
+            next_state = state
+
+            return next_state, self.reward_matrix[state]
 
     def _is_valid(self, state):
         """
         Checks if a given state is inside the grid. In the future it could also check for invalid spaces
         inside the grid.
         """
-        if 0 <= state[0] < self.x_max and 0 <= state[1] < self.y_max:
+        if 0 <= state < self.world.size:
             return True
         return False
 
@@ -65,20 +66,20 @@ class GridWorldEnv(gym.Env):
         Check if the input state is terminal.
         """
         for t_state in self.terminal_states:
-            if tuple(state) == t_state:
+            if state == t_state:
                 return True
         return False
 
-    def _generate_world_render(self):
+    def _generate_world(self):
         """
-        Creates the gridworld map and places the agent and goal in their corresponding locations.
+        Creates and returns the gridworld map as a numpy array.
+
+        The states are defined by their index and contain a tuple of uint16 values that represent the
+        coordinates (x,y) of a state in the grid.
         """
-        # TODO: New definition of states broke this function.
-        new_world = [['o' for _ in range(self.x_max)] for _ in range(self.y_max)]
-        new_world[self.curr_state[0]][self.curr_state[1]] = 'x'
-        for t_state in self.terminal_states:
-            new_world[t_state[0]][t_state[1]] = 'T'
-        return new_world
+        world = np.fromiter(((x, y) for x in np.nditer(np.arange(self.x_max))
+                             for y in np.nditer(np.arange(self.y_max))), dtype='int16, int16')
+        return world
 
     def _update_world(self):
         """
@@ -115,24 +116,31 @@ class GridWorldEnv(gym.Env):
 
     def _reset(self):
         self.done = False
-        self.curr_state = [0, 0]
+        self.curr_state = 0
         self.terminal_state = (self.x_max-1, self.y_max-1)
         return self.curr_state
 
     def _render(self, mode='human', close=False):
-        if mode == 'human' or mode == 'ansi':
-            outfile = StringIO() if mode == 'ansi' else sys.stdout
-            for row in self.world:
-                for cell in row:
-                    outfile.write((cell + ' '))
-                outfile.write('\n')
-            outfile.write('\n')
-            return outfile
+        pass
 
-        elif mode == 'graphic':
-            raise NotImplementedError
-        else:
-            super(GridWorldEnv, self).render(mode=mode)
+        # new_world = [['o' for _ in range(self.x_max)] for _ in range(self.y_max)]
+        # new_world[self.curr_state[0]][self.curr_state[1]] = 'x'
+        # for t_state in self.terminal_states:
+        #     new_world[t_state[0]][t_state[1]] = 'T'
+
+        # if mode == 'human' or mode == 'ansi':
+        #     outfile = StringIO() if mode == 'ansi' else sys.stdout
+        #     for row in self.world:
+        #         for cell in row:
+        #             outfile.write((cell + ' '))
+        #         outfile.write('\n')
+        #     outfile.write('\n')
+        #     return outfile
+        #
+        # elif mode == 'graphic':
+        #     raise NotImplementedError
+        # else:
+        #     super(GridWorldEnv, self).render(mode=mode)
 
     def _close(self):
         pass
@@ -143,19 +151,19 @@ class GridWorldEnv(gym.Env):
 
 if __name__ == '__main__':
     gw_env = GridWorldEnv()
-    policy0 = np.ones([gw_env.state_space_size, gw_env.action_space_size]) / gw_env.action_space_size
-    v0 = np.zeros(gw_env.state_space_size)
+    policy0 = np.ones([gw_env.world.size, len(gw_env.actions_list)]) / len(gw_env.actions_list)
+    v0 = np.zeros(gw_env.world.size)
 
 
     def policy_eval(policy, env, discount_factor=1.0, threshold=0.00001, **kwargs):
         if 'value_function' in kwargs:
             v = kwargs['value_function']
         else:
-            v = np.zeros(env.state_space_size)
+            v = np.zeros(env.world.size)
 
         while True:
             delta = 0
-            for state in range(env.state_space_size):
+            for state in range(env.world.size):
                 v_update = 0
                 for action, action_prob in enumerate(policy[state]):
                     for next_state, reward in env.look_step_ahead(state, action):
@@ -173,7 +181,7 @@ if __name__ == '__main__':
             v = policy_eval(policy, env, discount_factor)
             policy_stable = True
 
-            for state in range(env.state_space_size):
+            for state in range(env.world.size):
                 chosen_action = np.argmax(policy[state])
                 action_values = np.zeros(env.action_space_size)
                 for action in range(env.action_space_size):
