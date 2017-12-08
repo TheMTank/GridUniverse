@@ -23,7 +23,7 @@ class GridWorldEnv(gym.Env):
         self.observation_space = spaces.Box(spaces.Discrete(self.world.size),
                                             spaces.Box(spaces.Discrete(self.x_max), spaces.Discrete(self.y_max)))
         # set initial state for the agent
-        self.previous_state = self.current_state = initial_state
+        self.previous_state = self.current_state = self.initial_state = initial_state
         # set terminal state(s)
         self.terminal_states = kwargs['terminal_states'] if 'terminal_states' in kwargs else [self.world.size - 1]
         # set reward matrix
@@ -35,31 +35,35 @@ class GridWorldEnv(gym.Env):
         self.done = False
         self.info = {}
         # create first render with the initial status of the world
-
-        # np.nditer(grid, flags=['multi_index'])
+        # TODO: render pending
 
     def look_step_ahead(self, state, action):
+        """
+        Computes the results of a hypothetical action taking place at the given state.
+
+        Returns the state to what that action would lead, the reward at that new state and a boolean value that
+        determines if the next state is terminal
+        """
+        done = self.done
         if self._is_terminal(state):
             next_state = state
+            done = True
         else:
             state_x, state_y = self.world[self.current_state]
             movement_x, movement_y = self.actions_list[action]
             next_location = np.array((state_x + movement_x, state_y + movement_y), dtype='int16, int16')
-            next_state = np.where(self.world == next_location)[0][0]
+            next_state = np.where(self.world == next_location)[0][0] if self._is_valid(next_location) else state
 
-        if not self._is_valid(next_state):
-            next_state = state
+            if not self._is_valid(next_state):
+                next_state = state
 
-            return next_state, self.reward_matrix[state]
+        return next_state, self.reward_matrix[state], self._is_terminal(next_state)
 
     def _is_valid(self, state):
         """
-        Checks if a given state is inside the grid. In the future it could also check for invalid spaces
-        inside the grid.
+        Checks if a given state is inside the grid.
         """
-        if 0 <= state < self.world.size:
-            return True
-        return False
+        return True if state in self.world else False
 
     def _is_terminal(self, state):
         """
@@ -81,44 +85,26 @@ class GridWorldEnv(gym.Env):
                              for y in np.nditer(np.arange(self.y_max))), dtype='int16, int16')
         return world
 
-    def _update_world(self):
-        """
-        Updates the status of the world after a single step
-        """
-        self.world[self.prev_state[0]][self.prev_state[1]] = 'o'
-        self.world[self.curr_state[0]][self.curr_state[1]] = 'x'
+    # def _update_world(self):
+    #     """
+    #     Updates the status of the world after a single step
+    #     """
+    #     self.world[self.prev_state[0]][self.prev_state[1]] = 'o'
+    #     self.world[self.curr_state[0]][self.curr_state[1]] = 'x'
 
     def _step(self, action):
-        action_str = self.ACTION_MEANING[action]
-        self.prev_state = self.curr_state.copy()
-        # TODO: Remap states to a grid for calculating next state
-        if action_str == "UP":
-            if self._is_valid((self.curr_state[0] - 1, self.curr_state[1])):
-                self.curr_state[0] -= 1
-        elif action_str == "DOWN":
-            if self._is_valid((self.curr_state[0] + 1, self.curr_state[1])):
-                self.curr_state[0] += 1
-        elif action_str == "LEFT":
-            if self._is_valid((self.curr_state[0], self.curr_state[1] - 1)):
-                self.curr_state[1] -= 1
-        elif action_str == "RIGHT":
-            if self._is_valid((self.curr_state[0], self.curr_state[1] + 1)):
-                self.curr_state[1] += 1
-        self._update_world()
-        # TODO: Observation should be also the world state
-        observation = self.curr_state
-
-        if self._is_terminal(self.curr_state):
-            self.done = True
-
-        reward = self.reward_matrix[self.curr_state]
-        return observation, reward, self.done, self.info
+        """
+        Moves the agent one step according to the given action.
+        """
+        self.prev_state = self.current_state.copy()
+        self.current_state, reward, self.done = self.look_step_ahead(self.current_state, action)
+        # TODO: currently returning only current state. Should we return a tuple with the world or which format?
+        return self.current_state, reward, self.done, self.info
 
     def _reset(self):
         self.done = False
-        self.curr_state = 0
-        self.terminal_state = (self.x_max-1, self.y_max-1)
-        return self.curr_state
+        self.current_state = self.previous_state = self.initial_state
+        return self.current_state  # TODO: should we add world as observation?
 
     def _render(self, mode='human', close=False):
         pass
