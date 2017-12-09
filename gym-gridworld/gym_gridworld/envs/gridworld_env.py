@@ -1,7 +1,5 @@
 import gym
-from gym import error, spaces, utils
-from gym.utils import seeding
-
+from gym import spaces
 import numpy as np
 import sys
 from six import StringIO
@@ -34,8 +32,6 @@ class GridWorldEnv(gym.Env):
         # set additional parameters for the environment
         self.done = False
         self.info = {}
-        # create first render with the initial status of the world
-        # TODO: render pending
 
     def look_step_ahead(self, state, action):
         """
@@ -44,26 +40,31 @@ class GridWorldEnv(gym.Env):
         Returns the state to what that action would lead, the reward at that new state and a boolean value that
         determines if the next state is terminal
         """
-        done = self.done
         if self._is_terminal(state):
             next_state = state
-            done = True
         else:
             state_x, state_y = self.world[self.current_state]
             movement_x, movement_y = self.actions_list[action]
             next_location = np.array((state_x + movement_x, state_y + movement_y), dtype='int16, int16')
-            next_state = np.where(self.world == next_location)[0][0] if self._is_valid(next_location) else state
+            next_state = np.where(self.world == next_location)[0][0] if self._is_valid_location(next_location) \
+                else state
 
-            if not self._is_valid(next_state):
+            if not self._is_valid_state(next_state):
                 next_state = state
 
         return next_state, self.reward_matrix[state], self._is_terminal(next_state)
 
-    def _is_valid(self, state):
+    def _is_valid_location(self, location):
         """
         Checks if a given state is inside the grid.
         """
-        return True if state in self.world else False
+        return True if location in self.world else False
+
+    def _is_valid_state(self, state):
+        """
+        Checks if a given state is inside the grid.
+        """
+        return True if 0 <= state < self.world.size - 1 else False
 
     def _is_terminal(self, state):
         """
@@ -85,18 +86,11 @@ class GridWorldEnv(gym.Env):
                              for y in np.nditer(np.arange(self.y_max))), dtype='int16, int16')
         return world
 
-    # def _update_world(self):
-    #     """
-    #     Updates the status of the world after a single step
-    #     """
-    #     self.world[self.prev_state[0]][self.prev_state[1]] = 'o'
-    #     self.world[self.curr_state[0]][self.curr_state[1]] = 'x'
-
     def _step(self, action):
         """
         Moves the agent one step according to the given action.
         """
-        self.prev_state = self.current_state.copy()
+        self.previous_state = self.current_state
         self.current_state, reward, self.done = self.look_step_ahead(self.current_state, action)
         # TODO: currently returning only current state. Should we return a tuple with the world or which format?
         return self.current_state, reward, self.done, self.info
@@ -107,26 +101,25 @@ class GridWorldEnv(gym.Env):
         return self.current_state  # TODO: should we add world as observation?
 
     def _render(self, mode='human', close=False):
-        pass
+        new_world = np.fromiter(('o' for _ in np.nditer(np.arange(self.x_max))
+                                 for _ in np.nditer(np.arange(self.y_max))), dtype='S1')
+        new_world[self.current_state] = 'x'
+        for t_state in self.terminal_states:
+            new_world[t_state] = 'T'
 
-        # new_world = [['o' for _ in range(self.x_max)] for _ in range(self.y_max)]
-        # new_world[self.curr_state[0]][self.curr_state[1]] = 'x'
-        # for t_state in self.terminal_states:
-        #     new_world[t_state[0]][t_state[1]] = 'T'
+        if mode == 'human' or mode == 'ansi':
+            outfile = StringIO() if mode == 'ansi' else sys.stdout
+            for row in np.reshape(new_world, (self.x_max, self.y_max)):
+                for state in row:
+                    outfile.write((state.decode('UTF-8') + ' '))
+                outfile.write('\n')
+            outfile.write('\n')
+            return outfile
 
-        # if mode == 'human' or mode == 'ansi':
-        #     outfile = StringIO() if mode == 'ansi' else sys.stdout
-        #     for row in self.world:
-        #         for cell in row:
-        #             outfile.write((cell + ' '))
-        #         outfile.write('\n')
-        #     outfile.write('\n')
-        #     return outfile
-        #
-        # elif mode == 'graphic':
-        #     raise NotImplementedError
-        # else:
-        #     super(GridWorldEnv, self).render(mode=mode)
+        elif mode == 'graphic':
+            raise NotImplementedError
+        else:
+            super(GridWorldEnv, self).render(mode=mode)
 
     def _close(self):
         pass
@@ -142,6 +135,7 @@ if __name__ == '__main__':
 
 
     def policy_eval(policy, env, discount_factor=1.0, threshold=0.00001, **kwargs):
+        threshold = 0.01
         if 'value_function' in kwargs:
             v = kwargs['value_function']
         else:
@@ -152,9 +146,9 @@ if __name__ == '__main__':
             for state in range(env.world.size):
                 v_update = 0
                 for action, action_prob in enumerate(policy[state]):
-                    for next_state, reward in env.look_step_ahead(state, action):
-                        v_update += action_prob * (reward + discount_factor * v[next_state])
-                delta = max(delta, np.abs(v - v[state]))
+                    next_state, reward, done = env.look_step_ahead(state, action)
+                    v_update += action_prob * (reward + discount_factor * v[next_state])
+                delta = max(delta, np.abs(v_update - v[state]))
                 v[state] = v_update
             if delta < threshold:
                 break
@@ -184,6 +178,7 @@ if __name__ == '__main__':
 
     policy1 = policy_improvement(policy0, gw_env)
     v2 = policy_eval(policy1, gw_env, value_function=v1)
+    print('finished')
     # and keep alternating between policy evaluation and improvement until convergence
 
 
