@@ -92,13 +92,12 @@ class GridWorldEnv(gym.Env):
         """
         self.previous_state = self.current_state
         self.current_state, reward, self.done = self.look_step_ahead(self.current_state, action)
-        # TODO: currently returning only current state. Should we return a tuple with the world or which format?
         return self.current_state, reward, self.done, self.info
 
     def _reset(self):
         self.done = False
         self.current_state = self.previous_state = self.initial_state
-        return self.current_state  # TODO: should we add world as observation?
+        return self.current_state
 
     def _render(self, mode='human', close=False):
         new_world = np.fromiter(('o' for _ in np.nditer(np.arange(self.x_max))
@@ -109,7 +108,7 @@ class GridWorldEnv(gym.Env):
 
         if mode == 'human' or mode == 'ansi':
             outfile = StringIO() if mode == 'ansi' else sys.stdout
-            for row in np.reshape(new_world, (self.x_max, self.y_max)):
+            for row in np.reshape(new_world, (self.x_max, self.y_max))[:, ::-1].T:
                 for state in row:
                     outfile.write((state.decode('UTF-8') + ' '))
                 outfile.write('\n')
@@ -129,68 +128,16 @@ class GridWorldEnv(gym.Env):
 
 
 if __name__ == '__main__':
-    gw_env = GridWorldEnv()
-    policy0 = np.ones([gw_env.world.size, len(gw_env.actions_list)]) / len(gw_env.actions_list)
-    v0 = np.zeros(gw_env.world.size)
+    env = GridWorldEnv()
+    for i_episode in range(1):
+        observation = env.reset()
+        for t in range(100):
+            env.render()
+            # print(observation)
+            action = env.action_space.sample()
+            print('go ' + env.action_descriptors[action])
+            observation, reward, done, info = env.step(action)
 
-
-    def policy_eval(policy, env, discount_factor=1.0, threshold=0.00001, **kwargs):
-        threshold = 0.01
-        if 'value_function' in kwargs:
-            v = kwargs['value_function']
-        else:
-            v = np.zeros(env.world.size)
-
-        while True:
-            delta = 0
-            for state in range(env.world.size):
-                v_update = 0
-                for action, action_prob in enumerate(policy[state]):
-                    next_state, reward, done = env.look_step_ahead(state, action)
-                    v_update += action_prob * (reward + discount_factor * v[next_state])
-                delta = max(delta, np.abs(v_update - v[state]))
-                v[state] = v_update
-            if delta < threshold:
+            if done:
+                print("Episode finished after {} timesteps".format(t + 1))
                 break
-        return v
-
-    v1 = policy_eval(policy0, gw_env, value_function=v0)
-
-    def policy_improvement(policy, env, discount_factor=1.0):
-        while True:
-            v = policy_eval(policy, env, discount_factor)
-            policy_stable = True
-
-            for state in range(env.world.size):
-                chosen_action = np.argmax(policy[state])
-                action_values = np.zeros(env.action_space_size)
-                for action in range(env.action_space_size):
-                    for next_state, reward in env.look_step_ahead(state, action):
-                        action_values[action] += reward + discount_factor * v[next_state]
-                best_action = np.argmax(action_values)
-
-                if chosen_action != best_action:
-                    policy_stable = False
-                policy[state] = np.eye(env.action_space_size)[best_action]
-
-            if policy_stable:
-                return policy, v
-
-    policy1 = policy_improvement(policy0, gw_env)
-    v2 = policy_eval(policy1, gw_env, value_function=v1)
-    print('finished')
-    # and keep alternating between policy evaluation and improvement until convergence
-
-
-    # for i_episode in range(1):
-    #     observation = env.reset()
-    #     for t in range(100):
-    #         env.render()
-    #         # print(observation)
-    #         action = env.action_space.sample()
-    #         print(ACTION_MEANING[action])
-    #         observation, reward, done, info = env.step(action)
-    #
-    #         if done:
-    #             print("Episode finished after {} timesteps".format(t + 1))
-    #             break
