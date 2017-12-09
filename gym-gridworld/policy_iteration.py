@@ -10,14 +10,11 @@ def reshape_as_gridworld(input_matrix):
     return np.reshape(input_matrix, (world_shape[0], world_shape[1]))[:, ::-1].T
 
 
-def single_step_policy_evaluation(policy, env, discount_factor=1.0, **kwargs):
+def single_step_policy_evaluation(policy, env, discount_factor=1.0, value_function=None):
     """
     Returns an update of the input value function using the input policy.
     """
-    if 'value_function' in kwargs:
-        v = kwargs['value_function']
-    else:
-        v = np.zeros(env.world.size)
+    v = np.zeros(env.world.size) if value_function is None else value_function
     v_new = np.zeros(env.world.size)
 
     for state in range(env.world.size):
@@ -36,33 +33,32 @@ def get_policy_map(policy):
     return reshape_as_gridworld(policy_map)
 
 
-def greedy_policy_from_value_function(policy, env, discount_factor=1.0, **kwargs):
+def greedy_policy_from_value_function(policy, env, value_function, discount_factor=1.0):
     """
     Returns a greedy policy based on the input value function.
 
     If no value function was provided the defaults from a single step starting with a value function of zeros
     will be used.
     """
-    v = single_step_policy_evaluation(policy, env, discount_factor, **kwargs)
-
     for state in range(env.world.size):
         action_values = np.zeros(env.action_space.n)
         for action in range(env.action_space.n):
             next_state, reward, done = env.look_step_ahead(state, action)
-            action_values[action] += policy[state][action] * (reward + discount_factor * v[next_state])
+            action_values[action] += policy[state][action] * (reward + discount_factor * value_function[next_state])
         best_action = np.argmax(action_values)  # TODO: we have to select all max with the same prob, this is wrong
         policy[state] = np.eye(env.action_space.n)[best_action]
     return policy
 
 
-def policy_iteration(policy, env, threshold=0.00001, **kwargs):
+def policy_iteration(policy, env, value_function=None, threshold=0.00001, **kwargs):
     """
     Policy iteration algorithm, which consists on iteratively evaluating a policy and updating it greedily with
     respect to the value function obtained from a single step evaluation.
     """
     delta = 0
+    value_function = np.zeros(env.world.size) if value_function is None else value_function
     while True:
-        policy_value = single_step_policy_evaluation(policy, env, **kwargs)
+        policy_value = single_step_policy_evaluation(policy, env, value_function, **kwargs)
         greedy_policy = greedy_policy_from_value_function(policy_value, env, **kwargs)
 
         if delta < threshold:
@@ -82,6 +78,6 @@ if __name__ == '__main__':
     print(reshape_as_gridworld(val_fun))
 
     # test greedy policy
-    policy1 = greedy_policy_from_value_function(policy0, gw_env)
+    policy1 = greedy_policy_from_value_function(policy0, gw_env, val_fun)
     policy_map1 = get_policy_map(policy1)
     print('Policy:\n', policy_map1)
