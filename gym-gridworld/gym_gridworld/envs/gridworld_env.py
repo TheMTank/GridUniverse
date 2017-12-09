@@ -33,6 +33,17 @@ class GridWorldEnv(gym.Env):
         self.done = False
         self.info = {}
 
+    def _generate_world(self):
+        """
+        Creates and returns the gridworld map as a numpy array.
+
+        The states are defined by their index and contain a tuple of uint16 values that represent the
+        coordinates (x,y) of a state in the grid.
+        """
+        world = np.fromiter(((x, y) for x in np.nditer(np.arange(self.x_max))
+                             for y in np.nditer(np.arange(self.y_max))), dtype='int16, int16')
+        return world
+
     def look_step_ahead(self, state, action):
         """
         Computes the results of a hypothetical action taking place at the given state.
@@ -43,7 +54,7 @@ class GridWorldEnv(gym.Env):
         if self._is_terminal(state):
             next_state = state
         else:
-            state_x, state_y = self.world[self.current_state]
+            state_x, state_y = self.world[state]
             movement_x, movement_y = self.actions_list[action]
             next_location = np.array((state_x + movement_x, state_y + movement_y), dtype='int16, int16')
             next_state = np.where(self.world == next_location)[0][0] if self._is_valid_location(next_location) \
@@ -52,7 +63,7 @@ class GridWorldEnv(gym.Env):
             if not self._is_valid_state(next_state):
                 next_state = state
 
-        return next_state, self.reward_matrix[state], self._is_terminal(next_state)
+        return next_state, self.reward_matrix[next_state], self._is_terminal(next_state)
 
     def _is_valid_location(self, location):
         """
@@ -64,7 +75,7 @@ class GridWorldEnv(gym.Env):
         """
         Checks if a given state is inside the grid.
         """
-        return True if 0 <= state < self.world.size - 1 else False
+        return True if 0 <= state < self.world.size else False
 
     def _is_terminal(self, state):
         """
@@ -74,17 +85,6 @@ class GridWorldEnv(gym.Env):
             if state == t_state:
                 return True
         return False
-
-    def _generate_world(self):
-        """
-        Creates and returns the gridworld map as a numpy array.
-
-        The states are defined by their index and contain a tuple of uint16 values that represent the
-        coordinates (x,y) of a state in the grid.
-        """
-        world = np.fromiter(((x, y) for x in np.nditer(np.arange(self.x_max))
-                             for y in np.nditer(np.arange(self.y_max))), dtype='int16, int16')
-        return world
 
     def _step(self, action):
         """
@@ -133,7 +133,6 @@ if __name__ == '__main__':
         observation = env.reset()
         for t in range(100):
             env.render()
-            # print(observation)
             action = env.action_space.sample()
             print('go ' + env.action_descriptors[action])
             observation, reward, done, info = env.step(action)
