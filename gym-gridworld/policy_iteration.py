@@ -81,6 +81,34 @@ def policy_iteration(policy, env, value_function=None, threshold=0.00001, max_st
     return policy_value, greedy_policy
 
 
+def value_iteration(policy, env, value_function=None, threshold=0.00001, max_steps=1000, **kwargs):
+    """
+    Value iteration algorithm, which consists on iteratively evaluating a policy until convergence and updating it
+    greedily with respect to the value function obtained.
+    """
+    value_function = np.zeros(env.world.size) if value_function is None else value_function
+    step_number = 0
+    greedy_policy = policy
+    while True:
+        policy_value = single_step_policy_evaluation(greedy_policy, env, value_function=value_function, **kwargs)
+        delta = np.max(value_function - policy_value)
+        value_function = policy_value
+        if delta < threshold:
+            new_policy = greedy_policy_from_value_function(greedy_policy, env, value_function=policy_value, **kwargs)
+            if greedy_policy.all() == new_policy.all(): # TODO: this criteria is not enough, find a new one
+                break
+            else:
+                greedy_policy = new_policy
+        step_number += 1
+
+        if step_number == max_steps:
+            warning_message = 'Value iteration did not reach the selected threshold. Finished after reaching ' \
+                              'the maximum {} steps'.format(max_steps)
+            warnings.warn(warning_message, UserWarning)
+            break
+    return policy_value, greedy_policy
+
+
 if __name__ == '__main__':
     # test policy evaluation
     world_shape = (4, 4)
@@ -102,4 +130,13 @@ if __name__ == '__main__':
     print('Value:\n', reshape_as_gridworld(optimal_value))
     print('Policy: (0=up, 1=right, 2=down, 3=left)\n', get_policy_map(optimal_policy))
     np.set_printoptions(linewidth=75*2)
-    print('Policy: (0=up, 1=right, 2=down, 3=left)\n', get_policy_map(optimal_policy, max_only=False))
+    print('Policy: (up, right, down, left)\n', get_policy_map(optimal_policy, max_only=False))
+    np.set_printoptions(linewidth=75)
+
+    # test value iteration
+    optimal_value, optimal_policy = value_iteration(policy0, gw_env, v0, threshold=0.001, max_steps=100)
+    print('Value:\n', reshape_as_gridworld(optimal_value))
+    print('Policy: (0=up, 1=right, 2=down, 3=left)\n', get_policy_map(optimal_policy))
+    np.set_printoptions(linewidth=75*2)
+    print('Policy: (up, right, down, left)\n', get_policy_map(optimal_policy, max_only=False))
+    np.set_printoptions(linewidth=75)
