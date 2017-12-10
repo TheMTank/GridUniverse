@@ -1,5 +1,6 @@
 import numpy as np
 from gym_gridworld.envs.gridworld_env import GridWorldEnv
+import warnings
 
 
 def reshape_as_gridworld(input_matrix):
@@ -29,7 +30,8 @@ def get_policy_map(policy):
     """
     Generates a visualization grid from the policy to be able to print which action is most likely from every state
     """
-    policy_map = np.fromiter((np.argmax(policy[state]) for state in np.arange(policy.shape[0])), dtype=np.int64)
+    policy_map = np.fromiter((np.argmax(policy[state]) for state in np.nditer(np.arange(policy.shape[0]))),
+                             dtype=np.int64)
     return reshape_as_gridworld(policy_map)
 
 
@@ -45,8 +47,9 @@ def greedy_policy_from_value_function(policy, env, value_function, discount_fact
         for action in range(env.action_space.n):
             next_state, reward, done = env.look_step_ahead(state, action)
             action_values[action] += policy[state][action] * (reward + discount_factor * value_function[next_state])
-        best_action = np.argmax(action_values)  # TODO: we have to select all max with the same prob, this is wrong
-        policy[state] = np.eye(env.action_space.n)[best_action]
+        max_value_actions = np.where(action_values == np.amax(action_values))[0]
+        policy[state] = np.fromiter((1 / len(max_value_actions) if action in max_value_actions else 0
+                                     for action in np.nditer(np.arange(action_values.size))), dtype=np.float)
     return policy
 
 
@@ -64,9 +67,12 @@ def policy_iteration(policy, env, value_function=None, threshold=0.00001, max_st
 
         greedy_policy = greedy_policy_from_value_function(policy, env, value_function=policy_value, **kwargs)
         step_number += 1
-        if delta < threshold or step_number == max_steps:
+        if delta < threshold:
             break
-
+        elif step_number == max_steps:
+            warnings.warn('Policy iteration did not reach the selected threshold. Finished after reaching '
+                          'the maximum {} steps'.format(max_steps), UserWarning)
+            break
     return policy_value, greedy_policy
 
 
@@ -89,4 +95,4 @@ if __name__ == '__main__':
     # test policy iteration
     optimal_value, optimal_policy = policy_iteration(policy0, gw_env, v0, threshold=0.001, max_steps=100)
     print('Value:\n', reshape_as_gridworld(optimal_value))
-    print('Policy:\n', get_policy_map(optimal_policy))
+    print('Policy: (0=up, 1=right, 2=down, 3=left)\n', get_policy_map(optimal_policy))
