@@ -26,12 +26,16 @@ def single_step_policy_evaluation(policy, env, discount_factor=1.0, value_functi
     return v_new
 
 
-def get_policy_map(policy):
+def get_policy_map(policy, max_only=True):
     """
     Generates a visualization grid from the policy to be able to print which action is most likely from every state
     """
-    policy_map = np.fromiter((np.argmax(policy[state]) for state in np.nditer(np.arange(policy.shape[0]))),
-                             dtype=np.int64)
+    if max_only:
+        policy_map = np.fromiter((np.argmax(policy[state]) for state in np.nditer(np.arange(policy.shape[0]))),
+                                 dtype=np.int64)
+    else:
+        policy_map = np.fromiter((policy[state] for state in np.nditer(np.arange(policy.shape[0]))),
+                                 dtype='float64, float64, float64, float64')
     return reshape_as_gridworld(policy_map)
 
 
@@ -70,8 +74,9 @@ def policy_iteration(policy, env, value_function=None, threshold=0.00001, max_st
         if delta < threshold:
             break
         elif step_number == max_steps:
-            warnings.warn('Policy iteration did not reach the selected threshold. Finished after reaching '
-                          'the maximum {} steps'.format(max_steps), UserWarning)
+            warning_message = 'Policy iteration did not reach the selected threshold. Finished after reaching ' \
+                              'the maximum {} steps'.format(max_steps)
+            warnings.warn(warning_message, UserWarning)
             break
     return policy_value, greedy_policy
 
@@ -96,3 +101,5 @@ if __name__ == '__main__':
     optimal_value, optimal_policy = policy_iteration(policy0, gw_env, v0, threshold=0.001, max_steps=100)
     print('Value:\n', reshape_as_gridworld(optimal_value))
     print('Policy: (0=up, 1=right, 2=down, 3=left)\n', get_policy_map(optimal_policy))
+    np.set_printoptions(linewidth=75*2)
+    print('Policy: (0=up, 1=right, 2=down, 3=left)\n', get_policy_map(optimal_policy, max_only=False))
