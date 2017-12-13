@@ -51,8 +51,8 @@ def greedy_policy_from_value_function(policy, env, value_function, discount_fact
         for action in range(env.action_space.n):
             next_state, reward, done = env.look_step_ahead(state, action)
             q_function[state][action] += policy[state][action] * (reward + discount_factor * value_function[next_state])
-        max_value_actions = np.where(q_function[state] == np.amax(q_function[state]))[0]
-        # TODO: for state 6 np.where fails in line above (54), why?
+        max_value_actions = np.where(np.around(q_function[state], 8) == np.around(np.amax(q_function[state]), 8))[0]
+
         policy[state] = np.fromiter((1 / len(max_value_actions) if action in max_value_actions else 0
                                      for action in np.nditer(np.arange(env.action_space.n))), dtype=np.float)
     return policy
@@ -93,7 +93,6 @@ def policy_iteration(policy, env, value_function=None, threshold=0.00001, max_st
         delta_eval = np.max(value_function - new_value_function)
         value_function = new_value_function
         if delta_eval < threshold:  # policy evaluation converged
-            print('delta reached')
             new_policy = greedy_policy_from_value_function(greedy_policy, env, value_function=value_function, **kwargs)
             delta = np.max(last_converged_v_fun - new_value_function)
             if delta < threshold:  # last converged value functions difference converged
@@ -103,7 +102,6 @@ def policy_iteration(policy, env, value_function=None, threshold=0.00001, max_st
                 greedy_policy = new_policy
 
         elif step_number == max_steps - 1:
-            last_converged_v_fun = new_value_function
             greedy_policy = greedy_policy_from_value_function(greedy_policy, env, value_function=value_function,
                                                               **kwargs)
             warning_message = 'Policy iteration did not reach the selected threshold. Finished after reaching ' \

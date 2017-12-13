@@ -15,7 +15,7 @@ class GridWorldEnv(gym.Env):
         self.world = self._generate_world()
         # set action space params
         self.action_space = spaces.Discrete(4)
-        self.actions_list = np.array([(0, 1), (1, 0), (0, -1), (-1, 0)], dtype='int16, int16')
+        self.actions_list = np.array([(0, 1), (1, 0), (0, -1), (-1, 0)], dtype='int64, int64')
         self.action_descriptors = ['up', 'right', 'down', 'left']
         # set observed params: [current state, world state]
         self.observation_space = spaces.Box(spaces.Discrete(self.world.size),
@@ -41,7 +41,7 @@ class GridWorldEnv(gym.Env):
         coordinates (x,y) of a state in the grid.
         """
         world = np.fromiter(((x, y) for x in np.nditer(np.arange(self.x_max))
-                             for y in np.nditer(np.arange(self.y_max))), dtype='int16, int16')
+                             for y in np.nditer(np.arange(self.y_max))), dtype='int64, int64')
         return world
 
     def look_step_ahead(self, state, action):
@@ -56,7 +56,7 @@ class GridWorldEnv(gym.Env):
         else:
             state_x, state_y = self.world[state]
             movement_x, movement_y = self.actions_list[action]
-            next_location = np.array((state_x + movement_x, state_y + movement_y), dtype='int16, int16')
+            next_location = np.array((state_x + movement_x, state_y + movement_y), dtype='int64, int64')
             next_state = np.where(self.world == next_location)[0][0] if self._is_valid_location(next_location) \
                 else state
 
