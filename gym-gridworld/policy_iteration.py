@@ -46,67 +46,70 @@ def greedy_policy_from_value_function(policy, env, value_function, discount_fact
     If no value function was provided the defaults from a single step starting with a value function of zeros
     will be used.
     """
+    q_function = np.zeros((env.world.size, env.action_space.n))
     for state in range(env.world.size):
-        action_values = np.zeros(env.action_space.n)
         for action in range(env.action_space.n):
             next_state, reward, done = env.look_step_ahead(state, action)
-            action_values[action] += policy[state][action] * (reward + discount_factor * value_function[next_state])
-        max_value_actions = np.where(action_values == np.amax(action_values))[0]
+            q_function[state][action] += policy[state][action] * (reward + discount_factor * value_function[next_state])
+        max_value_actions = np.where(q_function[state] == np.amax(q_function[state]))[0]
+        # TODO: for state 6 np.where fails in line above (54), why?
         policy[state] = np.fromiter((1 / len(max_value_actions) if action in max_value_actions else 0
-                                     for action in np.nditer(np.arange(action_values.size))), dtype=np.float)
+                                     for action in np.nditer(np.arange(env.action_space.n))), dtype=np.float)
     return policy
-
-
-def policy_iteration(policy, env, value_function=None, threshold=0.00001, max_steps=1000, **kwargs):
-    """
-    Policy iteration algorithm, which consists on iteratively evaluating a policy and updating it greedily with
-    respect to the value function obtained from a single step evaluation.
-    """
-    value_function = np.zeros(env.world.size) if value_function is None else value_function
-    step_number = 0
-    while True:
-        policy_value = single_step_policy_evaluation(policy, env, value_function=value_function, **kwargs)
-        delta = np.max(value_function - policy_value)
-        value_function = policy_value
-
-        greedy_policy = greedy_policy_from_value_function(policy, env, value_function=policy_value, **kwargs)
-        step_number += 1
-        if delta < threshold:
-            break
-        elif step_number == max_steps:
-            warning_message = 'Policy iteration did not reach the selected threshold. Finished after reaching ' \
-                              'the maximum {} steps'.format(max_steps)
-            warnings.warn(warning_message, UserWarning)
-            break
-    return policy_value, greedy_policy
 
 
 def value_iteration(policy, env, value_function=None, threshold=0.00001, max_steps=1000, **kwargs):
     """
-    Value iteration algorithm, which consists on iteratively evaluating a policy until convergence and updating it
-    greedily with respect to the value function obtained.
+    Value iteration algorithm, which consists on one sweep of policy evaluation (no convergence) and then one policy
+    greedy update. These two steps are repeated until convergence.
     """
     value_function = np.zeros(env.world.size) if value_function is None else value_function
-    step_number = 0
     greedy_policy = policy
-    while True:
-        policy_value = single_step_policy_evaluation(greedy_policy, env, value_function=value_function, **kwargs)
-        delta = np.max(value_function - policy_value)
-        value_function = policy_value
+    for step_number in range(max_steps):
+        new_value_function = single_step_policy_evaluation(greedy_policy, env, value_function=value_function, **kwargs)
+        delta = np.max(value_function - new_value_function)
+        value_function = new_value_function
+
+        greedy_policy = greedy_policy_from_value_function(greedy_policy, env, value_function=value_function, **kwargs)
+
         if delta < threshold:
-            new_policy = greedy_policy_from_value_function(greedy_policy, env, value_function=policy_value, **kwargs)
-            if greedy_policy.all() == new_policy.all(): # TODO: this criteria is not enough, find a new one
+            break
+        elif step_number == max_steps - 1:
+            warning_message = 'Value iteration did not reach the selected threshold. Finished after reaching ' \
+                              'the maximum {} steps'.format(step_number + 1)
+            warnings.warn(warning_message, UserWarning)
+    return value_function, greedy_policy
+
+
+def policy_iteration(policy, env, value_function=None, threshold=0.00001, max_steps=1000, **kwargs):
+    """
+    Policy iteration algorithm, which consists on iterative policy evaluation until convergence for the current policy
+    (estimate over many sweeps until you can't estimate no more). And then finally updates policy to be greedy.
+    """
+    value_function = last_converged_v_fun = np.zeros(env.world.size) if value_function is None else value_function
+    greedy_policy = policy
+    for step_number in range(max_steps):
+        new_value_function = single_step_policy_evaluation(greedy_policy, env, value_function=value_function, **kwargs)
+        delta_eval = np.max(value_function - new_value_function)
+        value_function = new_value_function
+        if delta_eval < threshold:  # policy evaluation converged
+            print('delta reached')
+            new_policy = greedy_policy_from_value_function(greedy_policy, env, value_function=value_function, **kwargs)
+            delta = np.max(last_converged_v_fun - new_value_function)
+            if delta < threshold:  # last converged value functions difference converged
                 break
             else:
+                last_converged_v_fun = new_value_function
                 greedy_policy = new_policy
-        step_number += 1
 
-        if step_number == max_steps:
-            warning_message = 'Value iteration did not reach the selected threshold. Finished after reaching ' \
-                              'the maximum {} steps'.format(max_steps)
+        elif step_number == max_steps - 1:
+            last_converged_v_fun = new_value_function
+            greedy_policy = greedy_policy_from_value_function(greedy_policy, env, value_function=value_function,
+                                                              **kwargs)
+            warning_message = 'Policy iteration did not reach the selected threshold. Finished after reaching ' \
+                              'the maximum {} steps with delta_eval {}'.format(step_number + 1, delta_eval)
             warnings.warn(warning_message, UserWarning)
-            break
-    return policy_value, greedy_policy
+    return last_converged_v_fun, greedy_policy
 
 
 if __name__ == '__main__':
@@ -124,19 +127,25 @@ if __name__ == '__main__':
     policy1 = greedy_policy_from_value_function(policy0, gw_env, val_fun)
     policy_map1 = get_policy_map(policy1)
     print('Policy: (0=up, 1=right, 2=down, 3=left)\n', policy_map1)
+    np.set_printoptions(linewidth=75*2, precision=4)
+    print('Policy: (up, right, down, left)\n', get_policy_map(policy1, max_only=False))
+    np.set_printoptions(linewidth=75, precision=8)
 
     # test policy iteration
-    optimal_value, optimal_policy = policy_iteration(policy0, gw_env, v0, threshold=0.001, max_steps=100)
+    print('Policy iteration:')
+    policy0 = np.ones([gw_env.world.size, len(gw_env.actions_list)]) / len(gw_env.actions_list)
+    optimal_value, optimal_policy = policy_iteration(policy0, gw_env, v0, threshold=0.001, max_steps=1000)
     print('Value:\n', reshape_as_gridworld(optimal_value))
     print('Policy: (0=up, 1=right, 2=down, 3=left)\n', get_policy_map(optimal_policy))
-    np.set_printoptions(linewidth=75*2)
+    np.set_printoptions(linewidth=75*2, precision=4)
     print('Policy: (up, right, down, left)\n', get_policy_map(optimal_policy, max_only=False))
-    np.set_printoptions(linewidth=75)
+    np.set_printoptions(linewidth=75, precision=8)
 
     # test value iteration
+    print('Value iteration:')
     optimal_value, optimal_policy = value_iteration(policy0, gw_env, v0, threshold=0.001, max_steps=100)
     print('Value:\n', reshape_as_gridworld(optimal_value))
     print('Policy: (0=up, 1=right, 2=down, 3=left)\n', get_policy_map(optimal_policy))
-    np.set_printoptions(linewidth=75*2)
+    np.set_printoptions(linewidth=75*2, precision=4)
     print('Policy: (up, right, down, left)\n', get_policy_map(optimal_policy, max_only=False))
-    np.set_printoptions(linewidth=75)
+    np.set_printoptions(linewidth=75, precision=8)
