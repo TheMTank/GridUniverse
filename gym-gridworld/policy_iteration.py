@@ -50,7 +50,7 @@ def greedy_policy_from_value_function(policy, env, value_function, discount_fact
     for state in range(env.world.size):
         for action in range(env.action_space.n):
             next_state, reward, done = env.look_step_ahead(state, action)
-            q_function[state][action] += policy[state][action] * (reward + discount_factor * value_function[next_state])
+            q_function[state][action] += reward + discount_factor * value_function[next_state]
         max_value_actions = np.where(np.around(q_function[state], 8) == np.around(np.amax(q_function[state]), 8))[0]
 
         policy[state] = np.fromiter((1 / len(max_value_actions) if action in max_value_actions else 0
@@ -102,7 +102,7 @@ def policy_iteration(policy, env, value_function=None, threshold=0.00001, max_st
                 greedy_policy = new_policy
 
         elif step_number == max_steps - 1:
-            greedy_policy = greedy_policy_from_value_function(greedy_policy, env, value_function=value_function,
+            greedy_policy = greedy_policy_from_value_function(greedy_policy, env, value_function=last_converged_v_fun,
                                                               **kwargs)
             warning_message = 'Policy iteration did not reach the selected threshold. Finished after reaching ' \
                               'the maximum {} steps with delta_eval {}'.format(step_number + 1, delta_eval)
@@ -141,6 +141,7 @@ if __name__ == '__main__':
 
     # test value iteration
     print('Value iteration:')
+    policy0 = np.ones([gw_env.world.size, len(gw_env.actions_list)]) / len(gw_env.actions_list)
     optimal_value, optimal_policy = value_iteration(policy0, gw_env, v0, threshold=0.001, max_steps=100)
     print('Value:\n', reshape_as_gridworld(optimal_value))
     print('Policy: (0=up, 1=right, 2=down, 3=left)\n', get_policy_map(optimal_policy))
