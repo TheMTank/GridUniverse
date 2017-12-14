@@ -57,25 +57,21 @@ class GridWorldEnv(gym.Env):
             state_x, state_y = self.world[state]
             movement_x, movement_y = self.actions_list[action]
             next_location = np.array((state_x + movement_x, state_y + movement_y), dtype='int64, int64')
-            next_state = np.where(self.world == next_location)[0][0] if self._is_valid_location(next_location) \
+            next_state = np.where(self.world == next_location)[0][0] if self._is_valid(next_location) \
                 else state
-
-            if not self._is_valid_state(next_state):
-                next_state = state
 
         return next_state, self.reward_matrix[next_state], self.is_terminal(next_state)
 
-    def _is_valid_location(self, location):
+    def _is_valid(self, state):
         """
         Checks if a given state is inside the grid.
-        """
-        return True if location in self.world else False
 
-    def _is_valid_state(self, state):
+        The input state can be given as the state index or as a tuple containing the (x,y) coordinates of the state on
+        the grid.
         """
-        Checks if a given state is inside the grid.
-        """
-        return True if 0 <= state < self.world.size else False
+        if isinstance(state, np.int64):
+            state = self.world[state] if 0 <= state < self.world.size else None
+        return True if state in self.world else False
 
     def is_terminal(self, state):
         """
