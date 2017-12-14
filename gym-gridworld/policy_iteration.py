@@ -53,7 +53,8 @@ def greedy_policy_from_value_function(policy, env, value_function, discount_fact
             q_function[state][action] += reward + discount_factor * value_function[next_state]
         max_value_actions = np.where(np.around(q_function[state], 8) == np.around(np.amax(q_function[state]), 8))[0]
 
-        policy[state] = np.fromiter((1 / len(max_value_actions) if action in max_value_actions else 0
+        policy[state] = np.fromiter((1 / len(max_value_actions) if action in max_value_actions and
+                                    not env.is_terminal(state) else 0
                                      for action in np.nditer(np.arange(env.action_space.n))), dtype=np.float)
     return policy
 

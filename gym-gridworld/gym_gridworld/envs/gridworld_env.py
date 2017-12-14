@@ -51,7 +51,7 @@ class GridWorldEnv(gym.Env):
         Returns the state to what that action would lead, the reward at that new state and a boolean value that
         determines if the next state is terminal
         """
-        if self._is_terminal(state):
+        if self.is_terminal(state):
             next_state = state
         else:
             state_x, state_y = self.world[state]
@@ -63,7 +63,7 @@ class GridWorldEnv(gym.Env):
             if not self._is_valid_state(next_state):
                 next_state = state
 
-        return next_state, self.reward_matrix[next_state], self._is_terminal(next_state)
+        return next_state, self.reward_matrix[next_state], self.is_terminal(next_state)
 
     def _is_valid_location(self, location):
         """
@@ -77,7 +77,7 @@ class GridWorldEnv(gym.Env):
         """
         return True if 0 <= state < self.world.size else False
 
-    def _is_terminal(self, state):
+    def is_terminal(self, state):
         """
         Check if the input state is terminal.
         """
