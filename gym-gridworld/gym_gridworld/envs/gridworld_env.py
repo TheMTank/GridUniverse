@@ -15,7 +15,10 @@ class GridWorldEnv(gym.Env):
         self.world = self._generate_world()
         # set action space params
         self.action_space = spaces.Discrete(4)
-        self.actions_list = np.array([(0, 1), (1, 0), (0, -1), (-1, 0)], dtype='int64, int64')
+        self.action_state_to_next_state = [lambda s: s if self.world[s][1] == (self.y_max - 1) else s + 1,
+                                           lambda s: s if self.world[s][0] == (self.x_max - 1) else s + self.y_max,
+                                           lambda s: s if self.world[s][1] == 0 else s - 1,
+                                           lambda s: s if self.world[s][0] == 0 else s - self.y_max]
         self.action_descriptors = ['up', 'right', 'down', 'left']
         # set observed params: [current state, world state]
         self.observation_space = spaces.Box(spaces.Discrete(self.world.size),
@@ -54,24 +57,16 @@ class GridWorldEnv(gym.Env):
         if self.is_terminal(state):
             next_state = state
         else:
-            state_x, state_y = self.world[state]
-            movement_x, movement_y = self.actions_list[action]
-            next_location = np.array((state_x + movement_x, state_y + movement_y), dtype='int64, int64')
-            next_state = np.where(self.world == next_location)[0][0] if self._is_valid(next_location) \
-                else state
+            next_state = self.action_state_to_next_state[action](state)
+            next_state = next_state if self._is_valid(next_state) else state
 
         return next_state, self.reward_matrix[next_state], self.is_terminal(next_state)
 
     def _is_valid(self, state):
         """
-        Checks if a given state is inside the grid.
-
-        The input state can be given as the state index or as a tuple containing the (x,y) coordinates of the state on
-        the grid.
+        Checks if a given state is a wall or any other element that shall not be trespassed.
         """
-        if isinstance(state, np.int64):
-            state = self.world[state] if 0 <= state < self.world.size else None
-        return True if state in self.world else False
+        return True
 
     def is_terminal(self, state):
         """
