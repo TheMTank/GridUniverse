@@ -95,10 +95,10 @@ def policy_iteration(policy, env, value_function=None, threshold=0.00001, max_st
         if delta_eval < threshold:  # policy evaluation converged
             new_policy = greedy_policy_from_value_function(greedy_policy, env, value_function=value_function, **kwargs)
             delta = np.max(last_converged_v_fun - new_value_function)
+            last_converged_v_fun = new_value_function
             if delta < threshold:  # last converged value functions difference converged
                 break
             else:
-                last_converged_v_fun = new_value_function
                 greedy_policy = new_policy
 
         elif step_number == max_steps - 1:
