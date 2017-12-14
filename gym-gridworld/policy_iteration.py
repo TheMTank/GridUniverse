@@ -26,17 +26,19 @@ def single_step_policy_evaluation(policy, env, discount_factor=1.0, value_functi
     return v_new
 
 
-def get_policy_map(policy, max_only=True):
+def get_policy_map(policy):
     """
     Generates a visualization grid from the policy to be able to print which action is most likely from every state
     """
-    if max_only:
-        policy_map = np.fromiter((np.argmax(policy[state]) for state in np.nditer(np.arange(policy.shape[0]))),
-                                 dtype=np.int64)
-    else:
-        policy_map = np.fromiter((policy[state] for state in np.nditer(np.arange(policy.shape[0]))),
-                                 dtype='float64, float64, float64, float64')
-    return reshape_as_gridworld(policy_map)
+    for state in np.nditer(np.arange(policy.shape[0])):
+        unicode_arrows = u'\u2190 \u2191 \u2192 \u2193 \u2194 \u2195'  # left, up, right, down, left-right, up-down
+        policy_arrows = 0  # TODO: check which action(s) does my policy accepts and match it with the arrows
+
+    # TODO: integrate probabilities with the arrow map? otherwise print both together
+    policy_probabilities = np.fromiter((policy[state] for state in np.nditer(np.arange(policy.shape[0]))),
+                             dtype='float64, float64, float64, float64')
+
+    return reshape_as_gridworld(policy_arrows), reshape_as_gridworld(policy_probabilities)
 
 
 def greedy_policy_from_value_function(policy, env, value_function, discount_factor=1.0):
