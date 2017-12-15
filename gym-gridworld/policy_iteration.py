@@ -30,15 +30,15 @@ def get_policy_map(policy):
     """
     Generates a visualization grid from the policy to be able to print which action is most likely from every state
     """
-    unicode_arrows = [u'\u2191', u'\u2192', u'\u2193', u'\u2190' # up, right, down, left
-                      u'\u2194', u'\u2195']  # left-right, up-down
-    policy_arrows_map = np.full(policy.shape[0], ' ')
+    unicode_arrows = np.array([u'\u2191', u'\u2192', u'\u2193', u'\u2190' # up, right, down, left
+                      u'\u2194', u'\u2195'], dtype='<U1')  # left-right, up-down
+    policy_arrows_map = np.empty(policy.shape[0], dtype='<U4')
     for state in np.nditer(np.arange(policy.shape[0])):
         # find index of actions where the probability is > 0
         optimal_actions = np.where(np.around(policy[state], 8) > np.around(np.float64(0), 8))[0]
         # match actions to unicode values of the arrows to be displayed
         for action in optimal_actions:
-            policy_arrows_map[state] = ' '.join((policy_arrows_map[state], unicode_arrows[action]))
+            policy_arrows_map[state] = np.core.defchararray.add(policy_arrows_map[state], unicode_arrows[action])
     # TODO: Problem on policy_arrows_map definition and update
     policy_probabilities = np.fromiter((policy[state] for state in np.nditer(np.arange(policy.shape[0]))),
                                        dtype='float64, float64, float64, float64')
