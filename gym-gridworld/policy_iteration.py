@@ -30,15 +30,20 @@ def get_policy_map(policy):
     """
     Generates a visualization grid from the policy to be able to print which action is most likely from every state
     """
+    unicode_arrows = [u'\u2191', u'\u2192', u'\u2193', u'\u2190' # up, right, down, left
+                      u'\u2194', u'\u2195']  # left-right, up-down
+    policy_arrows_map = np.full(policy.shape[0], ' ')
     for state in np.nditer(np.arange(policy.shape[0])):
-        unicode_arrows = u'\u2190 \u2191 \u2192 \u2193 \u2194 \u2195'  # left, up, right, down, left-right, up-down
-        policy_arrows = 0  # TODO: check which action(s) does my policy accepts and match it with the arrows
-
-    # TODO: integrate probabilities with the arrow map? otherwise print both together
+        # find index of actions where the probability is > 0
+        optimal_actions = np.where(np.around(policy[state], 8) > np.around(np.float64(0), 8))[0]
+        # match actions to unicode values of the arrows to be displayed
+        for action in optimal_actions:
+            policy_arrows_map[state] = ' '.join((policy_arrows_map[state], unicode_arrows[action]))
+    # TODO: Problem on policy_arrows_map definition and update
     policy_probabilities = np.fromiter((policy[state] for state in np.nditer(np.arange(policy.shape[0]))),
-                             dtype='float64, float64, float64, float64')
+                                       dtype='float64, float64, float64, float64')
 
-    return reshape_as_gridworld(policy_arrows), reshape_as_gridworld(policy_probabilities)
+    return reshape_as_gridworld(policy_arrows_map), reshape_as_gridworld(policy_probabilities)
 
 
 def greedy_policy_from_value_function(policy, env, value_function, discount_factor=1.0):
@@ -129,7 +134,7 @@ if __name__ == '__main__':
     policy_map1 = get_policy_map(policy1)
     print('Policy: (0=up, 1=right, 2=down, 3=left)\n', policy_map1)
     np.set_printoptions(linewidth=75*2, precision=4)
-    print('Policy: (up, right, down, left)\n', get_policy_map(policy1, max_only=False))
+    print('Policy: (up, right, down, left)\n', get_policy_map(policy1))
     np.set_printoptions(linewidth=75, precision=8)
 
     # test policy iteration
@@ -139,7 +144,7 @@ if __name__ == '__main__':
     print('Value:\n', reshape_as_gridworld(optimal_value))
     print('Policy: (0=up, 1=right, 2=down, 3=left)\n', get_policy_map(optimal_policy))
     np.set_printoptions(linewidth=75*2, precision=4)
-    print('Policy: (up, right, down, left)\n', get_policy_map(optimal_policy, max_only=False))
+    print('Policy: (up, right, down, left)\n', get_policy_map(optimal_policy))
     np.set_printoptions(linewidth=75, precision=8)
 
     # test value iteration
@@ -149,5 +154,5 @@ if __name__ == '__main__':
     print('Value:\n', reshape_as_gridworld(optimal_value))
     print('Policy: (0=up, 1=right, 2=down, 3=left)\n', get_policy_map(optimal_policy))
     np.set_printoptions(linewidth=75*2, precision=4)
-    print('Policy: (up, right, down, left)\n', get_policy_map(optimal_policy, max_only=False))
+    print('Policy: (up, right, down, left)\n', get_policy_map(optimal_policy))
     np.set_printoptions(linewidth=75, precision=8)
