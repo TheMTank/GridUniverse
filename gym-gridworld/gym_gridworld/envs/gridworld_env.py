@@ -3,6 +3,7 @@ from gym import spaces
 import numpy as np
 import sys
 from six import StringIO
+import time
 
 
 class GridWorldEnv(gym.Env):
@@ -32,6 +33,8 @@ class GridWorldEnv(gym.Env):
         # set additional parameters for the environment
         self.done = False
         self.info = {}
+
+        self.viewer = None
 
     def _generate_world(self):
         """
@@ -116,7 +119,56 @@ class GridWorldEnv(gym.Env):
             return outfile
 
         elif mode == 'graphic':
-            raise NotImplementedError
+
+            screen_width = 600
+            screen_height = 400
+
+
+            # world_width = self.x_threshold * 2
+            world_width = screen_width
+            scale = screen_width / world_width
+            carty = 100  # TOP OF CART
+            polewidth = 10.0
+            polelen = scale * 1.0
+            cartwidth = 50.0
+            cartheight = 30.0
+
+            if self.viewer is None:
+                import render
+                self.viewer = render.Viewer(env, screen_width, screen_height)
+
+                l, r, t, b = -cartwidth / 2, cartwidth / 2, cartheight / 2, -cartheight / 2
+                axleoffset = cartheight / 4.0
+                cart = render.FilledPolygon([(l, b), (l, t), (r, t), (r, b)])
+                self.carttrans = render.Transform()
+                cart.add_attr(self.carttrans)
+                self.viewer.add_geom(cart)
+                l, r, t, b = -polewidth / 2, polewidth / 2, polelen - polewidth / 2, -polewidth / 2
+                pole = render.FilledPolygon([(l, b), (l, t), (r, t), (r, b)])
+                pole.set_color(.8, .6, .4)
+                self.poletrans = render.Transform(translation=(0, axleoffset))
+                pole.add_attr(self.poletrans)
+                pole.add_attr(self.carttrans)
+                self.viewer.add_geom(pole)
+                self.axle = render.make_circle(polewidth / 2)
+                self.axle.add_attr(self.poletrans)
+                self.axle.add_attr(self.carttrans)
+                self.axle.set_color(.5, .5, .8)
+                self.viewer.add_geom(self.axle)
+                self.track = render.Line((0, carty), (screen_width, carty))
+                self.track.set_color(0, 0, 0)
+                self.viewer.add_geom(self.track)
+
+            # x = self.state
+            x = (50, 50, 50, 50)
+            cartx = x[0] * scale + screen_width / 2.0  # MIDDLE OF CART
+            self.carttrans.set_translation(cartx, carty)
+            self.poletrans.set_rotation(-x[2])
+
+            self.viewer.render(env, return_rgb_array = mode=='graphic')
+            time.sleep(1)
+            # render.pyg_render(new_world, self)
+            #raise NotImplementedError
         else:
             super(GridWorldEnv, self).render(mode=mode)
 
@@ -132,7 +184,7 @@ if __name__ == '__main__':
     for i_episode in range(1):
         observation = env.reset()
         for t in range(100):
-            env.render()
+            env.render(mode='graphic')
             action = env.action_space.sample()
             print('go ' + env.action_descriptors[action])
             observation, reward, done, info = env.step(action)
