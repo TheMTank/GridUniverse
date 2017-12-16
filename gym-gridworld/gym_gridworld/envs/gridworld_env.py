@@ -8,7 +8,7 @@ from six import StringIO
 class GridWorldEnv(gym.Env):
     metadata = {'render.modes': ['human', 'ansi', 'graphic']}
 
-    def __init__(self, grid_shape=(4, 4), initial_state=0, **kwargs):
+    def __init__(self, grid_shape=(4, 4), initial_state=0, custom_world_fp=None, **kwargs):
         # set state space params
         self.x_max = grid_shape[0]
         self.y_max = grid_shape[1]
@@ -35,6 +35,9 @@ class GridWorldEnv(gym.Env):
         # set additional parameters for the environment
         self.done = False
         self.info = {}
+
+        if custom_world_fp:
+            self.create_custom_world_from_file(custom_world_fp)
 
     def _generate_world(self):
         """
@@ -117,9 +120,63 @@ class GridWorldEnv(gym.Env):
     def _seed(self, seed=None):
         raise NotImplementedError
 
+    def create_custom_world_from_file(self, fp):
+        f = open(fp, 'r') # change to "with" todo
+        num_cols = None
+
+        list_world = []
+        self.terminal_states = []
+
+        # x, y = 0, 0
+
+        all_lines = f.readlines()
+        # num_rows = len(all_lines)
+        for y, line in enumerate(all_lines):
+            list_world.append([])
+            x = 0
+            line = line.strip()
+            if not num_cols:
+                num_cols = len(line)
+            if len(line) != num_cols:
+                raise EnvironmentError
+
+            for char in line:
+                index = (num_cols * y) + x
+
+                if char == 'T':
+                    self.terminal_states.append(index)
+                elif char == 'o':
+                    pass
+                elif char == '#':
+                    pass
+                elif char == 'x':
+                    self.current_state = index
+                else:
+                    print('Invalid Character \"{}\". Returning'.format(char))
+                    raise EnvironmentError
+
+                list_world[y].append((x, y))
+                x += 1
+            y += 1
+
+        print (list_world)
+        # self.world = np.array(list_world).flatten()
+        self.y_max = len(all_lines)
+        self.x_max = num_cols
+        self.world = self._generate_world()
+        print(self.world)
+
+        self.reward_matrix = np.full(self.world.shape, -1)
+        for terminal_state in self.terminal_states:
+            self.reward_matrix[terminal_state] = 0
+
+        # todo put all above into functions so no repeat? setup_world() or something like that
+
+        f.close()
+
 
 if __name__ == '__main__':
-    env = GridWorldEnv()
+    env = GridWorldEnv(custom_world_fp='test_env.txt')
     for i_episode in range(1):
         observation = env.reset()
         for t in range(100):
