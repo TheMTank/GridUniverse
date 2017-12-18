@@ -3,8 +3,20 @@ from gym_gridworld.envs.gridworld_env import GridWorldEnv
 import warnings
 
 
-def run_episode(policy):
-    return np.zeros(1), np.zeros(1)
+def run_episode(policy, env, max_steps_per_episode = 100):
+    states_history = []
+    rewards_history = []
+    observation = env.reset()
+    for step in range(max_steps_per_episode):
+        env.render()
+        action = policy[observation]
+        observation, reward, done, info = env.step(action)
+        states_history.append(observation)
+        rewards_history.append(reward)
+        if done:
+            break
+
+    return np.asarray(states_history, dtype=np.uint16), np.asarray(rewards_history, dtype=np.int64)
 
 
 def monte_carlo(policy, env, every_visit=False, incremental_mean=True, stationary_env=False, num_episodes=100):
@@ -48,5 +60,12 @@ def monte_carlo(policy, env, every_visit=False, incremental_mean=True, stationar
         value_function += total_return/visit_counter
 
     return value_function
+
+if __name__ == '__main__':
+    gw_env = GridWorldEnv()
+    policy0 = np.ones([gw_env.world.size, len(gw_env.actions_list)]) / len(gw_env.actions_list)
+    st_history, rw_history = run_episode(policy0, gw_env)
+    print('States history: ' + st_history)
+    print('Rewards history: ' + rw_history)
 
 
