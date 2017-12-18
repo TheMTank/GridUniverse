@@ -3,19 +3,25 @@ from gym_gridworld.envs.gridworld_env import GridWorldEnv
 import warnings
 
 
-def run_episode(policy, env, max_steps_per_episode = 100):
+def run_episode(policy, env, max_steps_per_episode=100):
+    """
+    Generates an agent and runs actions until the agent either gets to a terminal state or executes a number of 
+    max_steps_per_episode steps.
+    
+    Assumes a stochastic policy and acts with a sample taken from a normal distribution with the probabilities given
+    by the policy.
+    """
     states_history = []
     rewards_history = []
     observation = env.reset()
     for step in range(max_steps_per_episode):
         env.render()
-        action = policy[observation]
+        action = np.random.choice(policy[observation].size, p=policy[observation])
         observation, reward, done, info = env.step(action)
         states_history.append(observation)
         rewards_history.append(reward)
         if done:
             break
-
     return np.asarray(states_history, dtype=np.uint16), np.asarray(rewards_history, dtype=np.int64)
 
 
@@ -61,9 +67,10 @@ def monte_carlo(policy, env, every_visit=False, incremental_mean=True, stationar
 
     return value_function
 
+
 if __name__ == '__main__':
     gw_env = GridWorldEnv()
-    policy0 = np.ones([gw_env.world.size, len(gw_env.actions_list)]) / len(gw_env.actions_list)
+    policy0 = np.ones([gw_env.world.size, gw_env.action_space.n]) / gw_env.action_space.n
     st_history, rw_history = run_episode(policy0, gw_env)
     print('States history: ' + st_history)
     print('Rewards history: ' + rw_history)
