@@ -15,7 +15,10 @@ class GridWorldEnv(gym.Env):
         self.world = self._generate_world()
         # set action space params
         self.action_space = spaces.Discrete(4)
-        self.actions_list = np.array([(0, 1), (1, 0), (0, -1), (-1, 0)], dtype='int16, int16')
+        self.action_state_to_next_state = [lambda s: s if self.world[s][1] == (self.y_max - 1) else s + 1,
+                                           lambda s: s if self.world[s][0] == (self.x_max - 1) else s + self.y_max,
+                                           lambda s: s if self.world[s][1] == 0 else s - 1,
+                                           lambda s: s if self.world[s][0] == 0 else s - self.y_max]
         self.action_descriptors = ['up', 'right', 'down', 'left']
         # set observed params: [current state, world state]
         self.observation_space = spaces.Box(spaces.Discrete(self.world.size),
@@ -41,7 +44,7 @@ class GridWorldEnv(gym.Env):
         coordinates (x,y) of a state in the grid.
         """
         world = np.fromiter(((x, y) for x in np.nditer(np.arange(self.x_max))
-                             for y in np.nditer(np.arange(self.y_max))), dtype='int16, int16')
+                             for y in np.nditer(np.arange(self.y_max))), dtype='int64, int64')
         return world
 
     def look_step_ahead(self, state, action):
@@ -51,33 +54,21 @@ class GridWorldEnv(gym.Env):
         Returns the state to what that action would lead, the reward at that new state and a boolean value that
         determines if the next state is terminal
         """
-        if self._is_terminal(state):
+        if self.is_terminal(state):
             next_state = state
         else:
-            state_x, state_y = self.world[state]
-            movement_x, movement_y = self.actions_list[action]
-            next_location = np.array((state_x + movement_x, state_y + movement_y), dtype='int16, int16')
-            next_state = np.where(self.world == next_location)[0][0] if self._is_valid_location(next_location) \
-                else state
+            next_state = self.action_state_to_next_state[action](state)
+            next_state = next_state if self._is_valid(next_state) else state
 
-            if not self._is_valid_state(next_state):
-                next_state = state
+        return next_state, self.reward_matrix[next_state], self.is_terminal(next_state)
 
-        return next_state, self.reward_matrix[next_state], self._is_terminal(next_state)
-
-    def _is_valid_location(self, location):
+    def _is_valid(self, state):
         """
-        Checks if a given state is inside the grid.
+        Checks if a given state is a wall or any other element that shall not be trespassed.
         """
-        return True if location in self.world else False
+        return True
 
-    def _is_valid_state(self, state):
-        """
-        Checks if a given state is inside the grid.
-        """
-        return True if 0 <= state < self.world.size else False
-
-    def _is_terminal(self, state):
+    def is_terminal(self, state):
         """
         Check if the input state is terminal.
         """
