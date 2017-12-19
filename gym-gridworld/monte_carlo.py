@@ -25,7 +25,7 @@ def run_episode(policy, env, max_steps_per_episode=100):
 
 
 def monte_carlo_evaluation(policy, env, every_visit=False, incremental_mean=True, stationary_env=True,
-                           discount_factor=0.01, n_episodes=100):
+                           discount_factor=0.01, threshold=0.0001, n_episodes=100):
     """"
     Monte Carlo algorithm, which solves the MDP learning from full episodes without the need of a model.
 
@@ -57,8 +57,11 @@ def monte_carlo_evaluation(policy, env, every_visit=False, incremental_mean=True
             """
             for idx, state in enumerate(episodes_states):
                 for i in range(episodes_states.size - idx):
-                    # TODO: add threshold for multiplication (discount_factor gets lower every time)
-                    total_return[state] += (discount_factor ** i) * episodes_reward[i]
+                    # break the loop if the next state contribution is below the threshold
+                    if (discount_factor ** i) > threshold:
+                        total_return[state] += (discount_factor ** i) * episodes_reward[i]
+                    else:
+                        break
                 value_function[state] += (total_return[state] - value_function[state]) / visit_counter[state]
         else:
             """
