@@ -62,21 +62,6 @@ def test_random_gridworld():
                 print("Episode finished after {} timesteps".format(t + 1))
                 break
 
-def test_gridworld_render():
-    env = GridWorldEnv()
-    for i_episode in range(1):
-        observation = env.reset()
-        for t in range(100):
-            env.render(mode='graphic')
-            action = env.action_space.sample()
-            print('go ' + env.action_descriptors[action])
-            observation, reward, done, info = env.step(action)
-
-            if done:
-                print("Episode finished after {} timesteps".format(t + 1))
-                break
-
 if __name__ == '__main__':
     test_random_gridworld()
     test_policy_iteration()
-    test_gridworld_render()
