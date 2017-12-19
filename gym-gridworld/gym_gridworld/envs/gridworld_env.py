@@ -30,7 +30,7 @@ class GridWorldEnv(gym.Env):
         self.terminal_states = kwargs['terminal_states'] if 'terminal_states' in kwargs else [self.world.size - 1]
         # kwargs['walls'] = [1, 4, 14] # uncomment for quick test
         # need index positioning for efficient check in _is_valid()
-        # but also need list to easily access them all (e.g in render())
+        # but also need list to easily access each wall sequentially (e.g in render())
         self.wall_indices = []
         self.walls = np.zeros(self.world.shape)
         if 'walls' in kwargs:
@@ -84,9 +84,8 @@ class GridWorldEnv(gym.Env):
         """
         Check if the input state is terminal.
         """
-        for t_state in self.terminal_states:
-            if state == t_state:
-                return True
+        if state in self.terminal_states:
+            return True
         return False
 
     def _step(self, action):
