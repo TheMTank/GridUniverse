@@ -28,17 +28,15 @@ class GridWorldEnv(gym.Env):
         self.previous_state = self.current_state = self.initial_state = initial_state
         # set terminal state(s) and wall(s)
         self.terminal_states = kwargs['terminal_states'] if 'terminal_states' in kwargs else [self.world.size - 1]
-        # kwargs['walls'] = [1, 14] # uncomment for quick test
-        # need index positioning for easy check in _is_valid function
-        # but also need list for easy access to them all (e.g in render())
+        # kwargs['walls'] = [1, 4, 14] # uncomment for quick test
+        # need index positioning for efficient check in _is_valid()
+        # but also need list to easily access them all (e.g in render())
         self.wall_indices = []
         self.walls = np.zeros(self.world.shape)
-
         if 'walls' in kwargs:
             for state_index in kwargs['walls']:
                 self.walls[state_index] = 1
                 self.wall_indices.append(state_index)
-        self.terminal_states = kwargs['terminal_states'] if 'terminal_states' in kwargs else [self.world.size - 1]
         # set reward matrix
         self.reward_matrix = np.full(self.world.shape, -1)
         for terminal_state in self.terminal_states:
