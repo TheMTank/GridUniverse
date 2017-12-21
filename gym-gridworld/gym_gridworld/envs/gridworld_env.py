@@ -22,8 +22,7 @@ class GridWorldEnv(gym.Env):
                                            lambda s: s if self.world[s][0] == 0 else s - self.y_max]
         self.action_descriptors = ['up', 'right', 'down', 'left']
         # set observed params: [current state, world state]
-        self.observation_space = spaces.Box(spaces.Discrete(self.world.size),
-                                            spaces.Box(spaces.Discrete(self.x_max), spaces.Discrete(self.y_max)))
+        self.observation_space = spaces.Discrete(self.world.size)
         # set initial state for the agent
         self.previous_state = self.current_state = self.initial_state = initial_state
         # set terminal state(s) and wall(s)
