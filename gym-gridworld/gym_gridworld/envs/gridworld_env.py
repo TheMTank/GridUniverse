@@ -15,15 +15,27 @@ class GridWorldEnv(gym.Env):
         self.world = self._generate_world()
         # set action space params
         self.action_space = spaces.Discrete(4)
-        self.actions_list = np.array([(0, 1), (1, 0), (0, -1), (-1, 0)], dtype='int64, int64')
+        # main boundary check for edges of map done here
+        self.action_state_to_next_state = [lambda s: s if self.world[s][1] == (self.y_max - 1) else s + 1,
+                                           lambda s: s if self.world[s][0] == (self.x_max - 1) else s + self.y_max,
+                                           lambda s: s if self.world[s][1] == 0 else s - 1,
+                                           lambda s: s if self.world[s][0] == 0 else s - self.y_max]
         self.action_descriptors = ['up', 'right', 'down', 'left']
         # set observed params: [current state, world state]
-        self.observation_space = spaces.Box(spaces.Discrete(self.world.size),
-                                            spaces.Box(spaces.Discrete(self.x_max), spaces.Discrete(self.y_max)))
+        self.observation_space = spaces.Discrete(self.world.size)
         # set initial state for the agent
         self.previous_state = self.current_state = self.initial_state = initial_state
-        # set terminal state(s)
+        # set terminal state(s) and wall(s)
         self.terminal_states = kwargs['terminal_states'] if 'terminal_states' in kwargs else [self.world.size - 1]
+        # kwargs['walls'] = [1, 4, 14] # uncomment for quick test
+        # need index positioning for efficient check in _is_valid()
+        # but also need list to easily access each wall sequentially (e.g in render())
+        self.wall_indices = []
+        self.walls = np.zeros(self.world.shape)
+        if 'walls' in kwargs:
+            for state_index in kwargs['walls']:
+                self.walls[state_index] = 1
+                self.wall_indices.append(state_index)
         # set reward matrix
         self.reward_matrix = np.full(self.world.shape, -1)
         for terminal_state in self.terminal_states:
@@ -54,32 +66,25 @@ class GridWorldEnv(gym.Env):
         if self.is_terminal(state):
             next_state = state
         else:
-            state_x, state_y = self.world[state]
-            movement_x, movement_y = self.actions_list[action]
-            next_location = np.array((state_x + movement_x, state_y + movement_y), dtype='int64, int64')
-            next_state = np.where(self.world == next_location)[0][0] if self._is_valid(next_location) \
-                else state
+            next_state = self.action_state_to_next_state[action](state)
+            next_state = next_state if self._is_valid(next_state) else state
 
         return next_state, self.reward_matrix[next_state], self.is_terminal(next_state)
 
     def _is_valid(self, state):
         """
-        Checks if a given state is inside the grid.
-
-        The input state can be given as the state index or as a tuple containing the (x,y) coordinates of the state on
-        the grid.
+        Checks if a given state is a wall or any other element that shall not be trespassed.
         """
-        if isinstance(state, np.int64):
-            state = self.world[state] if 0 <= state < self.world.size else None
-        return True if state in self.world else False
+        if self.walls[state] == 1:
+            return False
+        return True
 
     def is_terminal(self, state):
         """
         Check if the input state is terminal.
         """
-        for t_state in self.terminal_states:
-            if state == t_state:
-                return True
+        if state in self.terminal_states:
+            return True
         return False
 
     def _step(self, action):
@@ -101,6 +106,9 @@ class GridWorldEnv(gym.Env):
         new_world[self.current_state] = 'x'
         for t_state in self.terminal_states:
             new_world[t_state] = 'T'
+
+        for w_state in self.wall_indices:
+            new_world[w_state] = '#'
 
         if mode == 'human' or mode == 'ansi':
             outfile = StringIO() if mode == 'ansi' else sys.stdout
