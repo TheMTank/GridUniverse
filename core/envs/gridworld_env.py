@@ -129,18 +129,3 @@ class GridWorldEnv(gym.Env):
 
     def _seed(self, seed=None):
         raise NotImplementedError
-
-
-if __name__ == '__main__':
-    env = GridWorldEnv()
-    for i_episode in range(1):
-        observation = env.reset()
-        for t in range(100):
-            env.render()
-            action = env.action_space.sample()
-            print('go ' + env.action_descriptors[action])
-            observation, reward, done, info = env.step(action)
-
-            if done:
-                print("Episode finished after {} timesteps".format(t + 1))
-                break
