@@ -1,5 +1,3 @@
-
-
 import numpy as np
 
 from core.envs.gridworld_env import GridWorldEnv
@@ -16,34 +14,34 @@ def test_policy_iteration():
     val_fun = v0
     for k in range(500):
         val_fun = single_step_policy_evaluation(policy0, gw_env, value_function=val_fun)
-    print(reshape_as_gridworld(val_fun))
+    print(reshape_as_gridworld(val_fun, world_shape))
 
     # test greedy policy
     policy1 = greedy_policy_from_value_function(policy0, gw_env, val_fun)
-    policy_map1 = get_policy_map(policy1)
+    policy_map1 = get_policy_map(policy1, world_shape)
     print('Policy: (0=up, 1=right, 2=down, 3=left)\n', policy_map1)
     np.set_printoptions(linewidth=75 * 2, precision=4)
-    print('Policy: (up, right, down, left)\n', get_policy_map(policy1))
+    print('Policy: (up, right, down, left)\n', get_policy_map(policy1, world_shape))
     np.set_printoptions(linewidth=75, precision=8)
 
     # test policy iteration
     print('Policy iteration:')
     policy0 = np.ones([gw_env.world.size, len(gw_env.action_state_to_next_state)]) / len(gw_env.action_state_to_next_state)
     optimal_value, optimal_policy = policy_iteration(policy0, gw_env, v0, threshold=0.001, max_steps=1000)
-    print('Value:\n', reshape_as_gridworld(optimal_value))
-    print('Policy: (0=up, 1=right, 2=down, 3=left)\n', get_policy_map(optimal_policy))
+    print('Value:\n', reshape_as_gridworld(optimal_value, world_shape))
+    print('Policy: (0=up, 1=right, 2=down, 3=left)\n', get_policy_map(optimal_policy, world_shape))
     np.set_printoptions(linewidth=75 * 2, precision=4)
-    print('Policy: (up, right, down, left)\n', get_policy_map(optimal_policy))
+    print('Policy: (up, right, down, left)\n', get_policy_map(optimal_policy, world_shape))
     np.set_printoptions(linewidth=75, precision=8)
 
     # test value iteration
     print('Value iteration:')
     policy0 = np.ones([gw_env.world.size, len(gw_env.action_state_to_next_state)]) / len(gw_env.action_state_to_next_state)
     optimal_value, optimal_policy = value_iteration(policy0, gw_env, v0, threshold=0.001, max_steps=100)
-    print('Value:\n', reshape_as_gridworld(optimal_value))
-    print('Policy: (0=up, 1=right, 2=down, 3=left)\n', get_policy_map(optimal_policy))
+    print('Value:\n', reshape_as_gridworld(optimal_value, world_shape))
+    print('Policy: (0=up, 1=right, 2=down, 3=left)\n', get_policy_map(optimal_policy, world_shape))
     np.set_printoptions(linewidth=75 * 2, precision=4)
-    print('Policy: (up, right, down, left)\n', get_policy_map(optimal_policy))
+    print('Policy: (up, right, down, left)\n', get_policy_map(optimal_policy, world_shape))
     np.set_printoptions(linewidth=75, precision=8)
 
 

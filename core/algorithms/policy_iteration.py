@@ -5,7 +5,7 @@ import sys
 import warnings
 
 
-def reshape_as_gridworld(input_matrix):
+def reshape_as_gridworld(input_matrix, world_shape):
     """
     Helper function to reshape a gridworld state matrix into a visual representation of the gridworld with origin on the
     low left corner and x,y corresponding to cartesian coordinates.
@@ -28,7 +28,7 @@ def single_step_policy_evaluation(policy, env, discount_factor=1.0, value_functi
     return v_new
 
 
-def get_policy_map(policy, mode='human'):
+def get_policy_map(policy, world_shape, mode='human'):
     """
     Generates a visualization grid from the policy to be able to print which action is most likely from every state
     """
@@ -44,13 +44,13 @@ def get_policy_map(policy, mode='human'):
     policy_probabilities = np.fromiter((policy[state] for state in np.nditer(np.arange(policy.shape[0]))),
                                        dtype='float64, float64, float64, float64')
     outfile = StringIO() if mode == 'ansi' else sys.stdout
-    for row in reshape_as_gridworld(policy_arrows_map):
+    for row in reshape_as_gridworld(policy_arrows_map, world_shape):
         for state in row:
             outfile.write((state + u'  '))
         outfile.write('\n')
     outfile.write('\n')
 
-    return policy_arrows_map, reshape_as_gridworld(policy_probabilities)
+    return policy_arrows_map, reshape_as_gridworld(policy_probabilities, world_shape)
 
 
 def greedy_policy_from_value_function(policy, env, value_function, discount_factor=1.0):
@@ -123,43 +123,3 @@ def policy_iteration(policy, env, value_function=None, threshold=0.00001, max_st
                               'the maximum {} steps with delta_eval {}'.format(step_number + 1, delta_eval)
             warnings.warn(warning_message, UserWarning)
     return last_converged_v_fun, greedy_policy
-
-
-if __name__ == '__main__':
-    # test policy evaluation
-    world_shape = (4, 4)
-    gw_env = GridWorldEnv(grid_shape=world_shape, terminal_states=[3, 12])
-    policy0 = np.ones([gw_env.world.size, len(gw_env.actions_list)]) / len(gw_env.actions_list)
-    v0 = np.zeros(gw_env.world.size)
-    val_fun = v0
-    for k in range(500):
-        val_fun = single_step_policy_evaluation(policy0, gw_env, value_function=val_fun)
-    print(reshape_as_gridworld(val_fun))
-
-    # test greedy policy
-    policy1 = greedy_policy_from_value_function(policy0, gw_env, val_fun)
-    policy_map1 = get_policy_map(policy1)
-    print('Policy: (0=up, 1=right, 2=down, 3=left)\n', policy_map1)
-    np.set_printoptions(linewidth=75*2, precision=4)
-    print('Policy: (up, right, down, left)\n', get_policy_map(policy1))
-    np.set_printoptions(linewidth=75, precision=8)
-
-    # test policy iteration
-    print('Policy iteration:')
-    policy0 = np.ones([gw_env.world.size, len(gw_env.actions_list)]) / len(gw_env.actions_list)
-    optimal_value, optimal_policy = policy_iteration(policy0, gw_env, v0, threshold=0.001, max_steps=1000)
-    print('Value:\n', reshape_as_gridworld(optimal_value))
-    print('Policy: (0=up, 1=right, 2=down, 3=left)\n', get_policy_map(optimal_policy))
-    np.set_printoptions(linewidth=75*2, precision=4)
-    print('Policy: (up, right, down, left)\n', get_policy_map(optimal_policy))
-    np.set_printoptions(linewidth=75, precision=8)
-
-    # test value iteration
-    print('Value iteration:')
-    policy0 = np.ones([gw_env.world.size, len(gw_env.actions_list)]) / len(gw_env.actions_list)
-    optimal_value, optimal_policy = value_iteration(policy0, gw_env, v0, threshold=0.001, max_steps=100)
-    print('Value:\n', reshape_as_gridworld(optimal_value))
-    print('Policy: (0=up, 1=right, 2=down, 3=left)\n', get_policy_map(optimal_policy))
-    np.set_printoptions(linewidth=75*2, precision=4)
-    print('Policy: (up, right, down, left)\n', get_policy_map(optimal_policy))
-    np.set_printoptions(linewidth=75, precision=8)
