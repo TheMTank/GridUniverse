@@ -1,5 +1,7 @@
 import numpy as np
 from gym_gridworld.envs.gridworld_env import GridWorldEnv
+from six import StringIO
+import sys
 import warnings
 
 
@@ -26,24 +28,29 @@ def single_step_policy_evaluation(policy, env, discount_factor=1.0, value_functi
     return v_new
 
 
-def get_policy_map(policy):
+def get_policy_map(policy, mode='human'):
     """
     Generates a visualization grid from the policy to be able to print which action is most likely from every state
     """
-    unicode_arrows = [u'\u2191', u'\u2192', u'\u2193', u'\u2190' # up, right, down, left
-                      u'\u2194', u'\u2195']  # left-right, up-down
-    policy_arrows_map = np.full(policy.shape[0], ' ')
+    unicode_arrows = np.array([u'\u2191', u'\u2192', u'\u2193', u'\u2190' # up, right, down, left
+                      u'\u2194', u'\u2195'], dtype='<U1')  # left-right, up-down
+    policy_arrows_map = np.empty(policy.shape[0], dtype='<U4')
     for state in np.nditer(np.arange(policy.shape[0])):
         # find index of actions where the probability is > 0
         optimal_actions = np.where(np.around(policy[state], 8) > np.around(np.float64(0), 8))[0]
         # match actions to unicode values of the arrows to be displayed
         for action in optimal_actions:
-            policy_arrows_map[state] = ' '.join((policy_arrows_map[state], unicode_arrows[action]))
-    # TODO: Problem on policy_arrows_map definition and update
+            policy_arrows_map[state] = np.core.defchararray.add(policy_arrows_map[state], unicode_arrows[action])
     policy_probabilities = np.fromiter((policy[state] for state in np.nditer(np.arange(policy.shape[0]))),
                                        dtype='float64, float64, float64, float64')
+    outfile = StringIO() if mode == 'ansi' else sys.stdout
+    for row in reshape_as_gridworld(policy_arrows_map):
+        for state in row:
+            outfile.write((state + u'  '))
+        outfile.write('\n')
+    outfile.write('\n')
 
-    return reshape_as_gridworld(policy_arrows_map), reshape_as_gridworld(policy_probabilities)
+    return policy_arrows_map, reshape_as_gridworld(policy_probabilities)
 
 
 def greedy_policy_from_value_function(policy, env, value_function, discount_factor=1.0):
