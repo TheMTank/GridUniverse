@@ -22,23 +22,20 @@ class GridWorldEnv(gym.Env):
                                            lambda s: s if self.world[s][0] == 0 else s - self.y_max]
         self.action_descriptors = ['up', 'right', 'down', 'left']
         # set observed params: [current state, world state]
-        self.observation_space = spaces.Box(spaces.Discrete(self.world.size),
-                                            spaces.Box(spaces.Discrete(self.x_max), spaces.Discrete(self.y_max)))
+        self.observation_space = spaces.Discrete(self.world.size)
         # set initial state for the agent
         self.previous_state = self.current_state = self.initial_state = initial_state
         # set terminal state(s) and wall(s)
         self.terminal_states = kwargs['terminal_states'] if 'terminal_states' in kwargs else [self.world.size - 1]
-        # kwargs['walls'] = [1, 14] # uncomment for quick test
-        # need index positioning for easy check in _is_valid function
-        # but also need list for easy access to them all (e.g in render())
+        # kwargs['walls'] = [1, 4, 14] # uncomment for quick test
+        # need index positioning for efficient check in _is_valid()
+        # but also need list to easily access each wall sequentially (e.g in render())
         self.wall_indices = []
         self.walls = np.zeros(self.world.shape)
-
         if 'walls' in kwargs:
             for state_index in kwargs['walls']:
                 self.walls[state_index] = 1
                 self.wall_indices.append(state_index)
-        self.terminal_states = kwargs['terminal_states'] if 'terminal_states' in kwargs else [self.world.size - 1]
         # set reward matrix
         self.reward_matrix = np.full(self.world.shape, -1)
         for terminal_state in self.terminal_states:
@@ -86,9 +83,8 @@ class GridWorldEnv(gym.Env):
         """
         Check if the input state is terminal.
         """
-        for t_state in self.terminal_states:
-            if state == t_state:
-                return True
+        if state in self.terminal_states:
+            return True
         return False
 
     def _step(self, action):
