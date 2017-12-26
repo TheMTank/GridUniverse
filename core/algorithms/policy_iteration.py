@@ -1,5 +1,5 @@
 import numpy as np
-from gym_gridworld.envs.gridworld_env import GridWorldEnv
+from core.envs.gridworld_env import GridWorldEnv
 import warnings
 
 
