@@ -15,18 +15,27 @@ class GridWorldEnv(gym.Env):
         self.world = self._generate_world()
         # set action space params
         self.action_space = spaces.Discrete(4)
+        # main boundary check for edges of map done here
         self.action_state_to_next_state = [lambda s: s if self.world[s][1] == (self.y_max - 1) else s + 1,
                                            lambda s: s if self.world[s][0] == (self.x_max - 1) else s + self.y_max,
                                            lambda s: s if self.world[s][1] == 0 else s - 1,
                                            lambda s: s if self.world[s][0] == 0 else s - self.y_max]
         self.action_descriptors = ['up', 'right', 'down', 'left']
         # set observed params: [current state, world state]
-        self.observation_space = spaces.Box(spaces.Discrete(self.world.size),
-                                            spaces.Box(spaces.Discrete(self.x_max), spaces.Discrete(self.y_max)))
+        self.observation_space = spaces.Discrete(self.world.size)
         # set initial state for the agent
         self.previous_state = self.current_state = self.initial_state = initial_state
-        # set terminal state(s)
+        # set terminal state(s) and wall(s)
         self.terminal_states = kwargs['terminal_states'] if 'terminal_states' in kwargs else [self.world.size - 1]
+        # kwargs['walls'] = [1, 4, 14] # uncomment for quick test
+        # need index positioning for efficient check in _is_valid()
+        # but also need list to easily access each wall sequentially (e.g in render())
+        self.wall_indices = []
+        self.walls = np.zeros(self.world.shape)
+        if 'walls' in kwargs:
+            for state_index in kwargs['walls']:
+                self.walls[state_index] = 1
+                self.wall_indices.append(state_index)
         # set reward matrix
         self.reward_matrix = np.full(self.world.shape, -1)
         for terminal_state in self.terminal_states:
@@ -66,15 +75,16 @@ class GridWorldEnv(gym.Env):
         """
         Checks if a given state is a wall or any other element that shall not be trespassed.
         """
+        if self.walls[state] == 1:
+            return False
         return True
 
     def is_terminal(self, state):
         """
         Check if the input state is terminal.
         """
-        for t_state in self.terminal_states:
-            if state == t_state:
-                return True
+        if state in self.terminal_states:
+            return True
         return False
 
     def _step(self, action):
@@ -97,6 +107,9 @@ class GridWorldEnv(gym.Env):
         for t_state in self.terminal_states:
             new_world[t_state] = 'T'
 
+        for w_state in self.wall_indices:
+            new_world[w_state] = '#'
+
         if mode == 'human' or mode == 'ansi':
             outfile = StringIO() if mode == 'ansi' else sys.stdout
             for row in np.reshape(new_world, (self.x_max, self.y_max))[:, ::-1].T:
@@ -116,18 +129,3 @@ class GridWorldEnv(gym.Env):
 
     def _seed(self, seed=None):
         raise NotImplementedError
-
-
-if __name__ == '__main__':
-    env = GridWorldEnv()
-    for i_episode in range(1):
-        observation = env.reset()
-        for t in range(100):
-            env.render()
-            action = env.action_space.sample()
-            print('go ' + env.action_descriptors[action])
-            observation, reward, done, info = env.step(action)
-
-            if done:
-                print("Episode finished after {} timesteps".format(t + 1))
-                break
