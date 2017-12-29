@@ -1,6 +1,5 @@
 import numpy as np
-from gym_gridworld.envs.gridworld_env import GridWorldEnv
-import warnings
+from core.envs.gridworld_env import GridWorldEnv
 
 
 def reshape_as_gridworld(input_matrix):
@@ -89,6 +88,7 @@ if __name__ == '__main__':
 
         print(i_episode, '\n', value_function)
 
+    # Now test algorithm
     # Create greedy policy from value function
     policy1 = greedy_policy_from_value_function(env, value_function)
     print(policy1)
