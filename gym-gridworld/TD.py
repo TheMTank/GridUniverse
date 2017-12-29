@@ -54,12 +54,12 @@ def greedy_policy_from_value_function(env, value_function, discount_factor=1.0):
 # V(St) ← V(St) + alpha * (Gt − V(St))
 # V(St) ← V(St) + alpha * (Rt+1 + lambda * V(St+1) − V(St))
 
-
 alpha = 0.1
-lambda_td = 0.99
+discount_factor = 0.99
 
 if __name__ == '__main__':
-    env = GridWorldEnv()
+    world_shape = (4, 4)
+    env = GridWorldEnv(world_shape=world_shape)
 
     value_function = np.zeros(env.world.size)
 
@@ -78,7 +78,7 @@ if __name__ == '__main__':
 
             value_function[prev_state] = value_function[prev_state] + \
                                          alpha * (reward +
-                                          lambda_td * value_function[curr_state]
+                                         discount_factor * value_function[curr_state]
                                           - value_function[prev_state])
 
             prev_state = curr_state
@@ -89,8 +89,7 @@ if __name__ == '__main__':
 
         print(i_episode, '\n', value_function)
 
-    world_shape = (4, 4)
-
+    # Create greedy policy from value function
     policy1 = greedy_policy_from_value_function(env, value_function)
     print(policy1)
 
@@ -99,8 +98,6 @@ if __name__ == '__main__':
     np.set_printoptions(linewidth=75 * 2, precision=4)
     print('Policy: (up, right, down, left)\n', get_policy_map(policy1))
     np.set_printoptions(linewidth=75, precision=8)
-
-    #self.action_descriptors = ['up', 'right', 'down', 'left']
 
     print('Starting greedy policy run')
     curr_state = env.reset()
