@@ -40,16 +40,9 @@ class GridWorldEnv(gym.Env):
             if t_s < 0 or t_s > (self.world.size - 1):
                 raise ValueError("Terminal state {} is out of grid bounds".format(t_s))
         # set walls
-        # need index positioning for efficient check in _is_valid()
-        # but also need list to easily access each wall sequentially (e.g in render())
         self.wall_indices = []
-        self.walls = np.zeros(self.world.shape)
-        if walls is not None:
-            for wall_state_index in walls:
-                if wall_state_index < 0 or wall_state_index > (self.world.size - 1):
-                    raise ValueError("Wall index {} is out of grid bounds".format(wall_state_index))
-                self.walls[wall_state_index] = 1
-                self.wall_indices.append(wall_state_index)
+        self.wall_grid = np.zeros(self.world.shape)
+        self._generate_walls(walls)
         # set reward matrix
         self.reward_matrix = np.full(self.world.shape, -1)
         for terminal_state in self.terminal_states:
@@ -73,6 +66,22 @@ class GridWorldEnv(gym.Env):
                              for y in np.nditer(np.arange(self.y_max))), dtype='int64, int64')
         return world
 
+    def _generate_walls(self, walls):
+        """
+        Given a list of wall indices, fills in self.wall_indices list
+        and places "1"s appropriately within self.walls numpy array
+
+        self.walls: need index positioning for efficient check in _is_valid() but
+        self.wall_indices: we also need list to easily access each wall sequentially (e.g in render())
+        """
+        if walls is not None:
+            for wall_state_index in walls:
+                if wall_state_index < 0 or wall_state_index > (self.world.size - 1):
+                    raise ValueError("Wall index {} is out of grid bounds".format(wall_state_index))
+
+                self.wall_grid[wall_state_index] = 1
+                self.wall_indices.append(wall_state_index)
+
     def look_step_ahead(self, state, action):
         """
         Computes the results of a hypothetical action taking place at the given state.
@@ -92,7 +101,7 @@ class GridWorldEnv(gym.Env):
         """
         Checks if a given state is a wall or any other element that shall not be trespassed.
         """
-        if self.walls[state] == 1:
+        if self.wall_grid[state] == 1:
             return False
         return True
 
@@ -148,58 +157,73 @@ class GridWorldEnv(gym.Env):
         raise NotImplementedError
 
     def create_custom_world_from_file(self, fp):
-        f = open(fp, 'r') # change to "with" todo
-        num_cols = None
+        """
+        Creates the world from a text file in the format of
 
-        list_world = []
-        self.terminal_states = []
+        ooo#
+        oxoo
+        oooo
+        oooT
 
-        # x, y = 0, 0
+        Where:
+         "o" is an empty walkable area.
+         "#" is a blocked "wall"
+         "T" is a terminal state
+         "x" is a possible starting location
+        """
 
-        all_lines = f.readlines()
-        # num_rows = len(all_lines)
-        for y, line in enumerate(all_lines):
-            list_world.append([])
-            x = 0
-            line = line.strip()
-            if not num_cols:
-                num_cols = len(line)
-            if len(line) != num_cols:
-                raise EnvironmentError
+        with open(fp, 'r') as f:
+            num_cols = None
 
-            for char in line:
-                index = (num_cols * y) + x
+            list_world = []
+            self.terminal_states = []
+            walls_indices = []
 
-                if char == 'T':
-                    self.terminal_states.append(index)
-                elif char == 'o':
-                    pass
-                elif char == '#':
-                    pass
-                elif char == 'x':
-                    self.current_state = index
-                else:
-                    print('Invalid Character \"{}\". Returning'.format(char))
-                    raise EnvironmentError
+            all_lines = f.readlines()
+            # num_rows = len(all_lines)
+            for y, line in enumerate(all_lines):
+                list_world.append([])
+                x = 0
+                line = line.strip()
+                if not num_cols:
+                    num_cols = len(line)
+                if len(line) != num_cols:
+                    raise EnvironmentError("Text file is not a rectangle")
 
-                list_world[y].append((x, y))
-                x += 1
-            y += 1
+                for char in line:
+                    index = (num_cols * y) + x
 
-        print (list_world)
-        # self.world = np.array(list_world).flatten()
-        self.y_max = len(all_lines)
-        self.x_max = num_cols
-        self.world = self._generate_world()
-        print(self.world)
+                    if char == 'T':
+                        self.terminal_states.append(index)
+                    elif char == 'o':
+                        pass
+                    elif char == '#':
+                        # self.walls[index] = 1
+                        # self.wall_indices.append(index)
+                        walls_indices.append(index)
+                    elif char == 'x':
+                        self.current_state = index
+                        # todo multiple starting locations
+                    else:
+                        raise EnvironmentError('Invalid Character "{}". Returning'.format(char))
 
-        self.reward_matrix = np.full(self.world.shape, -1)
-        for terminal_state in self.terminal_states:
-            self.reward_matrix[terminal_state] = 0
+                    list_world[y].append((x, y))
+                    x += 1
+                y += 1
 
-        # todo put all above into functions so no repeat? setup_world() or something like that
+            print (list_world)
+            self.y_max = len(all_lines)
+            self.x_max = num_cols
+            self.world = self._generate_world()
+            print(self.world)
 
-        f.close()
+            self._generate_walls(walls_indices)
+
+            self.reward_matrix = np.full(self.world.shape, -1)
+            for terminal_state in self.terminal_states:
+                self.reward_matrix[terminal_state] = 0
+
+            # todo put all above into functions so no repeat? setup_world() or something like that
 
 
 if __name__ == '__main__':
