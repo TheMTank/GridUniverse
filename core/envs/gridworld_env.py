@@ -8,25 +8,48 @@ from six import StringIO
 class GridWorldEnv(gym.Env):
     metadata = {'render.modes': ['human', 'ansi', 'graphic']}
 
-    def __init__(self, grid_shape=(4, 4), initial_state=0, custom_world_fp=None, **kwargs):
+    def __init__(self, grid_shape=(4, 4), initial_state=0, terminal_states=None, walls=None, custom_world_fp=None):
         # set state space params
+        if terminal_states is not None and not isinstance(terminal_states, list):
+            raise ValueError("terminal_states parameter must be a list of integer indices")
+        if walls is not None and not isinstance(walls, list):
+            raise ValueError("walls parameter must be a list of integer indices")
+        if not isinstance(grid_shape, tuple) or len(grid_shape) != 2 or not isinstance(grid_shape[0], int):
+            raise ValueError("grid_shape parameter must be tuple of two integers")
         self.x_max = grid_shape[0]
         self.y_max = grid_shape[1]
         self.world = self._generate_world()
         # set action space params
         self.action_space = spaces.Discrete(4)
+        # main boundary check for edges of map done here
         self.action_state_to_next_state = [lambda s: s if self.world[s][1] == (self.y_max - 1) else s + 1,
                                            lambda s: s if self.world[s][0] == (self.x_max - 1) else s + self.y_max,
                                            lambda s: s if self.world[s][1] == 0 else s - 1,
                                            lambda s: s if self.world[s][0] == 0 else s - self.y_max]
         self.action_descriptors = ['up', 'right', 'down', 'left']
         # set observed params: [current state, world state]
-        self.observation_space = spaces.Box(spaces.Discrete(self.world.size),
-                                            spaces.Box(spaces.Discrete(self.x_max), spaces.Discrete(self.y_max)))
+        self.observation_space = spaces.Discrete(self.world.size)
         # set initial state for the agent
         self.previous_state = self.current_state = self.initial_state = initial_state
-        # set terminal state(s)
-        self.terminal_states = kwargs['terminal_states'] if 'terminal_states' in kwargs else [self.world.size - 1]
+        # set terminal state(s) and default terminal state if None given
+        if terminal_states is None or len(terminal_states) == 0:
+            self.terminal_states = [self.world.size - 1]
+        else:
+            self.terminal_states = terminal_states
+        for t_s in self.terminal_states:
+            if t_s < 0 or t_s > (self.world.size - 1):
+                raise ValueError("Terminal state {} is out of grid bounds".format(t_s))
+        # set walls
+        # need index positioning for efficient check in _is_valid()
+        # but also need list to easily access each wall sequentially (e.g in render())
+        self.wall_indices = []
+        self.walls = np.zeros(self.world.shape)
+        if walls is not None:
+            for wall_state_index in walls:
+                if wall_state_index < 0 or wall_state_index > (self.world.size - 1):
+                    raise ValueError("Wall index {} is out of grid bounds".format(wall_state_index))
+                self.walls[wall_state_index] = 1
+                self.wall_indices.append(wall_state_index)
         # set reward matrix
         self.reward_matrix = np.full(self.world.shape, -1)
         for terminal_state in self.terminal_states:
@@ -69,15 +92,16 @@ class GridWorldEnv(gym.Env):
         """
         Checks if a given state is a wall or any other element that shall not be trespassed.
         """
+        if self.walls[state] == 1:
+            return False
         return True
 
     def is_terminal(self, state):
         """
         Check if the input state is terminal.
         """
-        for t_state in self.terminal_states:
-            if state == t_state:
-                return True
+        if state in self.terminal_states:
+            return True
         return False
 
     def _step(self, action):
@@ -99,6 +123,9 @@ class GridWorldEnv(gym.Env):
         new_world[self.current_state] = 'x'
         for t_state in self.terminal_states:
             new_world[t_state] = 'T'
+
+        for w_state in self.wall_indices:
+            new_world[w_state] = '#'
 
         if mode == 'human' or mode == 'ansi':
             outfile = StringIO() if mode == 'ansi' else sys.stdout
