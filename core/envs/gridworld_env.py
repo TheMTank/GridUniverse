@@ -31,8 +31,11 @@ class GridWorldEnv(gym.Env):
         self.action_descriptors = ['up', 'right', 'down', 'left']
         # set observed params: [current state, world state]
         self.observation_space = spaces.Discrete(self.world.size)
-        # set initial state for the agent
-        self.previous_state = self.current_state = self.initial_state = initial_state
+        # set initial state for the agent. If initial_state is a list choose randomly
+        if isinstance(initial_state, int):
+            initial_state = [initial_state] # convert to list
+        self.starting_states = initial_state
+        self.previous_state = self.current_state = self.initial_state = random.choice(self.starting_states)
         # set terminal state(s) and default terminal state if None given
         if terminal_states is None or len(terminal_states) == 0:
             self.terminal_states = [self.world.size - 1]
@@ -125,7 +128,7 @@ class GridWorldEnv(gym.Env):
 
     def _reset(self):
         self.done = False
-        self.current_state = self.previous_state = self.initial_state
+        self.previous_state = self.current_state = self.initial_state = random.choice(self.starting_states)
         return self.current_state
 
     def _render(self, mode='human', close=False):
@@ -178,7 +181,7 @@ class GridWorldEnv(gym.Env):
             width_of_grid = None
 
             self.terminal_states = []
-            starting_states = []
+            self.starting_states = []
             walls_indices = []
 
             curr_index = 0
@@ -199,16 +202,14 @@ class GridWorldEnv(gym.Env):
                     elif char == '#':
                         walls_indices.append(curr_index)
                     elif char == 'x':
-                        starting_states.append(curr_index)
+                        self.starting_states.append(curr_index)
                     else:
                         raise EnvironmentError('Invalid Character "{}". Returning'.format(char))
 
                     x += 1 # keep for future purposes
                     curr_index += 1
 
-            print(starting_states)
-            # todo reset will have to do random.choice as well
-            self.previous_state = self.current_state = self.initial_state = random.choice(starting_states)
+            self.previous_state = self.current_state = self.initial_state = random.choice(self.starting_states)
 
             self.y_max = len(all_lines)
             self.x_max = width_of_grid
