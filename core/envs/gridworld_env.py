@@ -10,6 +10,8 @@ class GridWorldEnv(gym.Env):
 
     def __init__(self, grid_shape=(4, 4), initial_state=0, terminal_states=None, walls=None):
         # set state space params
+        if not isinstance(grid_shape, tuple) or len(grid_shape) != 2 or not isinstance(grid_shape[0], int):
+            raise ValueError("grid_shape parameter must be tuple of two integers")
         self.x_max = grid_shape[0]
         self.y_max = grid_shape[1]
         self.world = self._generate_world()
@@ -25,7 +27,7 @@ class GridWorldEnv(gym.Env):
         self.observation_space = spaces.Discrete(self.world.size)
         # set initial state for the agent
         self.previous_state = self.current_state = self.initial_state = initial_state
-        # set terminal state(s) and default if None
+        # set terminal state(s) and default terminal state if None given
         if terminal_states is None or len(terminal_states) == 0:
             self.terminal_states = [self.world.size - 1]
         else:
