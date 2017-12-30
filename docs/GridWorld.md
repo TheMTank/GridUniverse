@@ -4,8 +4,8 @@ GridWorld is an environment with discrete states and actions which is suited to 
 Most of the inspiration for this environment comes from Lectures 1-5 of David Silver's 
 [RL course](http://www0.cs.ucl.ac.uk/staff/d.silver/web/Teaching.html) and the great [Sutton and Barto book](http://ufal.mff.cuni.cz/~straka/courses/npfl114/2016/sutton-bookdraft2016sep.pdf). 
 
-It is a great environment to test beginner RL algorithms like Dynamic Programming (Policy and Value Iteration) 
-and other algorithms like Monte Carlo and TD learning.
+It is a great environment to test beginner RL algorithms like Dynamic Programming (Policy and Value Iteration), 
+other algorithms like Monte Carlo and TD learning, as well as non-RL algorithms like search and maze solving.
 
 ## Constructor and initialisation
 
@@ -44,7 +44,8 @@ This is exactly the same way how OpenAI gym's environment interface is.
 `env.render()`
 
 Will render the environment in ascii format.  
-A version is being worked on to render using [pyglet](https://bitbucket.org/pyglet/pyglet/wiki/Home). 
+A version of the environment that can be rendered using [pyglet](https://bitbucket.org/pyglet/pyglet/wiki/Home) 
+is being worked on at the moment. 
 
 ## Other important info
 
@@ -61,3 +62,10 @@ This can be used for implementing Dynamic Programming algorithms.
 
 The agent's state is represented by a single number between 0-N where N is the number of states in the grid.
 This makes it easy for tabular matrix algorithms (e.g. Dynamic Programming) to run on the environment.
+
+## Code and Examples
+
+Study the self-contained easy to read environment code within `core/envs/gridworld_env.py`.
+
+Run and study the code within `examples/gridworld_examples.py` and `core/algorithms/policy_iteration.py` 
+to see how to use the environment more clearly.

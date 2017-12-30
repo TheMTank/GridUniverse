@@ -6,7 +6,7 @@ environments as well as our own custom environments.
 
 Currently working exclusively on OpenAI gym and a Gridworld environment made by us.
 
-## Example of use
+## Examples of use
 To test whether OpenAI gym and the atari example works run: 
 
 `python examples/atari_example.py`  
@@ -23,8 +23,7 @@ To run tests:
 
 ## Installation
 
-Follow the instructions at this link:  
-[Installation documentation](https://github.com/beduffy/RL_problems/tree/master/docs/Installation.md)
+Follow the instructions at this link: [Installation documentation](https://github.com/beduffy/RL_problems/tree/master/docs/Installation.md)
 
 ## Running OpenAI gym
 
@@ -37,11 +36,12 @@ https://gym.openai.com/docs
 
 ## Running GridWorld
 
-Much less installation (if any at all) is need to run our lightweight custom environment:
+Much less installation (if any at all) is needed to run our lightweight custom environment:
 
 `python examples/gridworld_examples.py`
 
-Study that code to see how to use the environment but for more info check the [GridWorld Documentation](https://github.com/beduffy/RL_problems/tree/master/docs/GridWorld.md)
+Study that code (especially the `run_random_gridworld()` function) to see how to use the environment 
+but for more info check the [GridWorld Documentation](https://github.com/beduffy/RL_problems/tree/master/docs/GridWorld.md)
 
 ## API Reference
 
