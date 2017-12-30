@@ -10,6 +10,10 @@ class GridWorldEnv(gym.Env):
 
     def __init__(self, grid_shape=(4, 4), initial_state=0, terminal_states=None, walls=None):
         # set state space params
+        if terminal_states is not None and not isinstance(terminal_states, list):
+            raise ValueError("terminal_states parameter must be a list of integer indices")
+        if walls is not None and not isinstance(walls, list):
+            raise ValueError("walls parameter must be a list of integer indices")
         if not isinstance(grid_shape, tuple) or len(grid_shape) != 2 or not isinstance(grid_shape[0], int):
             raise ValueError("grid_shape parameter must be tuple of two integers")
         self.x_max = grid_shape[0]
@@ -32,6 +36,9 @@ class GridWorldEnv(gym.Env):
             self.terminal_states = [self.world.size - 1]
         else:
             self.terminal_states = terminal_states
+        for t_s in self.terminal_states:
+            if t_s < 0 or t_s > (self.world.size - 1):
+                raise ValueError("Terminal state {} is out of grid bounds".format(t_s))
         # set walls
         # need index positioning for efficient check in _is_valid()
         # but also need list to easily access each wall sequentially (e.g in render())
@@ -39,6 +46,8 @@ class GridWorldEnv(gym.Env):
         self.walls = np.zeros(self.world.shape)
         if walls is not None:
             for wall_state_index in walls:
+                if wall_state_index < 0 or wall_state_index > (self.world.size - 1):
+                    raise ValueError("Wall index {} is out of grid bounds".format(wall_state_index))
                 self.walls[wall_state_index] = 1
                 self.wall_indices.append(wall_state_index)
         # set reward matrix
