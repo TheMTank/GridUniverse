@@ -1,31 +1,30 @@
 # RL_problems
 
-Repository created with the goal of developing reinforcement learning algorithms and be able to reproduce 
-experiments for different environments. Currently working exclusively on OpenAI gym.
+This repository was created with the goal of developing reinforcement learning algorithms and be able to reproduce 
+experiments for different environments as well as custom environments. Currently working exclusively on OpenAI gym and a Gridworld environment made by us.
 
 ## Example of use
-Currently no example available only a test example is available to check if the environment works correctly. You can run
-it by going to the main directory of the repository and entering the command:
+To test whether OpenAI gym and the atari example works run: 
 
-`python atari_example.py`
+`python atari_example.py`  
 
 You should see a small window that automatically plays "Space Invaders" if everything is working correctly.
+
+To run an example of policy and value iteration on our Gridworld environment run:  
+
+`python examples/examples.py`
+
+To run tests:  
+
+`python tests/tests.py`
 
 ## Installation
 
 ### Requirements
-You need to have installed the following packages before starting with the set up of the environment for this project:
-- cmake
-- zlib1g-dev
-- libjpeg-dev
-- xvfb
-- libav-tools
-- xorg-dev
-- libboost-all-dev
-- libsdl2-dev
-- swig
+You need to have installed the following packages before starting with the set up of the environment for this project:   
+cmake, zlib1g-dev, libjpeg-dev, xvfb, libav-tools, xorg-dev, libboost-all-dev, libsdl2-dev, swig
 
-To install them you can follow the explanations given in the official repository:
+To install them you can follow the instructions given in the official repository:
 https://github.com/openai/gym#installation
 
 If you already have them you can skip this step. An explanation on how to set up your virtual environment is given
@@ -34,17 +33,17 @@ provided that you are using Anaconda.
 ### Create conda environment
 
 First you need to install Anaconda. Select your corresponding installation file for Python 3.6. version following 
-the instructions that can be found on the official Mkdocs documentation.
+the instructions that can be found on the official documentation:
 https://conda.io/docs/user-guide/install/index.html
 
 Make sure you add conda to your system environment variables during installation, otherwise do it manually afterwards.
-You can check that the installation was successful by opening a terminal and enter one of the following commands:
+You can check that the installation was successful by opening a terminal and entering:
 
 ```
 conda --help
 ```
 
-### If it is your first time using this repository, or you would like to create a new environment for using it:
+### If this is your first time using this repository, or you would like to create a new environment for using it:
 
 Open a terminal, go to the main directory of the repository and enter one of the following commands:
 
@@ -66,8 +65,6 @@ https://conda.io/docs/commands/env/conda-env-update.html
 
 ## Installation of OpenAI gym
 
-Currently OpenAI Gym is supported only in Linux distributions.
-
 ### Activate the conda environment and install the required packages entering the following commands:
 
 `source activate <name_of_environment>`
@@ -81,11 +78,7 @@ https://gym.openai.com/docs
 
 ## API Reference
 
-Currently the only documentaiton is this readme. In the future, you will be able to find further information in the docs folder.
-
-## Tests
-
-Run `atari_example.py` to make sure that everything is in place and works as it should.
+Currently the only documentation is this readme. In the future, you will be able to find further information in the docs folder.
 
 ## Contributors
 
