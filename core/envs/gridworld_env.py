@@ -1,3 +1,4 @@
+import random
 import gym
 from gym import spaces
 import numpy as np
@@ -141,5 +142,5 @@ class GridWorldEnv(gym.Env):
     def _close(self):
         pass
 
-    def _seed(self, seed=None):
-        raise NotImplementedError
+    def _seed(self, seed):
+        random.seed(seed)
