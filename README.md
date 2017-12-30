@@ -9,13 +9,13 @@ Currently working exclusively on OpenAI gym and a Gridworld environment made by 
 ## Example of use
 To test whether OpenAI gym and the atari example works run: 
 
-`python atari_example.py`  
+`python examples/atari_example.py`  
 
 You should see a small window that automatically plays "Space Invaders" if everything is working correctly.
 
 To run an example of policy and value iteration on our Gridworld environment run:  
 
-`python examples/examples.py`
+`python examples/gridworld_examples.py`
 
 To run tests:  
 
@@ -28,16 +28,18 @@ Follow the instructions at this link:
 
 ## Running OpenAI gym
 
-Now you should be able to run `atari_example.py`.
+Now you should be able to run 
+
+`python examples/atari_example.py`.
 
 For a general documentation on how the environment works refer to the official documentation on
 https://gym.openai.com/docs
 
 ## Running GridWorld
 
-To run our custom environment run
+Much less installation (if any at all) is need to run our lightweight custom environment:
 
-`python examples/examples.py`
+`python examples/gridworld_examples.py`
 
 Study that code to see how to use the environment but for more info check the [GridWorld Documentation](https://github.com/beduffy/RL_problems/tree/master/docs/GridWorld.md)
 
