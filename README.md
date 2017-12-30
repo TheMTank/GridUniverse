@@ -1,8 +1,9 @@
 # RL_problems
 
-This repository was created with the goal of developing many different Reinforcement Learning algorithms 
-and then to be able to run large scale experiments using these algorithms on different open-source 
-environments as well as our own custom environments. 
+This repository was created with the goal of developing and reproducing many different Reinforcement Learning algorithms 
+and then being able to run large scale experiments using these algorithms on different open-source 
+environments as well as our own custom environments.  
+
 Currently working exclusively on OpenAI gym and a Gridworld environment made by us.
 
 ## Example of use
@@ -23,7 +24,7 @@ To run tests:
 ## Installation
 
 Follow the instructions at this link:  
-[Installation documentation](https://github.com/beduffy/RL_problems/tree/master/core)
+[Installation documentation](https://github.com/beduffy/RL_problems/tree/master/docs/Installation.md)
 
 ## Running OpenAI gym
 
