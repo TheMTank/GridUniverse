@@ -33,6 +33,14 @@ Now you should be able to run `atari_example.py`.
 For a general documentation on how the environment works refer to the official documentation on
 https://gym.openai.com/docs
 
+## Running GridWorld
+
+To run our custom environment run
+
+`python examples/examples.py`
+
+Study that code to see how to use the environment but for more info check the [GridWorld Documentation](https://github.com/beduffy/RL_problems/tree/master/docs/GridWorld.md)
+
 ## API Reference
 
 Further documentation can be found in the "docs" folder.
