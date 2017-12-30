@@ -23,7 +23,7 @@ To run tests:
 
 ## Installation
 
-Follow the instructions at this link: [Installation documentation](https://github.com/beduffy/RL_problems/tree/master/docs/Installation.md)
+Follow the instructions at this link: [Installation instructions](https://github.com/beduffy/RL_problems/tree/master/docs/Installation.md)
 
 ## Running OpenAI gym
 
@@ -31,8 +31,7 @@ Now you should be able to run
 
 `python examples/atari_example.py`.
 
-For a general documentation on how the environment works refer to the official documentation on
-https://gym.openai.com/docs
+For a general documentation on how the environment works refer to the [official documentation](https://gym.openai.com/docs).
 
 ## Running GridWorld
 
