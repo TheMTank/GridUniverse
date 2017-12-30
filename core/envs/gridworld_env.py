@@ -8,7 +8,7 @@ from six import StringIO
 class GridWorldEnv(gym.Env):
     metadata = {'render.modes': ['human', 'ansi', 'graphic']}
 
-    def __init__(self, grid_shape=(4, 4), initial_state=0, **kwargs):
+    def __init__(self, grid_shape=(4, 4), initial_state=0, terminal_states=None, walls=None):
         # set state space params
         self.x_max = grid_shape[0]
         self.y_max = grid_shape[1]
@@ -25,17 +25,20 @@ class GridWorldEnv(gym.Env):
         self.observation_space = spaces.Discrete(self.world.size)
         # set initial state for the agent
         self.previous_state = self.current_state = self.initial_state = initial_state
-        # set terminal state(s) and wall(s)
-        self.terminal_states = kwargs['terminal_states'] if 'terminal_states' in kwargs else [self.world.size - 1]
-        # kwargs['walls'] = [1, 4, 14] # uncomment for quick test
+        # set terminal state(s) and default if None
+        if terminal_states is None or len(terminal_states) == 0:
+            self.terminal_states = [self.world.size - 1]
+        else:
+            self.terminal_states = terminal_states
+        # set walls
         # need index positioning for efficient check in _is_valid()
         # but also need list to easily access each wall sequentially (e.g in render())
         self.wall_indices = []
         self.walls = np.zeros(self.world.shape)
-        if 'walls' in kwargs:
-            for state_index in kwargs['walls']:
-                self.walls[state_index] = 1
-                self.wall_indices.append(state_index)
+        if walls is not None:
+            for wall_state_index in walls:
+                self.walls[wall_state_index] = 1
+                self.wall_indices.append(wall_state_index)
         # set reward matrix
         self.reward_matrix = np.full(self.world.shape, -1)
         for terminal_state in self.terminal_states:
