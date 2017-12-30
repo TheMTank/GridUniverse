@@ -1,8 +1,10 @@
+import sys
+import random
+from six import StringIO
+
 import gym
 from gym import spaces
 import numpy as np
-import sys
-from six import StringIO
 
 
 class GridWorldEnv(gym.Env):
@@ -158,7 +160,7 @@ class GridWorldEnv(gym.Env):
 
     def create_custom_world_from_file(self, fp):
         """
-        Creates the world from a text file in the format of
+        Creates the world from a rectangular text file in the format of:
 
         ooo#
         oxoo
@@ -169,61 +171,56 @@ class GridWorldEnv(gym.Env):
          "o" is an empty walkable area.
          "#" is a blocked "wall"
          "T" is a terminal state
-         "x" is a possible starting location
+         "x" is a possible starting location. Chosen uniform randomly if multiple "x"s.
         """
 
         with open(fp, 'r') as f:
-            num_cols = None
+            width_of_grid = None
 
-            list_world = []
             self.terminal_states = []
+            starting_states = []
             walls_indices = []
 
-            all_lines = f.readlines()
-            # num_rows = len(all_lines)
+            curr_index = 0
+            all_lines = [line.rstrip() for line in f.readlines()]
+            all_lines = [line for line in all_lines if line]
             for y, line in enumerate(all_lines):
-                list_world.append([])
                 x = 0
-                line = line.strip()
-                if not num_cols:
-                    num_cols = len(line)
-                if len(line) != num_cols:
+                if not width_of_grid:
+                    width_of_grid = len(line) # first row length will be width from now on
+                if len(line) != width_of_grid:
                     raise EnvironmentError("Text file is not a rectangle")
 
                 for char in line:
-                    index = (num_cols * y) + x
-
                     if char == 'T':
-                        self.terminal_states.append(index)
+                        self.terminal_states.append(curr_index)
                     elif char == 'o':
                         pass
                     elif char == '#':
-                        # self.walls[index] = 1
-                        # self.wall_indices.append(index)
-                        walls_indices.append(index)
+                        walls_indices.append(curr_index)
                     elif char == 'x':
-                        self.current_state = index
-                        # todo multiple starting locations
+                        starting_states.append(curr_index)
                     else:
                         raise EnvironmentError('Invalid Character "{}". Returning'.format(char))
 
-                    list_world[y].append((x, y))
-                    x += 1
-                y += 1
+                    x += 1 # keep for future purposes
+                    curr_index += 1
 
-            print (list_world)
+            print(starting_states)
+            # todo reset will have to do random.choice as well
+            self.previous_state = self.current_state = self.initial_state = random.choice(starting_states)
+
             self.y_max = len(all_lines)
-            self.x_max = num_cols
+            self.x_max = width_of_grid
             self.world = self._generate_world()
-            print(self.world)
 
+            self.wall_grid = np.zeros(self.world.shape)
+            self.wall_indices = []
             self._generate_walls(walls_indices)
 
             self.reward_matrix = np.full(self.world.shape, -1)
             for terminal_state in self.terminal_states:
                 self.reward_matrix[terminal_state] = 0
-
-            # todo put all above into functions so no repeat? setup_world() or something like that
 
 
 if __name__ == '__main__':
