@@ -18,20 +18,22 @@ class GridWorldEnv(gym.Env):
             raise ValueError("walls parameter must be a list of integer indices")
         if not isinstance(grid_shape, tuple) or len(grid_shape) != 2 or not isinstance(grid_shape[0], int):
             raise ValueError("grid_shape parameter must be tuple of two integers")
-        self.x_max = grid_shape[0]
-        self.y_max = grid_shape[1]
+        self.x_max = grid_shape[0] # num columns
+        self.y_max = grid_shape[1] # num rows
         self.world = self._generate_world()
         # set action space params
         self.action_space = spaces.Discrete(4)
-        # main boundary check for edges of map done here
-        self.action_state_to_next_state = [lambda s: s if self.world[s][1] == (self.y_max - 1) else s + 1,
-                                           lambda s: s if self.world[s][0] == (self.x_max - 1) else s + self.y_max,
-                                           lambda s: s if self.world[s][1] == 0 else s - 1,
-                                           lambda s: s if self.world[s][0] == 0 else s - self.y_max]
+        # main boundary check for edges of map done here.
+        # To get to another row, we subtract or add the width of the grid (self.x_max) since the state is an integer
+        self.action_state_to_next_state = [lambda s: s - self.x_max if self.world[s][1] > 0 else s,                # up
+                                           lambda s: s + 1 if self.world[s][0] < (self.x_max - 1) else s,          # right
+                                           lambda s: s + self.x_max if self.world[s][1] < (self.y_max - 1) else s, # down
+                                           lambda s: s - 1 if self.world[s][0] > 0 else s]                         # left
+
         self.action_descriptors = ['up', 'right', 'down', 'left']
         # set observed params: [current state, world state]
         self.observation_space = spaces.Discrete(self.world.size)
-        # set initial state for the agent. If initial_state is a list choose randomly
+        # set initial state for the agent. If initial_state is a list, choose randomly
         if isinstance(initial_state, int):
             initial_state = [initial_state] # convert to list
         self.starting_states = initial_state
@@ -67,8 +69,8 @@ class GridWorldEnv(gym.Env):
         The states are defined by their index and contain a tuple of uint16 values that represent the
         coordinates (x,y) of a state in the grid.
         """
-        world = np.fromiter(((x, y) for x in np.nditer(np.arange(self.x_max))
-                             for y in np.nditer(np.arange(self.y_max))), dtype='int64, int64')
+        world = np.fromiter(((x, y) for y in np.nditer(np.arange(self.y_max))
+                             for x in np.nditer(np.arange(self.x_max))), dtype='int64, int64')
         return world
 
     def _generate_walls(self, walls):
@@ -143,7 +145,7 @@ class GridWorldEnv(gym.Env):
 
         if mode == 'human' or mode == 'ansi':
             outfile = StringIO() if mode == 'ansi' else sys.stdout
-            for row in np.reshape(new_world, (self.x_max, self.y_max))[:, ::-1].T:
+            for row in np.reshape(new_world, (self.y_max, self.x_max)):
                 for state in row:
                     outfile.write((state.decode('UTF-8') + ' '))
                 outfile.write('\n')
@@ -178,8 +180,6 @@ class GridWorldEnv(gym.Env):
         """
 
         with open(fp, 'r') as f:
-            width_of_grid = None
-
             self.terminal_states = []
             self.starting_states = []
             walls_indices = []
@@ -187,12 +187,10 @@ class GridWorldEnv(gym.Env):
             curr_index = 0
             all_lines = [line.rstrip() for line in f.readlines()]
             all_lines = [line for line in all_lines if line]
+            width_of_grid = len(all_lines[0]) # first row length will be width from now on
             for y, line in enumerate(all_lines):
-                x = 0
-                if not width_of_grid:
-                    width_of_grid = len(line) # first row length will be width from now on
                 if len(line) != width_of_grid:
-                    raise EnvironmentError("Text file is not a rectangle")
+                    raise EnvironmentError("Input text file is not a rectangle")
 
                 for char in line:
                     if char == 'T':
@@ -206,7 +204,6 @@ class GridWorldEnv(gym.Env):
                     else:
                         raise EnvironmentError('Invalid Character "{}". Returning'.format(char))
 
-                    x += 1 # keep for future purposes
                     curr_index += 1
 
             self.previous_state = self.current_state = self.initial_state = random.choice(self.starting_states)
@@ -233,7 +230,6 @@ if __name__ == '__main__':
             action = env.action_space.sample()
             print('go ' + env.action_descriptors[action])
             observation, reward, done, info = env.step(action)
-
             if done:
                 print("Episode finished after {} timesteps".format(t + 1))
                 break
