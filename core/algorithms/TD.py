@@ -1,4 +1,7 @@
+import sys
+
 import numpy as np
+
 from core.envs.gridworld_env import GridWorldEnv
 from core.algorithms import utils
 
@@ -12,43 +15,66 @@ if __name__ == '__main__':
     world_shape = (4, 4)
     env = GridWorldEnv(world_shape=world_shape)
 
-    value_function = np.zeros(env.world.size)
-    print('Initial value function:', value_function)
+    value_func = np.zeros(env.world.size)
+    print('Initial value function:', value_func)
+    n = 1
 
     # act randomly and evaluate policy
     for i_episode in range(15):
         curr_state = env.reset()
         prev_state = curr_state
-        for t in range(1000):
-            #env.render()
+
+        all_rewards = [] # n_step_rewards todo rename if I want to pop them off
+        for t in range(100):
             action = env.action_space.sample()
-            #print('go ' + env.action_descriptors[action])
             curr_state, reward, done, info = env.step(action)
+            all_rewards.append(reward)
 
-            # V(St) ← V(St) + alpha * (Rt+1 + lambda * V(St+1) − V(St))
+            # G(n)t = Rt+1 + γRt+2 + ... + γ ^ n−1 * Rt+n + γ ^ n V(St+n)
+            # V(St) ← V(St) + α * (G(n)t − V(St))
 
-            value_function[prev_state] = value_function[prev_state] + \
-                                         alpha * (reward +
-                                         discount_factor * value_function[curr_state]
-                                          - value_function[prev_state])
+            # n = 1 = TD(0)
+            # G(1)t = Rt+1 + γ * V(St+1)
+            # V(St) ← V(St) + α * (Rt+1 + γ * V(St+1) − V(St))
+
+            # n = 2
+            # G(2)t = Rt+1 + γ * Rt+2 + γ ^ 2 * V(St+2)
+
+            # so we have to wait 2 steps at the start before calculating anything.
+            # And then every step, we do the above.
+
+            # n_step_return = reward + discount_factor * value_func[curr_state]
+
+            if len(all_rewards) > n:
+                # print(all_rewards)
+                print('N last rewards:', all_rewards[-n:])
+
+                discounted_immediate_rewards = sum([(discount_factor ** i) * r for i, r in enumerate(all_rewards[-n:])])
+                print('discounted_immediate_rewards:', discounted_immediate_rewards)
+                discounted_future_value = (discount_factor ** n) * value_func[curr_state]
+                n_step_return = discounted_immediate_rewards + discounted_future_value
+                print('n_step_return:', n_step_return)
+                value_func[prev_state] = value_func[prev_state] + alpha * (n_step_return - value_func[prev_state])
+
+            # if (discount_factor ** i) < threshold]) todo or not
 
             prev_state = curr_state
-
             if done:
                 print("Episode finished after {} timesteps".format(t + 1))
                 break
 
         #print(i_episode, '\n', value_function)
 
+    # sys.exit()
     # Now test algorithm
     # Create greedy policy from value function
     # todo change so we don't need or always fill policy till end. Or... always have value as 0 for unseen states.
     policy0 = np.ones([env.world.size, len(env.action_state_to_next_state)]) / len(env.action_state_to_next_state)
-    policy1 = utils.greedy_policy_from_value_function(policy0, env, value_function)
+    policy1 = utils.greedy_policy_from_value_function(policy0, env, value_func)
     # print(policy1)
 
     policy_map1 = utils.get_policy_map(policy1, world_shape)
-    print('Policy: (up, right, down, left)\n', policy_map1)
+    # print('Policy: (up, right, down, left)\n', policy_map1)
     np.set_printoptions(linewidth=75, precision=8)
 
     print('Starting greedy policy run')
