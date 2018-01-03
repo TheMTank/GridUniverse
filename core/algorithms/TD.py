@@ -17,14 +17,14 @@ if __name__ == '__main__':
 
     value_func = np.zeros(env.world.size)
     print('Initial value function:', value_func)
-    n = 1
+    n = -1 # 5 # set to -1 for Monte Carlo
 
     # act randomly and evaluate policy
-    for i_episode in range(15):
+    for i_episode in range(50):
         curr_state = env.reset()
         prev_state = curr_state
 
-        all_rewards = [] # n_step_rewards todo rename if I want to pop them off
+        all_rewards = []
         for t in range(100):
             action = env.action_space.sample()
             curr_state, reward, done, info = env.step(action)
@@ -47,14 +47,22 @@ if __name__ == '__main__':
 
             if len(all_rewards) > n:
                 # print(all_rewards)
-                print('N last rewards:', all_rewards[-n:])
+                if n == -1:
+                    if not done:
+                        continue
+                    else:
+                        last_n_rewards = all_rewards # todo bug. Only assigns credit to first/one state. TD(1) must assign values to every state on path???
+                else:
+                    last_n_rewards = all_rewards[-n:]
+                print('N last rewards:', last_n_rewards)
 
-                discounted_immediate_rewards = sum([(discount_factor ** i) * r for i, r in enumerate(all_rewards[-n:])])
-                print('discounted_immediate_rewards:', discounted_immediate_rewards)
+                discounted_immediate_rewards = sum([(discount_factor ** i) * r for i, r in enumerate(last_n_rewards)])
                 discounted_future_value = (discount_factor ** n) * value_func[curr_state]
                 n_step_return = discounted_immediate_rewards + discounted_future_value
+                print('discounted_immediate_rewards:', discounted_immediate_rewards)
                 print('n_step_return:', n_step_return)
-                value_func[prev_state] = value_func[prev_state] + alpha * (n_step_return - value_func[prev_state])
+                TD_error = n_step_return - value_func[prev_state]
+                value_func[prev_state] = value_func[prev_state] + alpha * TD_error
 
             # if (discount_factor ** i) < threshold]) todo or not
 
@@ -65,6 +73,7 @@ if __name__ == '__main__':
 
         #print(i_episode, '\n', value_function)
 
+    print('Final value function:', value_func)
     # sys.exit()
     # Now test algorithm
     # Create greedy policy from value function
@@ -80,7 +89,7 @@ if __name__ == '__main__':
     print('Starting greedy policy run')
     curr_state = env.reset()
     prev_state = curr_state
-    for t in range(100):
+    for t in range(30):
         env.render()
 
         action = np.argmax(policy1[curr_state])
