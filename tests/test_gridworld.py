@@ -5,11 +5,12 @@ from core.envs.gridworld_env import GridWorldEnv
 
 class TestGridWorld(unittest.TestCase):
     def test_gridworld_wall(self):
-        env = GridWorldEnv(walls=[4])
+        env = GridWorldEnv(walls=[1])
         env.render()
         action = 1 # go right
 
         observation, reward, done, info = env.step(action)
+        print('go ' + env.action_descriptors[action])
 
         env.render()
         self.assertTrue(observation == 0) # check if in same place
@@ -17,10 +18,11 @@ class TestGridWorld(unittest.TestCase):
     def test_default_gridworld_completion_in_six_steps(self):
         env = GridWorldEnv()
 
-        actions_to_take = [1, 1, 1, 0, 0, 0] # 3 rights and 3 ups
+        actions_to_take = [1, 1, 1, 2, 2, 2] # 3 rights and 3 downs
         for t in range(100):
             env.render()
             action = actions_to_take[t]
+            print('go ' + env.action_descriptors[action])
             observation, reward, done, info = env.step(action)
 
             if done:
