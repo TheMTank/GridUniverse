@@ -30,5 +30,20 @@ class TestGridWorld(unittest.TestCase):
                 self.assertTrue((t + 1) == 6)
                 break
 
+    def test_large_gridworld_completion_in_48_steps(self):
+        env = GridWorldEnv(grid_shape=(25, 25))
+
+        actions_to_take = [1] * 24 + [2] * 24 # 24 steps right + 24 steps down
+        num_actions = len(actions_to_take)
+        print('Num actions to take to get to terminal state: {}'.format(num_actions))
+        for t in range(100):
+            action = actions_to_take[t]
+            observation, reward, done, info = env.step(action)
+
+            if done:
+                print("Episode finished after {} timesteps".format(t + 1))
+                self.assertTrue((t + 1) == num_actions)
+                break
+
 if __name__ == '__main__':
     unittest.main()
