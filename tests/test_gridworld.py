@@ -12,7 +12,7 @@ class TestGridWorld(unittest.TestCase):
         observation, reward, done, info = env.step(action)
 
         env.render()
-        self.assertTrue(observation == 0)
+        self.assertTrue(observation == 0) # check if in same place
 
     def test_default_gridworld_completion_in_six_steps(self):
         env = GridWorldEnv()
