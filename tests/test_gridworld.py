@@ -45,5 +45,34 @@ class TestGridWorld(unittest.TestCase):
                 self.assertTrue((t + 1) == num_actions)
                 break
 
+    def test_each_boundary(self):
+        env = GridWorldEnv()
+
+        # self.action_descriptors = ['up', 'right', 'down', 'left']
+        actions_to_take = [3, 0, 1, 1, 1, 1, 2, 2, 3, 2, 2, 3, 3, 3]
+        boundary_test_steps = [0, 1, 5, 10, 13]
+        collected_boundary_steps = []
+        prev_observation = env.reset()
+        for t in range(100):
+            if t > len(actions_to_take) - 1:
+                break
+
+            env.render()
+            action = actions_to_take[t]
+            print('go ' + env.action_descriptors[action])
+            observation, reward, done, info = env.step(action)
+
+            if observation == prev_observation:
+                collected_boundary_steps.append(t)
+
+            prev_observation = observation
+
+        print('collected_boundary_steps:', collected_boundary_steps)
+        print('boundary_test_steps', boundary_test_steps)
+        boolean_elementwise_comparison = [a == b for a, b in zip(collected_boundary_steps, boundary_test_steps)]
+        print(boolean_elementwise_comparison)
+        print(all(boolean_elementwise_comparison))
+        self.assertTrue(all(boolean_elementwise_comparison))
+
 if __name__ == '__main__':
     unittest.main()
