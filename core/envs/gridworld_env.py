@@ -219,17 +219,3 @@ class GridWorldEnv(gym.Env):
             self.reward_matrix = np.full(self.world.shape, -1)
             for terminal_state in self.terminal_states:
                 self.reward_matrix[terminal_state] = 0
-
-
-if __name__ == '__main__':
-    env = GridWorldEnv(custom_world_fp='test_env.txt')
-    for i_episode in range(1):
-        observation = env.reset()
-        for t in range(100):
-            env.render()
-            action = env.action_space.sample()
-            print('go ' + env.action_descriptors[action])
-            observation, reward, done, info = env.step(action)
-            if done:
-                print("Episode finished after {} timesteps".format(t + 1))
-                break
