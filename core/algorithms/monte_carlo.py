@@ -69,7 +69,7 @@ def run_episode(policy, env, max_steps_per_episode=100):
     rewards_hist = []
     observation = env.reset()
     for step in range(max_steps_per_episode):
-        action = np.random.choice(policy[observation].size, p=policy[observation]) # todo: change to random number in env action space
+        action = np.random.choice(policy[observation].size, p=policy[observation])
         observation, reward, done, info = env.step(action)
         states_hist.append(observation)
         rewards_hist.append(reward)
@@ -95,7 +95,9 @@ def monte_carlo_evaluation(policy, env, every_visit=False, incremental_mean=True
     4. If non-stationary environment use alpha instead of (1 / (total_visit_counter[state]))
     """
 
-    total_visit_counter = {} # could do "total_visit_counter = np.zeros(env.world.size)" but that isn't model-free
+    # could do "total_visit_counter = np.zeros(env.world.size)" but that isn't model-free
+    # This way we can run on procedurally generated environments that grown in size
+    total_visit_counter = {}
     total_return = {}
     value_function = {}
     for episode in range(n_episodes):
@@ -114,14 +116,14 @@ def monte_carlo_evaluation(policy, env, every_visit=False, incremental_mean=True
                     # Also don't increase it's visit count
                     continue
 
+            # If first-visit MC, the code below only runs for the first encounter of a state within an episode
             # Calculation depends heavily if whether it is first or every visit MC.
             # Update visit counter for last episode
             visits_from_last_episode[state] += 1
             # Update return for last episode for a specific state
             return_from_state = sum([(discount_factor ** i) * r for i, r in enumerate(episode_reward_hist[idx:])
-                                                  if (discount_factor ** i) < threshold]) # todo mention bug in commit
-            returns_from_last_episode[state] += return_from_state # Add if statement if first visit
-            # todo check that return is just summed up together in every visit MC and then only at end of episode do you do error term update (not for each update)
+                                                  if (discount_factor ** i) < threshold])
+            returns_from_last_episode[state] += return_from_state
 
         # Update total_visit_counter, total_return, and value function for each state
         for state in visits_from_last_episode:
@@ -135,67 +137,24 @@ def monte_carlo_evaluation(policy, env, every_visit=False, incremental_mean=True
             total_visit_counter[state] += visits_from_last_episode[state]
             # Update total return. Only used for non-incremental mean.
             if not incremental_mean:
-                """
-                Increment total return S(s) ← S(s) + Gt
-                """
+                # Increment total return S(s) ← S(s) + Gt
                 total_return[state] += returns_from_last_episode[state]
             else:
                 # Update value function only if incremental mean. Otherwise do at end
                 if stationary_env:
-                    """
-                    V(St) ← V(St) + 1/ N(St) * (Gt − V(St))
-                    """
+                    # V(St) ← V(St) + 1/ N(St) * (Gt − V(St))
                     value_function[state] += (1 / total_visit_counter[state]) * (returns_from_last_episode[state] - value_function[state])
                 else:
                     """
                     In non-stationary problems, it can be useful to track a running mean, i.e. forget old episodes.
                     V(St) ← V(St) + α(Gt − V(St))
                     """
-                    # todo stationary with non-incremental mean? And shouldn't store visit count? Not necessary
                     value_function[state] += alpha * (returns_from_last_episode[state] - value_function[state])
 
 
     if not incremental_mean:
-        """
-        Value is estimated by mean return V(s) = S(s) / N(s) if not incremental mean
-        """
+        # Value is estimated by mean return V(s) = S(s) / N(s) if not incremental mean
         for state in total_visit_counter:
             value_function[state] = total_return[state] / total_visit_counter[state]
 
     return value_function
-
-
-if __name__ == '__main__':
-    env = GridWorldEnv()
-    # todo non-model free. 4 actions is all we should know.
-    policy0 = np.ones([env.world.size, env.action_space.n]) / env.action_space.n
-    st_history, rw_history = run_episode(policy0, env)
-    print('States history: ' + str(st_history))
-    print('Rewards history: ' + str(rw_history))
-    value0 = monte_carlo_evaluation(policy0, env, every_visit=True, stationary_env=False)
-    print(value0)
-    for state, value in value0.items():
-        print(state, value)
-
-    # Create greedy policy from value function and run it on environment
-    world_shape = (4, 4)
-    policy1 = greedy_policy_from_value_function(env, value0)
-    print(policy1)
-
-    policy_map1 = get_policy_map(policy1, world_shape)
-    print('Policy: (up, right, down, left)\n', get_policy_map(policy1, world_shape))
-    np.set_printoptions(linewidth=75, precision=8)
-
-    print('Starting greedy policy run')
-    curr_state = env.reset()
-
-    for t in range(100):
-        env.render()
-
-        action = np.argmax(policy1[curr_state])
-        print('go ' + env.action_descriptors[action])
-        curr_state, reward, done, info = env.step(action)
-
-        if done:
-            print('DONE in {} steps'.format(t + 1))
-            break

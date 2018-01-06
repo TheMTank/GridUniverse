@@ -3,7 +3,7 @@ import numpy as np
 from core.envs.gridworld_env import GridWorldEnv
 from core.algorithms.policy_iteration import (single_step_policy_evaluation, reshape_as_gridworld, get_policy_map,
                                 greedy_policy_from_value_function, policy_iteration, value_iteration)
-
+from core.algorithms.monte_carlo import run_episode, monte_carlo_evaluation
 
 def run_random_gridworld():
     env = GridWorldEnv()
@@ -58,7 +58,40 @@ def run_policy_iteration():
     print('Policy: (up, right, down, left)\n', get_policy_map(optimal_policy, world_shape))
     np.set_printoptions(linewidth=75, precision=8)
 
+def run_monte_carlo():
+    env = GridWorldEnv()
+    policy0 = np.ones([env.world.size, env.action_space.n]) / env.action_space.n
+    st_history, rw_history = run_episode(policy0, env)
+    print('States history: ' + str(st_history))
+    print('Rewards history: ' + str(rw_history))
+    value0 = monte_carlo_evaluation(policy0, env, every_visit=True, stationary_env=False)
+    print(value0)
+    for state, value in value0.items():
+        print(state, value)
+
+    # Create greedy policy from value function and run it on environment
+    world_shape = (4, 4)
+    policy1 = greedy_policy_from_value_function(policy0, env, value0)
+    print(policy1)
+
+    print('Policy: (up, right, down, left)\n', get_policy_map(policy1, world_shape))
+    np.set_printoptions(linewidth=75, precision=8)
+
+    print('Starting greedy policy run')
+    curr_state = env.reset()
+
+    for t in range(100):
+        env.render()
+
+        action = np.argmax(policy1[curr_state])
+        print('go ' + env.action_descriptors[action])
+        curr_state, reward, done, info = env.step(action)
+
+        if done:
+            print('DONE in {} steps'.format(t + 1))
+            break
 
 if __name__ == '__main__':
     run_random_gridworld()
     run_policy_iteration()
+    run_monte_carlo()
