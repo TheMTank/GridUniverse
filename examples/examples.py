@@ -2,7 +2,7 @@ import numpy as np
 
 from core.envs.gridworld_env import GridWorldEnv
 from core.algorithms import utils
-from core.algorithms.policy_iteration import (policy_iteration, value_iteration)
+import core.algorithms.dynamic_programming as dp
 
 
 def run_random_gridworld():
@@ -41,7 +41,7 @@ def run_policy_iteration():
     # test policy iteration
     print('Policy iteration:')
     policy0 = np.ones([gw_env.world.size, len(gw_env.action_state_to_next_state)]) / len(gw_env.action_state_to_next_state)
-    optimal_value, optimal_policy = policy_iteration(policy0, gw_env, v0, threshold=0.001, max_steps=1000)
+    optimal_value, optimal_policy = dp.policy_iteration(policy0, gw_env, v0, threshold=0.001, max_steps=1000)
     print('Value:\n', utils.reshape_as_gridworld(optimal_value, world_shape))
     print('Policy: (0=up, 1=right, 2=down, 3=left)\n', utils.get_policy_map(optimal_policy, world_shape))
     np.set_printoptions(linewidth=75 * 2, precision=4)
@@ -51,7 +51,7 @@ def run_policy_iteration():
     # test value iteration
     print('Value iteration:')
     policy0 = np.ones([gw_env.world.size, len(gw_env.action_state_to_next_state)]) / len(gw_env.action_state_to_next_state)
-    optimal_value, optimal_policy = value_iteration(policy0, gw_env, v0, threshold=0.001, max_steps=100)
+    optimal_value, optimal_policy = dp.value_iteration(policy0, gw_env, v0, threshold=0.001, max_steps=100)
     print('Value:\n', utils.reshape_as_gridworld(optimal_value, world_shape))
     print('Policy: (0=up, 1=right, 2=down, 3=left)\n', utils.get_policy_map(optimal_policy, world_shape))
     np.set_printoptions(linewidth=75 * 2, precision=4)
