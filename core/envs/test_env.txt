@@ -1,6 +1,6 @@
-xoo
-ooo
-ooo
+xo#
+oo#
+oo#
 ooo
 oox
 ooo

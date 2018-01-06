@@ -13,11 +13,11 @@ class GridWorldEnv(gym.Env):
     def __init__(self, grid_shape=(4, 4), initial_state=0, terminal_states=None, walls=None, custom_world_fp=None):
         # set state space params
         if terminal_states is not None and not isinstance(terminal_states, list):
-            raise ValueError("terminal_states parameter must be a list of integer indices")
+            raise TypeError("terminal_states parameter must be a list of integer indices")
         if walls is not None and not isinstance(walls, list):
-            raise ValueError("walls parameter must be a list of integer indices")
+            raise TypeError("walls parameter must be a list of integer indices")
         if not isinstance(grid_shape, tuple) or len(grid_shape) != 2 or not isinstance(grid_shape[0], int):
-            raise ValueError("grid_shape parameter must be tuple of two integers")
+            raise TypeError("grid_shape parameter must be tuple of two integers")
         self.x_max = grid_shape[0] # num columns
         self.y_max = grid_shape[1] # num rows
         self.world = self._generate_world()
@@ -60,7 +60,7 @@ class GridWorldEnv(gym.Env):
         self.info = {}
 
         if custom_world_fp:
-            self.create_custom_world_from_file(custom_world_fp)
+            self._create_custom_world_from_file(custom_world_fp)
 
     def _generate_world(self):
         """
@@ -78,16 +78,16 @@ class GridWorldEnv(gym.Env):
         Given a list of wall indices, fills in self.wall_indices list
         and places "1"s appropriately within self.walls numpy array
 
-        self.walls: need index positioning for efficient check in _is_valid() but
+        self.walls: need index positioning for efficient check in _is_wall() but
         self.wall_indices: we also need list to easily access each wall sequentially (e.g in render())
         """
         if walls is not None:
-            for wall_state_index in walls:
-                if wall_state_index < 0 or wall_state_index > (self.world.size - 1):
-                    raise ValueError("Wall index {} is out of grid bounds".format(wall_state_index))
+            for wall_state in walls:
+                if wall_state < 0 or wall_state > (self.world.size - 1):
+                    raise ValueError("Wall state {} is out of grid bounds".format(wall_state))
 
-                self.wall_grid[wall_state_index] = 1
-                self.wall_indices.append(wall_state_index)
+                self.wall_grid[wall_state] = 1
+                self.wall_indices.append(wall_state)
 
     def look_step_ahead(self, state, action):
         """
@@ -100,11 +100,11 @@ class GridWorldEnv(gym.Env):
             next_state = state
         else:
             next_state = self.action_state_to_next_state[action](state)
-            next_state = next_state if self._is_valid(next_state) else state
+            next_state = next_state if self._is_wall(next_state) else state
 
         return next_state, self.reward_matrix[next_state], self.is_terminal(next_state)
 
-    def _is_valid(self, state):
+    def _is_wall(self, state):
         """
         Checks if a given state is a wall or any other element that shall not be trespassed.
         """
@@ -163,7 +163,7 @@ class GridWorldEnv(gym.Env):
     def _seed(self, seed=None):
         raise NotImplementedError
 
-    def create_custom_world_from_file(self, fp):
+    def _create_custom_world_from_file(self, fp):
         """
         Creates the world from a rectangular text file in the format of:
 
@@ -190,7 +190,7 @@ class GridWorldEnv(gym.Env):
             width_of_grid = len(all_lines[0]) # first row length will be width from now on
             for y, line in enumerate(all_lines):
                 if len(line) != width_of_grid:
-                    raise EnvironmentError("Input text file is not a rectangle")
+                    raise ValueError("Input text file is not a rectangle")
 
                 for char in line:
                     if char == 'T':
@@ -202,11 +202,11 @@ class GridWorldEnv(gym.Env):
                     elif char == 'x':
                         self.starting_states.append(curr_index)
                     else:
-                        raise EnvironmentError('Invalid Character "{}". Returning'.format(char))
+                        raise ValueError('Invalid Character "{}". Returning'.format(char))
 
                     curr_index += 1
 
-            self.previous_state = self.current_state = self.initial_state = random.choice(self.starting_states)
+            self.reset()
 
             self.y_max = len(all_lines)
             self.x_max = width_of_grid
