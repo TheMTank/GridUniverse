@@ -64,9 +64,13 @@ def run_monte_carlo():
     print('\n' + '*' * 20 + 'Starting Monte Carlo evaluation and greedy policy' + '*' * 20 + '\n')
     env = GridWorldEnv()
     policy0 = np.ones([env.world.size, env.action_space.n]) / env.action_space.n
+
+    print('Running an episode with a random agent (with initial policy)')
     st_history, rw_history = run_episode(policy0, env)
     print('States history: ' + str(st_history))
     print('Rewards history: ' + str(rw_history))
+
+    print('Starting Monte-Carlo evaluation of random policy')
     value0 = monte_carlo_evaluation(policy0, env, every_visit=True, stationary_env=False)
     print(value0)
     for state, value in value0.items():
@@ -80,7 +84,7 @@ def run_monte_carlo():
     print('Policy: (up, right, down, left)\n', utils.get_policy_map(policy1, world_shape))
     np.set_printoptions(linewidth=75, precision=8)
 
-    print('Starting greedy policy run')
+    print('Starting greedy policy episode')
     curr_state = env.reset()
 
     for t in range(100):
