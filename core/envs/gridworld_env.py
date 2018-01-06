@@ -11,7 +11,16 @@ class GridWorldEnv(gym.Env):
     metadata = {'render.modes': ['human', 'ansi', 'graphic']}
 
     def __init__(self, grid_shape=(4, 4), initial_state=0, terminal_states=None, walls=None, custom_world_fp=None):
-        # set state space params
+        """
+
+        :param grid_shape: Tuple of size 2 to specify (width, height) of grid
+        :param initial_state: int for single initial state or list of possible states chosen uniform randomly
+        :param terminal_states: list of terminal states. If agent walks into any, done = True,
+                                and no actions are possible
+        :param walls: list of walls. These are blocked states where the agent can't walk
+        :param custom_world_fp: optional parameter to create the grid from a text file.
+        """
+        # check state space params
         if terminal_states is not None and not isinstance(terminal_states, list):
             raise TypeError("terminal_states parameter must be a list of integer indices")
         if walls is not None and not isinstance(walls, list):
