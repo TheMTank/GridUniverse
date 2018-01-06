@@ -53,8 +53,24 @@ class TestGridWorld(unittest.TestCase):
 
             if done:
                 print("Episode finished after {} timesteps".format(t + 1))
-                self.assertTrue((t + 1) == num_actions)
                 break
+        self.assertTrue((t + 1) == num_actions and done)
+
+    def test_custom_gridworld_from_text_file(self):
+        """
+        Test whether we can complete the GridWorld created from the text file within
+        """
+
+        env = GridWorldEnv(custom_world_fp='../core/envs/test_env.txt')
+        actions_to_take = [2, 2, 2, 2, 2, 2, 2, 1]
+        for step_no, action in enumerate(actions_to_take):
+            env.render()
+            print('go ' + env.action_descriptors[action])
+            observation, reward, done, info = env.step(action)
+            if done:
+                print("Episode finished after {} timesteps".format(step_no + 1))
+
+        self.assertTrue((step_no + 1) == len(actions_to_take) and done)
 
     def test_each_boundary(self):
         """
