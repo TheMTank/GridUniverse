@@ -1,8 +1,9 @@
+import sys
+
+import numpy as np
+from six import StringIO
 import gym
 from gym import spaces
-import numpy as np
-import sys
-from six import StringIO
 
 
 class GridWorldEnv(gym.Env):
