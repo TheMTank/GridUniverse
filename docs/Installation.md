@@ -12,7 +12,7 @@ provided that you are using Anaconda.
 
 ### Create conda environment
 
-First you need to install Anaconda. Select your corresponding installation file for Python 3.6. version following 
+First you should install Anaconda so that you can easily install all required packages to run the code samples within this repository. Select your corresponding installation file for Python 3.6. version following 
 the instructions that can be found on the official documentation:
 https://conda.io/docs/user-guide/install/index.html
 
@@ -53,4 +53,4 @@ And install OpenAI Gym
 
 `pip install gym`
 
-Now you should be able to run `atari_example.py`.
+Now you should be able to run the examples.

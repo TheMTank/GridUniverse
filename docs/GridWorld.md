@@ -13,13 +13,16 @@ You can create the default environment like this:
 
 `env = GridWorldEnv()`
 
-The default grid_shape is (4, 4) but you can specify any square shape you want e.g.:
+The default grid_shape is (4, 4) but you can specify any rectangle shape you want e.g.:
 
 `env = GridWorldEnv(grid_shape=(55, 7))`
 
 Other options include where to place terminal states and walls:
 
 `env = GridWorldEnv(walls=[5, 10], terminal_states=[15])`
+
+List format is expected e.g. walls=[5. 10] means that two walls (unwalkable areas) will be placed within the grid, at state indices 5 and 10.
+Similar for terminal_states, If an agent ends up in a terminal state, the episode is over.
 
 ## The main interface: env.step()
 
@@ -29,7 +32,7 @@ Other options include where to place terminal states and walls:
 This code first samples a random action from the action_space which is just an integer from 0-3 
 representing the actions of going:
 
-`self.action_descriptors = ['up', 'right', 'down', 'left']`
+`self.action_descriptors = ['up', 'right', 'down', 'left'] # 0, 1, 2, 3` 
 
 We can then feed the environment an action:
 
@@ -37,7 +40,9 @@ We can then feed the environment an action:
 
 This will return the new state of the agent in "observation", the "reward" received, 
 if the environment has terminated ("done") and other "info".  
-This is exactly the same way how OpenAI gym's environment interface is.
+This is exactly the same way that OpenAI gym's environment interface is.
+
+See below at "Agent state" for more details on how it is represented.
 
 ## Render
 
@@ -47,15 +52,17 @@ Will render the environment in ascii format.
 A version of the environment that can be rendered using [pyglet](https://bitbucket.org/pyglet/pyglet/wiki/Home) 
 is being worked on at the moment. 
 
+Currently, even if env.render() is never called by the user, it will still be called by the superclass when the environment is closed. 
+
 ## Other important info
 
-`env.reset()`
+`observation = env.reset()`
 
-Will reset the environment and the agent's position to the start again.
+Will reset the environment and the agent's position to the start again and return this state.
 
 `def look_step_ahead(self, state, action):`
 
-This function takes as parameters a state and an action and will return state returned by the environment. 
+This function takes as parameters a state and an action and the next state is returned by the environment. 
 This can be used for implementing Dynamic Programming algorithms.
 
 **Agent state**
@@ -65,7 +72,7 @@ This makes it easy for tabular matrix algorithms (e.g. Dynamic Programming) to r
 
 ## Code and Examples
 
-Study the self-contained easy to read environment code within `core/envs/gridworld_env.py`.
+Explore the self-contained environment code within `core/envs/gridworld_env.py`.
 
-Run and study the code within `examples/gridworld_examples.py` and `core/algorithms/policy_iteration.py` 
+Run the code within `examples/gridworld_examples.py` and `core/algorithms/policy_iteration.py` 
 to see how to use the environment more clearly.

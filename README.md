@@ -7,11 +7,6 @@ environments as well as our own custom environments.
 Currently working exclusively on OpenAI gym and a Gridworld environment made by us.
 
 ## Examples of use
-To test whether OpenAI gym and the atari example works run: 
-
-`python examples/atari_example.py`  
-
-You should see a small window that automatically plays "Space Invaders" if everything is working correctly.
 
 To run an example of policy and value iteration on our Gridworld environment run:  
 
@@ -27,24 +22,26 @@ Follow the instructions at this link: [Installation instructions](https://github
 
 ## Running OpenAI gym
 
-Now you should be able to run 
+Now you should be able to run: 
 
-`python examples/atari_example.py`.
+`python examples/atari_example.py`
+
+You should see a small window that automatically plays "Space Invaders" if everything is working correctly.
 
 For a general documentation on how the environment works refer to the [official documentation](https://gym.openai.com/docs).
 
 ## Running GridWorld
 
-Much less installation (if any at all) is needed to run our lightweight custom environment:
+To run our custom environment explore the code within:
 
 `python examples/gridworld_examples.py`
 
-Study that code (especially the `run_random_gridworld()` function) to see how to use the environment 
-but for more info check the [GridWorld Documentation](https://github.com/beduffy/RL_problems/tree/master/docs/GridWorld.md)
+The `run_random_gridworld()` function shows the simplest way to use the environment.  
+For more info check the [GridWorld Documentation](https://github.com/beduffy/RL_problems/tree/master/docs/GridWorld.md)
 
 ## API Reference
 
-Further documentation can be found in the "docs" folder.
+You can look within the docs, examples and tests folders for more info on all aspects of this repo. 
 
 ## Contributors
 
