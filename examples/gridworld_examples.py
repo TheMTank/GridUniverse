@@ -20,7 +20,19 @@ def run_random_gridworld():
                 print("Episode finished after {} timesteps".format(t + 1))
                 break
 
-
+def run_and_create_gridworld_from_text_file():
+    print('\n' + '*' * 20 + 'Creating a pre-made GridWorld from text file and running random agent on it' + '*' * 20 + '\n')
+    env = GridWorldEnv(custom_world_fp='../core/envs/test_env.txt')
+    for i_episode in range(1):
+        observation = env.reset()
+        for t in range(100):
+            env.render()
+            action = env.action_space.sample()
+            print('go ' + env.action_descriptors[action])
+            observation, reward, done, info = env.step(action)
+            if done:
+                print("Episode finished after {} timesteps".format(t + 1))
+                break
 
 def run_policy_iteration_gridworld():
     print('\n' + '*' * 20 + 'Starting value and policy iteration' + '*' * 20 + '\n')
@@ -102,5 +114,6 @@ def run_monte_carlo():
 
 if __name__ == '__main__':
     run_random_gridworld()
+    run_and_create_gridworld_from_text_file()
     run_monte_carlo()
     run_policy_iteration_gridworld()
