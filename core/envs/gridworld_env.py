@@ -1,10 +1,10 @@
 import sys
 import random
-from six import StringIO
 
+import numpy as np
+from six import StringIO
 import gym
 from gym import spaces
-import numpy as np
 
 
 class GridWorldEnv(gym.Env):
