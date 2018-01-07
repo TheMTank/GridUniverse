@@ -12,6 +12,8 @@ class GridWorldEnv(gym.Env):
 
     def __init__(self, grid_shape=(4, 4), initial_state=0, terminal_states=None, walls=None, custom_world_fp=None):
         """
+        Main constructor to create a GridWorld environment. The default GridWorld is a square grid of 4x4 where the
+        agent starts at the top left corner and the terminal state is at the bottom right corner.
 
         :param grid_shape: Tuple of size 2 to specify (width, height) of grid
         :param initial_state: int for single initial state or list of possible states chosen uniform randomly
