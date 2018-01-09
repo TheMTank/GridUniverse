@@ -8,6 +8,7 @@ from core.algorithms import utils
 alpha = 0.1
 discount_factor = 0.99
 lambda_factor = 0.9
+lambda_return_mode = True
 n = 5 # set to -1 for Monte Carlo
 
 def calculate_n_step_return(n_steps, from_idx, all_states, all_rewards):
@@ -59,6 +60,9 @@ def calculate_n_step_return(n_steps, from_idx, all_states, all_rewards):
     print('discounted_immediate_rewards:', discounted_immediate_rewards)
     print('discounted_future_value:', discounted_future_value)
     print('{}_step_return: {}'.format(n_steps, n_step_return))
+
+    # todo if less than n left cut it off!!!
+
     return n_step_return
     #TD_error = n_step_return - value_func[all_states[from_idx]] # todo check. This is current state
     # TD_error = n_step_return - value_func[prev_state]
@@ -114,7 +118,7 @@ if __name__ == '__main__':
             # so we have to wait 2 steps at the start before calculating anything.
             # And then every step, we do the above.
 
-            # todo
+            # todo online n-step return
             # n_step_return = reward + discount_factor * value_func[curr_state]
 
             # if len(all_rewards) > n:
@@ -149,50 +153,56 @@ if __name__ == '__main__':
                 print('All states: {}'.format(all_states))
                 print('All rewards: {}'.format(all_rewards))
 
+                # shouldn't update value function while calculating lambda_returns, placeholder
                 new_value_func = np.zeros(value_func.shape)
 
                 for start_idx, state in enumerate(all_states):
-                    lambda_return = 0
+                    lambda_return_sum = 0
                     for n_steps, s in enumerate(all_states[start_idx:]):
                         # todo no such thing as 0-step
-                        if n_steps == 0:
+                        if n_steps == 0: # begin at 1
                             continue
-                        # 2nd parameter: n is 1-indexed e.g. 1-step, 2-step etc.
-                        # lambda_return +=  (lambda_factor ** step_idx) * calculate_n_step_return(step_idx + 1, start_idx, all_states, all_rewards)
-                        lambda_return += (lambda_factor ** (n_steps - 1)) * calculate_n_step_return(n_steps, start_idx, all_states, all_rewards)
+                        if lambda_return_mode:
+                            # 1st parameter: n_steps is 1-indexed e.g. 1-step, 2-step etc.
+                            # start_idx == current_state. start_idx + n_steps == value_of_nth_state
+                            lambda_return_sum += (lambda_factor ** (n_steps - 1)) * calculate_n_step_return(n_steps, start_idx, all_states, all_rewards)
+                        else:
+                            n_step_return = calculate_n_step_return(n_steps, start_idx, all_states, all_rewards)
+                            # only calculate one n_step_return (e.g. 5 steps, look 5 steps) and then break
+                            break
 
-                    # todo shouldn't update here.... should make new value function. confirm.
-
-                    lambda_return = lambda_return * (1 - lambda_factor) # outside sum
-                    TD_error = lambda_return - value_func[state]
+                    if lambda_return_mode:
+                        # (1 - lambda_factor) is multiplied from outside sum
+                        lambda_return = (1 - lambda_factor) * lambda_return_sum
+                        TD_error = lambda_return - value_func[state]
+                    else:
+                        TD_error = n_step_return - value_func[state]
                     new_value_func[state] = value_func[state] + alpha * TD_error # update towards error
                     #break
 
                 print("Episode finished after {} timesteps".format(t + 1))
                 value_func = new_value_func
-                break # next episode
+                break  # next episode
 
         #print(i_episode, '\n', value_function)
 
     print('Final value function:', value_func)
     #sys.exit()
-    # Now test algorithm
-    # Create greedy policy from value function
-    # todo change so we don't need or always fill policy till end. Or... always have value as 0 for unseen states.
+
+    # Test algorithm by creating greedy policy from value function
+    # todo change so we don't need or always fill policy till end. Or... always have value as 0 for unseen states. probably ok.
     policy0 = np.ones([env.world.size, len(env.action_state_to_next_state)]) / len(env.action_state_to_next_state)
     policy1 = utils.greedy_policy_from_value_function(policy0, env, value_func)
     # print(policy1)
 
     policy_map1 = utils.get_policy_map(policy1, world_shape)
     # print('Policy: (up, right, down, left)\n', policy_map1)
-    np.set_printoptions(linewidth=75, precision=8)
 
     print('Starting greedy policy run')
     curr_state = env.reset()
     prev_state = curr_state
     for t in range(10):
         env.render()
-
         # action = np.argmax(policy1[curr_state])
         action = np.random.choice(policy1[curr_state].size, p=policy1[curr_state]) # take uniform choice if equal
         print('go ' + env.action_descriptors[action])
