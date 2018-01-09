@@ -31,8 +31,8 @@ def get_policy_map(policy, world_shape, mode='human'):
     """
     Generates a visualization grid from the policy to be able to print which action is most likely from every state
     """
-    unicode_arrows = np.array([u'\u2191', u'\u2192', u'\u2193', u'\u2190' # up, right, down, left
-                      u'\u2194', u'\u2195'], dtype='<U1')  # left-right, up-down
+    unicode_arrows = np.array([u'\u2191', u'\u2192', u'\u2193', u'\u2190'  # up, right, down, left
+                               u'\u2194', u'\u2195'], dtype='<U1')         # left-right, up-down
     policy_arrows_map = np.empty(policy.shape[0], dtype='<U4')
     for state in np.nditer(np.arange(policy.shape[0])):
         # find index of actions where the probability is > 0
@@ -59,14 +59,39 @@ def greedy_policy_from_value_function(policy, env, value_function, discount_fact
     If no value function was provided the defaults from a single step starting with a value function of zeros
     will be used.
     """
-    q_function = np.zeros((env.world.size, env.action_space.n))
+    q_function = get_q_function(value_function, env, discount_factor)
     for state in range(env.world.size):
-        for action in range(env.action_space.n):
-            next_state, reward, done = env.look_step_ahead(state, action)
-            q_function[state][action] += reward + discount_factor * value_function[next_state]
         max_value_actions = np.where(np.around(q_function[state], 8) == np.around(np.amax(q_function[state]), 8))[0]
 
         policy[state] = np.fromiter((1 / len(max_value_actions) if action in max_value_actions and
                                     not env.is_terminal(state) else 0
                                      for action in np.nditer(np.arange(env.action_space.n))), dtype=np.float)
     return policy
+
+
+def get_q_function(value_function, env, discount_factor=1.0):
+    """"
+    Returns the action state value function, a.k.a. Q(s,a) function.
+    """
+    q_function = np.zeros((env.world.size, env.action_space.n))
+    for state in range(env.world.size):
+        for action in range(env.action_space.n):
+            next_state, reward, done = env.look_step_ahead(state, action)
+            q_function[state][action] += reward + discount_factor * value_function[next_state]
+    return q_function
+
+
+def e_greedy_action_select(state_q_function, env, epsilon=0.01):
+    """
+    Returns an action selected using epsilon-greedy exploration algorithm
+
+    state_q_function is a numpy array with the state-action value function (Q) values for the current state to be
+    evaluated.
+    """
+    explore = True if np.random.choice(2, p=[1 - epsilon, epsilon]) == 1 else False
+    if explore:
+        selected_action = env.action_space.sample()
+    else:
+        max_value_actions = np.where(np.around(state_q_function, 8) == np.around(np.amax(state_q_function), 8))[0]
+        selected_action = np.random.choice(max_value_actions)
+    return selected_action

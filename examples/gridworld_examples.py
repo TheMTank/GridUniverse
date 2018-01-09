@@ -5,6 +5,7 @@ from core.algorithms.monte_carlo import run_episode, monte_carlo_evaluation
 from core.algorithms import utils
 import core.algorithms.dynamic_programming as dp
 
+
 def run_random_gridworld():
     print('\n' + '*' * 20 + 'Starting to run random agent on GridWorld' + '*' * 20 + '\n')
     env = GridWorldEnv()
@@ -20,6 +21,7 @@ def run_random_gridworld():
                 print("Episode finished after {} timesteps".format(t + 1))
                 break
 
+
 def run_and_create_gridworld_from_text_file():
     print('\n' + '*' * 20 + 'Creating a pre-made GridWorld from text file and running random agent on it' + '*' * 20 + '\n')
     env = GridWorldEnv(custom_world_fp='../core/envs/test_env.txt')
@@ -33,6 +35,7 @@ def run_and_create_gridworld_from_text_file():
             if done:
                 print("Episode finished after {} timesteps".format(t + 1))
                 break
+
 
 def run_policy_iteration_gridworld():
     print('\n' + '*' * 20 + 'Starting value and policy iteration' + '*' * 20 + '\n')
@@ -74,7 +77,8 @@ def run_policy_iteration_gridworld():
     print('Policy: (up, right, down, left)\n', utils.get_policy_map(optimal_policy, world_shape))
     np.set_printoptions(linewidth=75, precision=8)
 
-def run_monte_carlo():
+
+def run_monte_carlo_evaluation():
     print('\n' + '*' * 20 + 'Starting Monte Carlo evaluation and greedy policy' + '*' * 20 + '\n')
     env = GridWorldEnv()
     policy0 = np.ones([env.world.size, env.action_space.n]) / env.action_space.n
@@ -112,8 +116,14 @@ def run_monte_carlo():
             print('DONE in {} steps'.format(t + 1))
             break
 
+
+def run_monte_carlo_control():
+    pass
+
+
 if __name__ == '__main__':
     run_random_gridworld()
     run_and_create_gridworld_from_text_file()
-    run_monte_carlo()
+    run_monte_carlo_evaluation()
     run_policy_iteration_gridworld()
+    run_monte_carlo_control()

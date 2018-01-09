@@ -98,7 +98,6 @@ def monte_carlo_evaluation(policy, env, every_visit=False, incremental_mean=True
                     """
                     value_function[state] += alpha * (returns_from_last_episode[state] - value_function[state])
 
-
     if not incremental_mean:
         # Value is estimated by mean return V(s) = S(s) / N(s) if not incremental mean
         for state in total_visit_counter:
