@@ -7,8 +7,20 @@ from core.algorithms import utils
 
 alpha = 0.1
 discount_factor = 0.99
+lambda_factor = 0.9
+n = 5 # set to -1 for Monte Carlo
 
-def calculate_n_step_return(from_idx, n, all_states, all_rewards):
+def calculate_n_step_return(n_steps, from_idx, all_states, all_rewards):
+    """
+    :param n_steps:
+    :param from_idx:
+    :param all_states:
+    :param all_rewards:
+    :return: n_step_return
+    """
+    # todo pass in value func.
+    # todo pass in values better. stop using globals
+
     # if len(all_rewards) > n:
         # print(all_rewards)
         # if n == -1:
@@ -24,26 +36,36 @@ def calculate_n_step_return(from_idx, n, all_states, all_rewards):
 
     # last_n_rewards = all_rewards[-n:]
     # if
-    first_n_rewards = all_rewards[from_idx:from_idx + n]
-    print('\nFrom step: {}'.format(from_idx))
-    print('First N = {} rewards: {}'.format(n, first_n_rewards))
+
+
+    first_n_rewards = all_rewards[from_idx:from_idx + n_steps]
+
+    print('\nFrom step index: {}'.format(from_idx))
+    print('First N = {} rewards: {}'.format(n_steps, first_n_rewards))
+    print('Value of St+{}: {}, value of St: {}'.format(n_steps, value_func[all_states[from_idx + n_steps]], value_func[all_states[from_idx]]))
+
+
+    # todo check V(St + 1) This is the future look.
+    # if from_idx + 2 > len(all_states): # stupid jump out for now. it was from_idx + 1 but was still breaking...
+    #     return 0.0
+    # try:
+    #     discounted_future_value = (discount_factor ** n) * value_func[all_states[from_idx + 1]] # todo value_func[curr_state] == this was a bug. think more. prev vs curr?
+    # except:
+    #     raise EnvironmentError('{} {}'.format(from_idx, len(all_states)))
 
     discounted_immediate_rewards = sum([(discount_factor ** i) * r for i, r in enumerate(first_n_rewards)])
-    # todo check V(St + 1) This is the future look.
-    if from_idx + 2 > len(all_states): # stupid jump out for now. it was from_idx + 1 but was still breaking...
-        return 0.0
-    try:
-        discounted_future_value = (discount_factor ** n) * value_func[all_states[from_idx + 1]] # todo value_func[curr_state] == this was a bug. think more. prev vs curr?
-    except:
-        raise EnvironmentError('{} {}'.format(from_idx, len(all_states)))
+    discounted_future_value = (discount_factor ** n_steps) * value_func[all_states[from_idx + n_steps]]
     n_step_return = discounted_immediate_rewards + discounted_future_value
     print('discounted_immediate_rewards:', discounted_immediate_rewards)
-    print('{}_step_return: {}'.format(n, n_step_return))
-    TD_error = n_step_return - value_func[all_states[from_idx]] # todo check. This is current state
+    print('discounted_future_value:', discounted_future_value)
+    print('{}_step_return: {}'.format(n_steps, n_step_return))
+    return n_step_return
+    #TD_error = n_step_return - value_func[all_states[from_idx]] # todo check. This is current state
     # TD_error = n_step_return - value_func[prev_state]
     # value_func[prev_state] = value_func[prev_state] + alpha * TD_error
 
-    return value_func[prev_state] + alpha * TD_error
+
+    #return all_states[from_idx] + alpha * TD_error
 
 if __name__ == '__main__':
     # TD Learning
@@ -54,7 +76,7 @@ if __name__ == '__main__':
 
     value_func = np.zeros(env.world.size)
     print('Initial value function:', value_func)
-    n =  5 # set to -1 for Monte Carlo
+
 
     # Forward-view TD(lambda)
     # 1. Store each state and reward in episode
@@ -62,12 +84,16 @@ if __name__ == '__main__':
     #    2.1. 1-step return, 2-step return, ..., all-step return (MC)
 
     # Make agent act randomly and evaluate policy
-    for i_episode in range(15):
+    for i_episode in range(14):
         curr_state = env.reset()
         prev_state = curr_state
 
         all_states = [curr_state]
         all_rewards = []
+
+        print('\n\n\nSTARTING NEXT EPISODE!!!!!!!!!!!!!!!!!!!!!!!!! \n\n\n')
+        print(value_func)
+
         for t in range(100):
             action = env.action_space.sample()
             curr_state, reward, done, info = env.step(action)
@@ -88,6 +114,7 @@ if __name__ == '__main__':
             # so we have to wait 2 steps at the start before calculating anything.
             # And then every step, we do the above.
 
+            # todo
             # n_step_return = reward + discount_factor * value_func[curr_state]
 
             # if len(all_rewards) > n:
@@ -114,25 +141,36 @@ if __name__ == '__main__':
 
             prev_state = curr_state
             if done:
-
-
                 # 2. At end of episode (offline) compute, for each step, calculate lambda-return
                 #    2.1. 1-step return, 2-step return, ..., all-step (inf) return (MC)
                 # todo test case for averaging 1-step and 2-step return
 
-                lambda_factor = 0.9
+                print('episode over, calculating lambda_return')
+                print('All states: {}'.format(all_states))
+                print('All rewards: {}'.format(all_rewards))
+
+                new_value_func = np.zeros(value_func.shape)
+
                 for start_idx, state in enumerate(all_states):
                     lambda_return = 0
-                    for step_idx, s in enumerate(all_states[start_idx:]):
+                    for n_steps, s in enumerate(all_states[start_idx:]):
+                        # todo no such thing as 0-step
+                        if n_steps == 0:
+                            continue
                         # 2nd parameter: n is 1-indexed e.g. 1-step, 2-step etc.
-                        lambda_return +=  (lambda_factor ** step_idx) * calculate_n_step_return(start_idx, step_idx + 1, all_states, all_rewards)
+                        # lambda_return +=  (lambda_factor ** step_idx) * calculate_n_step_return(step_idx + 1, start_idx, all_states, all_rewards)
+                        lambda_return += (lambda_factor ** (n_steps - 1)) * calculate_n_step_return(n_steps, start_idx, all_states, all_rewards)
 
-                    lambda_return *= (1 - lambda_factor) # outside sum
+                    # todo shouldn't update here.... should make new value function. confirm.
+
+                    lambda_return = lambda_return * (1 - lambda_factor) # outside sum
                     TD_error = lambda_return - value_func[state]
-                    value_func[state] = value_func[state] + alpha * TD_error
+                    new_value_func[state] = value_func[state] + alpha * TD_error # update towards error
+                    #break
 
                 print("Episode finished after {} timesteps".format(t + 1))
-                break
+                value_func = new_value_func
+                break # next episode
 
         #print(i_episode, '\n', value_function)
 
@@ -155,7 +193,8 @@ if __name__ == '__main__':
     for t in range(10):
         env.render()
 
-        action = np.argmax(policy1[curr_state])
+        # action = np.argmax(policy1[curr_state])
+        action = np.random.choice(policy1[curr_state].size, p=policy1[curr_state]) # take uniform choice if equal
         print('go ' + env.action_descriptors[action])
         curr_state, reward, done, info = env.step(action)
 
