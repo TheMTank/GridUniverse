@@ -95,3 +95,23 @@ def e_greedy_action_select(state_q_function, env, epsilon=0.01):
         max_value_actions = np.where(np.around(state_q_function, 8) == np.around(np.amax(state_q_function), 8))[0]
         selected_action = np.random.choice(max_value_actions)
     return selected_action
+
+
+def e_greedy_policy_from_value_function(policy, env, value_function=None, discount_factor=1.0, epsilon=0.01,
+                                        episode_n=1):
+    """
+    Returns an e-greedy policy based on the input value function.
+
+    The episode number "episode_n" is important to make it Greedy in the Limit with Infinite Exploration (GLIE), which
+    makes it converge as more episodes are run.
+    If no value function was provided the defaults from a single step starting with a value function of zeros
+    will be used.
+    """
+    if value_function is None:
+        value_function = np.zeros(env.world.size)
+    q_function = get_q_function(value_function, env, discount_factor)
+    for state in range(env.world.size):
+        selected_action = e_greedy_action_select(q_function[state], env, epsilon/episode_n)
+        policy[state] = np.fromiter((1 if action == selected_action and not env.is_terminal(state) else 0
+                                    for action in np.nditer(np.arange(env.action_space.n))), dtype=np.float)
+    return policy
