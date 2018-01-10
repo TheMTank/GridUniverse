@@ -6,3 +6,19 @@ core/algorithms/__pycache__/__init__\.cpython-36\.pyc
 core/algorithms/__pycache__/utils\.cpython-36\.pyc
 
 core/envs/__pycache__/__init__\.cpython-36\.pyc
+
+\.idea/misc\.xml
+
+\.idea/modules\.xml
+
+\.idea/RL_problems\.iml
+
+\.idea/vcs\.xml
+
+\.idea/workspace\.xml
+
+core/algorithms/__pycache__/dynamic_programming\.cpython-36\.pyc
+
+core/algorithms/__pycache__/monte_carlo\.cpython-36\.pyc
+
+core/envs/__pycache__/gridworld_env\.cpython-36\.pyc
