@@ -78,22 +78,6 @@ def get_q_function(value_function, env, discount_factor=1.0):
     return q_function
 
 
-def e_greedy_action_select(state_q_function, env, epsilon=0.01):
-    """
-    Returns an action selected using epsilon-greedy exploration algorithm
-
-    state_q_function is a numpy array with the state-action value function (Q) values for the current state to be
-    evaluated.
-    """
-    explore = True if np.random.choice(2, p=[1 - epsilon, epsilon]) == 1 else False
-    if explore:
-        selected_action = env.action_space.sample()
-    else:
-        max_value_actions = np.where(np.around(state_q_function, 8) == np.around(np.amax(state_q_function), 8))[0]
-        selected_action = np.random.choice(max_value_actions)
-    return selected_action
-
-
 def e_greedy_policy_from_value_function(policy, env, value_function, discount_factor=1.0, epsilon=0.01,
                                         episode_n=1):
     """
