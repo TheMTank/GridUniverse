@@ -61,7 +61,7 @@ class TestGridWorld(unittest.TestCase):
         Test whether we can complete the GridWorld created from the text file within
         """
 
-        env = GridWorldEnv(custom_world_fp='../core/envs/test_env.txt')
+        env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/test_env.txt')
         actions_to_take = [2, 2, 2, 2, 2, 2, 2, 1]
         for step_no, action in enumerate(actions_to_take):
             env.render()
