@@ -5,6 +5,8 @@ import numpy as np
 from core.envs.gridworld_env import GridWorldEnv
 from core.algorithms import utils
 
+
+# Hyperparameters
 alpha = 0.1
 discount_factor = 0.99
 lambda_factor = 0.9
@@ -73,7 +75,6 @@ if __name__ == '__main__':
     # Make agent act randomly and evaluate policy
     for i_episode in range(15):
         curr_state = env.reset()
-        prev_state = curr_state
 
         all_states = [curr_state]
         all_rewards = []
@@ -126,7 +127,6 @@ if __name__ == '__main__':
 
             # if (discount_factor ** i) < threshold]) todo or not
 
-            prev_state = curr_state
             if done:
                 # 2. At end of episode (offline) compute, for each step, calculate lambda-return
                 #    2.1. 1-step return, 2-step return, ..., all-step (inf) return (MC)
@@ -137,7 +137,7 @@ if __name__ == '__main__':
                 print('All rewards: {}'.format(all_rewards))
 
                 # shouldn't update value function while calculating lambda_returns, placeholder
-                new_value_func = np.zeros(value_func.shape)
+                # todo comment is wrong. Confirm in next commit. TD learns online after each step.
 
                 for start_idx, state in enumerate(all_states):
                     if lambda_return_mode:
@@ -158,11 +158,9 @@ if __name__ == '__main__':
                         TD_error = n_step_return - value_func[state]
                         # only calculate one n_step_return (e.g. 5 steps, look 5 steps)
 
-                    new_value_func[state] = value_func[state] + alpha * TD_error # update towards error
-                    #break
+                    value_func[state] = value_func[state] + alpha * TD_error # update towards error
 
                 print("Episode finished after {} timesteps".format(t + 1))
-                value_func = new_value_func
                 break  # next episode
 
         #print(i_episode, '\n', value_function)
