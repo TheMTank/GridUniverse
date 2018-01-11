@@ -197,7 +197,7 @@ class GridWorldEnv(gym.Env):
 
             curr_index = 0
             all_lines = [line.rstrip() for line in f.readlines()]
-            all_lines = [line for line in all_lines if line]
+            all_lines = ["".join(line.split()) for line in all_lines if line] # remove empty lines and any whitespace
             width_of_grid = len(all_lines[0]) # first row length will be width from now on
             for y, line in enumerate(all_lines):
                 if len(line) != width_of_grid:
@@ -216,6 +216,11 @@ class GridWorldEnv(gym.Env):
                         raise ValueError('Invalid Character "{}". Returning'.format(char))
 
                     curr_index += 1
+
+            if len(self.starting_states) == 0:
+                raise ValueError("No starting states set in text file. Place \"x\" within grid. ")
+            if len(self.terminal_states) == 0:
+                raise ValueError("No terminal states set in text file. Place \"T\" within grid. ")
 
             self.reset()
 
