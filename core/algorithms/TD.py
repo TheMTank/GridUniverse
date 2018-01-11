@@ -9,6 +9,7 @@ from core.algorithms import utils
 # Hyperparameters
 alpha = 0.1
 discount_factor = 0.99
+online = True
 lambda_factor = 0.9
 lambda_return_mode = False
 n = 5 # set to -1 for Monte Carlo
@@ -53,7 +54,7 @@ def calculate_n_step_return(n_steps, from_idx, all_states, all_rewards):
     n_step_return = discounted_immediate_rewards + discounted_future_value
     print('discounted_immediate_rewards:', discounted_immediate_rewards)
     print('discounted_future_value:', discounted_future_value)
-    print('{}_step_return: {}'.format(n_steps, n_step_return))
+    print('{}_step_return: {} for index: {}'.format(n_steps, n_step_return, from_idx))
 
     return n_step_return
 
@@ -73,7 +74,7 @@ if __name__ == '__main__':
     #    2.1. 1-step return, 2-step return, ..., all-step return (MC)
 
     # Make agent act randomly and evaluate policy
-    for i_episode in range(15):
+    for i_episode in range(17):
         curr_state = env.reset()
 
         all_states = [curr_state]
@@ -88,82 +89,81 @@ if __name__ == '__main__':
             all_states.append(curr_state)
             all_rewards.append(reward)
 
-
             # G(n)t = Rt+1 + γRt+2 + ... + γ ^ n−1 * Rt+n + γ ^ n V(St+n)
             # V(St) ← V(St) + α * (G(n)t − V(St))
-
             # n = 1 = TD(0)
             # G(1)t = Rt+1 + γ * V(St+1)
             # V(St) ← V(St) + α * (Rt+1 + γ * V(St+1) − V(St))
-
             # n = 2
             # G(2)t = Rt+1 + γ * Rt+2 + γ ^ 2 * V(St+2)
-
             # so we have to wait 2 steps at the start before calculating anything.
             # And then every step, we do the above.
 
-            # todo online n-step return
-            # n_step_return = reward + discount_factor * value_func[curr_state]
+            # online n-step return
+            if online:
+                if len(all_rewards) > n:
+                    # print(all_rewards)
+                    # monte carlo
+                    # if n == -1:
+                    #     if not done:
+                    #         continue
+                    #     else:
+                    #         last_n_rewards = all_rewards # todo bug. Only assigns credit to first/one state. TD(1) must assign values to every state on path???
+                    # else:
+                    #     last_n_rewards = all_rewards[-n:]
 
-            # if len(all_rewards) > n:
-            #     # print(all_rewards)
-            #     # if n == -1:
-            #     #     if not done:
-            #     #         continue
-            #     #     else:
-            #     #         last_n_rewards = all_rewards # todo bug. Only assigns credit to first/one state. TD(1) must assign values to every state on path???
-            #     # else:
-            #     #     last_n_rewards = all_rewards[-n:]
-            #     last_n_rewards = all_rewards[-n:]
-            #     print('N last rewards:', last_n_rewards)
-            #
-            #     discounted_immediate_rewards = sum([(discount_factor ** i) * r for i, r in enumerate(last_n_rewards)])
-            #     discounted_future_value = (discount_factor ** n) * value_func[curr_state]
-            #     n_step_return = discounted_immediate_rewards + discounted_future_value
-            #     print('discounted_immediate_rewards:', discounted_immediate_rewards)
-            #     print('n_step_return:', n_step_return)
-            #     TD_error = n_step_return - value_func[prev_state]
-            #     value_func[prev_state] = value_func[prev_state] + alpha * TD_error
+                    # calculate n-step return for state n-steps ago
+                    n_step_return = calculate_n_step_return(n, t - n, all_states, all_rewards)
+
+                    TD_error = n_step_return - value_func[all_states[t - n]]
+                    value_func[all_states[t - n]] = value_func[all_states[t - n]] + alpha * TD_error
 
             # if (discount_factor ** i) < threshold]) todo or not
 
             if done:
-                # 2. At end of episode (offline) compute, for each step, calculate lambda-return
-                #    2.1. 1-step return, 2-step return, ..., all-step (inf) return (MC)
-                # todo test case for averaging 1-step and 2-step return
+                if online:
+                    # todo DRY
+                    # calculate offline after the episode is over the returns for each state that weren't covered.
+                    # e.g. 10 step episode with 5-step return, if there are only 3 steps left,
+                    # we wait until the episode is over to calculate returns for the final 3 states/steps.
+                    for step_no in range(t - n + 1, len(all_rewards)):
+                        n_step_return = calculate_n_step_return(n, step_no, all_states, all_rewards)
 
-                print('episode over, calculating lambda_return')
-                print('All states: {}'.format(all_states))
-                print('All rewards: {}'.format(all_rewards))
+                        TD_error = n_step_return - value_func[all_states[t - n]]
+                        value_func[all_states[t - n]] = value_func[all_states[t - n]] + alpha * TD_error
 
-                # shouldn't update value function while calculating lambda_returns, placeholder
-                # todo comment is wrong. Confirm in next commit. TD learns online after each step.
+                else: # not online
+                    # 2. At end of episode (offline) compute, for each step, calculate lambda-return or n-step return
+                    #    2.1. 1-step return, 2-step return, ..., all-step (inf) return (MC)
+                    print('episode over, calculating returns offline')
+                    print('All states: {}'.format(all_states))
+                    print('All rewards: {}'.format(all_rewards))
 
-                for start_idx, state in enumerate(all_states):
-                    if lambda_return_mode:
-                        lambda_return_sum = 0
-                        for n_steps, s in enumerate(all_states[start_idx:]):
-                            # no such thing as 0-step
-                            if n_steps == 0: # begin at 1
-                                continue
-                            # 1st parameter: n_steps is 1-indexed e.g. 1-step, 2-step etc.
-                            # start_idx == current_state. start_idx + n_steps == value_of_nth_state
-                            lambda_return_sum += (lambda_factor ** (n_steps - 1)) * calculate_n_step_return(n_steps, start_idx, all_states, all_rewards)
+                    # todo test case for averaging 1-step and 2-step return
 
-                        # (1 - lambda_factor) is multiplied from outside sum
-                        lambda_return = (1 - lambda_factor) * lambda_return_sum
-                        TD_error = lambda_return - value_func[state]
-                    else:
-                        n_step_return = calculate_n_step_return(n, start_idx, all_states, all_rewards)
-                        TD_error = n_step_return - value_func[state]
-                        # only calculate one n_step_return (e.g. 5 steps, look 5 steps)
+                    for start_idx, state in enumerate(all_states):
+                        if lambda_return_mode:
+                            lambda_return_sum = 0
+                            for n_steps, s in enumerate(all_states[start_idx:]):
+                                # no such thing as 0-step
+                                if n_steps == 0: # begin at 1
+                                    continue
+                                # 1st parameter: n_steps is 1-indexed e.g. 1-step, 2-step etc.
+                                # start_idx == current_state. start_idx + n_steps == value_of_nth_state
+                                lambda_return_sum += (lambda_factor ** (n_steps - 1)) * calculate_n_step_return(n_steps, start_idx, all_states, all_rewards)
 
-                    value_func[state] = value_func[state] + alpha * TD_error # update towards error
+                            # (1 - lambda_factor) is multiplied from outside sum
+                            lambda_return = (1 - lambda_factor) * lambda_return_sum
+                            TD_error = lambda_return - value_func[state]
+                        else:
+                            n_step_return = calculate_n_step_return(n, start_idx, all_states, all_rewards)
+                            TD_error = n_step_return - value_func[state]
+                            # only calculate one n_step_return (e.g. 5 steps, look 5 steps)
+
+                        value_func[state] = value_func[state] + alpha * TD_error # update towards error
 
                 print("Episode finished after {} timesteps".format(t + 1))
                 break  # next episode
-
-        #print(i_episode, '\n', value_function)
 
     print('Final value function:', value_func)
     #sys.exit()
