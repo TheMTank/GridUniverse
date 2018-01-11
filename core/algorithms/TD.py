@@ -12,9 +12,9 @@ discount_factor = 0.99
 online = True
 lambda_factor = 0.9
 lambda_return_mode = False
-n = 5 # set to -1 for Monte Carlo
+n = -1 # set to -1 for Monte Carlo
 
-def calculate_n_step_return(n_steps, from_idx, all_states, all_rewards):
+def calculate_n_step_return(n_steps, from_step_num, all_states, all_rewards):
     """
     :param n_steps:
     :param from_idx:
@@ -24,37 +24,34 @@ def calculate_n_step_return(n_steps, from_idx, all_states, all_rewards):
     """
     # todo pass in value func.
     # todo pass in values better. stop using globals
-
-    # if len(all_rewards) > n:
-        # print(all_rewards)
-        # if n == -1:
-        #     if not done:
-        #         continue
-        #     else:
-        #         last_n_rewards = all_rewards # todo bug. Only assigns credit to first/one state. TD(1) must assign values to every state on path???
-        # else:
-        #     last_n_rewards = all_rewards[-n:]
-
     # todo instead of complex from_idx, n indexing, I could just pass the right arrays as parameters
     # todo assert that that from_idx + final n == number of steps in episode
+    # if (discount_factor ** i) < threshold]) todo or not
 
-    first_n_rewards = all_rewards[from_idx:from_idx + n_steps]
+    if n == -1:
+        # MC uses all rewards from from_step_num
+        first_n_rewards = all_rewards[from_step_num:]
+    else:
+        first_n_rewards = all_rewards[from_step_num:from_step_num + n_steps]
 
-    print('\nFrom step index: {}'.format(from_idx))
+    print('\nFrom step index: {}'.format(from_step_num))
     print('First N = {} rewards: {}'.format(n_steps, first_n_rewards))
     # print('Value of St+{}: {}, value of St: {}'.format(n_steps, value_func[all_states[from_idx + n_steps]], value_func[all_states[from_idx]]))
     discounted_immediate_rewards = sum([(discount_factor ** i) * r for i, r in enumerate(first_n_rewards)])
     # if from_step + n goes over number of states, stop bootstrapping/predicting value
     # and only use correct amount of rewards e.g. 5-step return uses 5 rewards and predicted value
-    if from_idx + n_steps < len(all_states):
-        discounted_future_value = (discount_factor ** n_steps) * value_func[all_states[from_idx + n_steps]]
+    if n != -1 and from_step_num + n_steps < len(all_states):
+        discounted_future_value = (discount_factor ** n_steps) * value_func[all_states[from_step_num + n_steps]]
+    elif n == -1: # todo better else structure
+        # MC doesn't estimate future
+        discounted_future_value = 0.0
     else:
         print('More steps than steps left in episode')
         discounted_future_value = 0.0
     n_step_return = discounted_immediate_rewards + discounted_future_value
     print('discounted_immediate_rewards:', discounted_immediate_rewards)
     print('discounted_future_value:', discounted_future_value)
-    print('{}_step_return: {} for index: {}'.format(n_steps, n_step_return, from_idx))
+    print('{}_step_return: {} for index: {}'.format(n_steps, n_step_return, from_step_num))
 
     return n_step_return
 
@@ -74,7 +71,7 @@ if __name__ == '__main__':
     #    2.1. 1-step return, 2-step return, ..., all-step return (MC)
 
     # Make agent act randomly and evaluate policy
-    for i_episode in range(17):
+    for i_episode in range(16):
         curr_state = env.reset()
 
         all_states = [curr_state]
@@ -101,36 +98,29 @@ if __name__ == '__main__':
 
             # online n-step return
             if online:
-                if len(all_rewards) > n:
-                    # print(all_rewards)
-                    # monte carlo
-                    # if n == -1:
-                    #     if not done:
-                    #         continue
-                    #     else:
-                    #         last_n_rewards = all_rewards # todo bug. Only assigns credit to first/one state. TD(1) must assign values to every state on path???
-                    # else:
-                    #     last_n_rewards = all_rewards[-n:]
-
+                if n != -1 and len(all_rewards) > n:
                     # calculate n-step return for state n-steps ago
                     n_step_return = calculate_n_step_return(n, t - n, all_states, all_rewards)
 
                     TD_error = n_step_return - value_func[all_states[t - n]]
                     value_func[all_states[t - n]] = value_func[all_states[t - n]] + alpha * TD_error
 
-            # if (discount_factor ** i) < threshold]) todo or not
-
             if done:
                 if online:
                     # todo DRY
-                    # calculate offline after the episode is over the returns for each state that weren't covered.
+                    # We need to go into the future to get rewards and sometimes the future is the end of the episode
+                    # hence offline (episode is over), we have to calculate the returns for each state that wasn't covered.
                     # e.g. 10 step episode with 5-step return, if there are only 3 steps left,
                     # we wait until the episode is over to calculate returns for the final 3 states/steps.
-                    for step_no in range(t - n + 1, len(all_rewards)):
+                    if n == -1: # Monte-carlo
+                        offline_step_range = range(len(all_rewards))
+                    else:
+                        offline_step_range = range(t - n + 1, len(all_rewards))
+                    for step_no in offline_step_range:
                         n_step_return = calculate_n_step_return(n, step_no, all_states, all_rewards)
 
-                        TD_error = n_step_return - value_func[all_states[t - n]]
-                        value_func[all_states[t - n]] = value_func[all_states[t - n]] + alpha * TD_error
+                        TD_error = n_step_return - value_func[all_states[step_no]]
+                        value_func[all_states[step_no]] = value_func[all_states[step_no]] + alpha * TD_error
 
                 else: # not online
                     # 2. At end of episode (offline) compute, for each step, calculate lambda-return or n-step return
