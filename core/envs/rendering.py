@@ -35,35 +35,25 @@ def get_display(spec):
 
 class Viewer(object):
     def __init__(self, env, width, height, display=None):
-
         display = get_display(display)
+        self.env = env
 
         self.width = width
         self.height = height
         self.window = pyglet.window.Window(width=width, height=height, display=display)
         self.window.on_close = self.window_closed_by_user
 
-
         pyglet.resource.path = ['../resources']
         pyglet.resource.reindex()
 
-        self.batch = pyglet.graphics.Batch()
         self.ground = pyglet.resource.image('wbs_texture_05_resized.jpg')
-        # red = pyglet.resource.image('wbs_texture_05_resized_red.jpg')
-        # green = pyglet.resource.image('wbs_texture_05_resized_green.jpg')
+        self.green = pyglet.resource.image('wbs_texture_05_resized_green.jpg')
+        self.red = pyglet.resource.image('wbs_texture_05_resized_red.jpg')
+        self.batch = pyglet.graphics.Batch()
         self.face_img = pyglet.resource.image('straight-face.png')
         self.face = pyglet.sprite.Sprite(self.face_img, batch=self.batch)
         self.padding = 1
-        # print(self.ground.width, self.ground.height)
 
-        # face.x = cur_x * ground.width
-        # face.y = cur_y * ground.height
-
-        # face.x = env.world[env.current_state][0] * (ground.width * padding)
-        # face.y = env.world[env.current_state][1] * (ground.height * padding)
-
-        # pyglet.app.run()
-        # first_time = False
         self.geoms = []
         self.onetime_geoms = []
         self.transform = Transform()
@@ -92,24 +82,41 @@ class Viewer(object):
         self.onetime_geoms.append(geom)
 
     # def render(self, return_rgb_array=False):
-    def render(self, env, return_rgb_array=False):
-        glClearColor(1,1,1,1)
-
-        self.face.x = env.world[env.current_state][0] * (self.ground.width * self.padding)
-        self.face.y = env.world[env.current_state][1] * (self.ground.height * self.padding)
-
+    def render(self, return_rgb_array=False):
+        glClearColor(0, 0, 0, 1)
         self.window.clear()
         self.window.switch_to()
-        # self.window.dispatch_events()
+        self.window.dispatch_events()
+        # self.transform.enable()
+        # for geom in self.geoms:
+        #     geom.render()
+        # for geom in self.onetime_geoms:
+        #     geom.render()
+        # self.transform.disable()
 
-        self.batch.draw()
-        self.ground.blit(0, 0)
-        self.transform.enable()
-        for geom in self.geoms:
-            geom.render()
-        for geom in self.onetime_geoms:
-            geom.render()
-        self.transform.disable()
+        # self.batch.draw()
+
+        # self.ground.blit(self.face.x, self.face.y)
+
+        # have to flip pixel location. top-left is initial state = x, y = 0, 0 = state 0
+        pix_grid_height = (self.env.y_max - 1) * (self.ground.height + self.padding)
+
+        for i, (x, y) in enumerate(self.env.world):
+            x_pix_loc, y_pix_loc = x * (self.ground.width + self.padding), pix_grid_height - y * (self.ground.height + self.padding)
+            if self.env.is_terminal(i): # if terminal
+                self.green.blit(x_pix_loc, y_pix_loc)
+            # elif i == 3: # lava
+            #     self.red.blit(x_pix_loc, y_pix_loc)
+            else:
+                self.ground.blit(x_pix_loc, y_pix_loc)
+
+        self.face.x = self.env.world[self.env.current_state][0] * (self.ground.width + self.padding)
+        self.face.y = pix_grid_height - self.env.world[self.env.current_state][1] * (self.ground.height + self.padding)
+        # print('x, y: {}, {}. x, y pixels: {}, {}'.format(self.env.world[self.env.current_state][0], self.env.world[self.env.current_state][1],
+        #                                                  self.face.x, self.face.y))
+
+        self.face.draw()
+
         arr = None
         if return_rgb_array:
             buffer = pyglet.image.get_buffer_manager().get_color_buffer()
@@ -122,7 +129,7 @@ class Viewer(object):
             # the boundary.) So we use the buffer height/width rather
             # than the requested one.
             arr = arr.reshape(buffer.height, buffer.width, 4)
-            arr = arr[::-1,:,0:3]
+            arr = arr[::-1, :, 0:3]
         self.window.flip()
         self.onetime_geoms = []
         return arr

@@ -6,8 +6,7 @@ import numpy as np
 from six import StringIO
 import gym
 from gym import spaces
-
-from core.envs import render
+from gym.utils import seeding
 
 
 class GridWorldEnv(gym.Env):
@@ -76,7 +75,39 @@ class GridWorldEnv(gym.Env):
         if custom_world_fp:
             self._create_custom_world_from_file(custom_world_fp)
 
+
+
+        # self.gravity = 9.8
+        # self.masscart = 1.0
+        # self.masspole = 0.1
+        # self.total_mass = (self.masspole + self.masscart)
+        # self.length = 0.5  # actually half the pole's length
+        # self.polemass_length = (self.masspole * self.length)
+        # self.force_mag = 10.0
+        # self.tau = 0.02  # seconds between state updates
+        #
+        # # Angle at which to fail the episode
+        # import math
+        # self.theta_threshold_radians = 12 * 2 * math.pi / 360
+        # self.x_threshold = 2.4
+        #
+        # # Angle limit set to 2 * theta_threshold_radians so failing observation is still within bounds
+        # high = np.array([
+        #     self.x_threshold * 2,
+        #     np.finfo(np.float32).max,
+        #     self.theta_threshold_radians * 2,
+        #     np.finfo(np.float32).max])
+
+        # self.action_space = spaces.Discrete(2)
+        # self.observation_space = spaces.Box(-high, high)
+
+        self.x_threshold = 2.4
         self.viewer = None
+        self.state = None
+
+        self._seed()
+        self.np_random, seed = seeding.np_random(55)
+        self.state = self.np_random.uniform(low=-0.05, high=0.05, size=(4,))
 
     def _generate_world(self):
         """
@@ -168,92 +199,60 @@ class GridWorldEnv(gym.Env):
             outfile.write('\n')
             return outfile
 
-
         elif mode == 'graphic':
+            if close: # code needed for pressing x on window to close
+                if self.viewer is not None:
+                    self.viewer.close()
+                    self.viewer = None
+                return
 
             screen_width = 600
-
             screen_height = 400
-
             # world_width = self.x_threshold * 2
-
-            world_width = screen_width
-
+            world_width = self.x_threshold * 2
             scale = screen_width / world_width
-
             carty = 100  # TOP OF CART
-
             polewidth = 10.0
-
             polelen = scale * 1.0
-
             cartwidth = 50.0
-
             cartheight = 30.0
-
             if self.viewer is None:
-                import render
-
-                self.viewer = render.Viewer(env, screen_width, screen_height)
-
+                # import render
+                from core.envs import rendering
+                self.viewer = rendering.Viewer(self, screen_width, screen_height)
                 l, r, t, b = -cartwidth / 2, cartwidth / 2, cartheight / 2, -cartheight / 2
-
                 axleoffset = cartheight / 4.0
-
-                cart = render.FilledPolygon([(l, b), (l, t), (r, t), (r, b)])
-
-                self.carttrans = render.Transform()
-
+                cart = rendering.FilledPolygon([(l, b), (l, t), (r, t), (r, b)])
+                self.carttrans = rendering.Transform()
                 cart.add_attr(self.carttrans)
-
                 self.viewer.add_geom(cart)
-
                 l, r, t, b = -polewidth / 2, polewidth / 2, polelen - polewidth / 2, -polewidth / 2
-
-                pole = render.FilledPolygon([(l, b), (l, t), (r, t), (r, b)])
-
+                pole = rendering.FilledPolygon([(l, b), (l, t), (r, t), (r, b)])
                 pole.set_color(.8, .6, .4)
-
-                self.poletrans = render.Transform(translation=(0, axleoffset))
-
+                self.poletrans = rendering.Transform(translation=(0, axleoffset))
                 pole.add_attr(self.poletrans)
-
                 pole.add_attr(self.carttrans)
-
                 self.viewer.add_geom(pole)
-
-                self.axle = render.make_circle(polewidth / 2)
-
+                self.axle = rendering.make_circle(polewidth / 2)
                 self.axle.add_attr(self.poletrans)
-
                 self.axle.add_attr(self.carttrans)
-
                 self.axle.set_color(.5, .5, .8)
-
                 self.viewer.add_geom(self.axle)
-
-                self.track = render.Line((0, carty), (screen_width, carty))
-
+                self.track = rendering.Line((0, carty), (screen_width, carty))
                 self.track.set_color(0, 0, 0)
-
                 self.viewer.add_geom(self.track)
-
             # x = self.state
+            # x = (50, 50, 50, 50)
+            if self.state is None: return None
 
-            x = (50, 50, 50, 50)
-
+            x = self.state
             cartx = x[0] * scale + screen_width / 2.0  # MIDDLE OF CART
-
             self.carttrans.set_translation(cartx, carty)
-
             self.poletrans.set_rotation(-x[2])
+            time.sleep(0.3)
 
-            self.viewer.render(env, return_rgb_array=mode == 'graphic')
-
-            time.sleep(1)
-
+            return self.viewer.render(return_rgb_array=mode == 'rgb_array')
             # render.pyg_render(new_world, self)
-
             # raise NotImplementedError
         else:
             super(GridWorldEnv, self).render(mode=mode)
@@ -262,7 +261,8 @@ class GridWorldEnv(gym.Env):
         pass
 
     def _seed(self, seed=None):
-        raise NotImplementedError
+        self.np_random, seed = seeding.np_random(seed)
+        return [seed]
 
     def _create_custom_world_from_file(self, fp):
         """
@@ -325,7 +325,7 @@ if __name__ == '__main__':
     env = GridWorldEnv()
     for i_episode in range(1):
         observation = env.reset()
-        for t in range(100):
+        for t in range(1000):
             env.render(mode='graphic')
             action = env.action_space.sample()
             print('go ' + env.action_descriptors[action])
@@ -333,4 +333,6 @@ if __name__ == '__main__':
 
             if done:
                 print("Episode finished after {} timesteps".format(t + 1))
+                env.render(mode='graphic')
+                time.sleep(10)
                 break
