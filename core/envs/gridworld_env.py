@@ -8,11 +8,12 @@ import gym
 from gym import spaces
 from gym.utils import seeding
 
+from core.envs import maze_generation
 
 class GridWorldEnv(gym.Env):
     metadata = {'render.modes': ['human', 'ansi', 'graphic']}
 
-    def __init__(self, grid_shape=(4, 4), initial_state=0, terminal_states=None, walls=None, custom_world_fp=None):
+    def __init__(self, grid_shape=(4, 4), initial_state=0, terminal_states=None, walls=None, custom_world_fp=None, random_maze=False):
         """
         Main constructor to create a GridWorld environment. The default GridWorld is a square grid of 4x4 where the
         agent starts at the top left corner and the terminal state is at the bottom right corner.
@@ -23,6 +24,8 @@ class GridWorldEnv(gym.Env):
                                 and no actions are possible
         :param walls: list of walls. These are blocked states where the agent can't walk
         :param custom_world_fp: optional parameter to create the grid from a text file.
+        :param random_maze: optional parameter to randomly generate a maze from the algorithm within maze_generation.py
+                            This will override the terminal_states, initial_state, walls and custom_world_fp params
         """
         # check state space params
         if terminal_states is not None and not isinstance(terminal_states, list):
@@ -79,7 +82,8 @@ class GridWorldEnv(gym.Env):
 
         self._seed()
         self.np_random, seed = seeding.np_random(55)
-        self.state = self.np_random.uniform(low=-0.05, high=0.05, size=(4,))
+        if random_maze:
+            self._create_random_maze(self.x_max, self.y_max)
 
     def _generate_world(self):
         """
@@ -199,6 +203,13 @@ class GridWorldEnv(gym.Env):
         return [seed]
 
     def _create_custom_world_from_file(self, fp):
+        with open(fp, 'r') as f:
+            all_lines = [line.rstrip() for line in f.readlines()]
+            all_lines = ["".join(line.split()) for line in all_lines if line] # remove empty lines and any whitespace
+
+            self._create_custom_world_from_text(all_lines)
+
+    def _create_custom_world_from_text(self, text_world_lines):
         """
         Creates the world from a rectangular text file in the format of:
 
@@ -214,46 +225,54 @@ class GridWorldEnv(gym.Env):
          "x" is a possible starting location. Chosen uniform randomly if multiple "x"s.
         """
 
-        with open(fp, 'r') as f:
-            self.terminal_states = []
-            self.starting_states = []
-            walls_indices = []
+        self.terminal_states = []
+        self.starting_states = []
+        walls_indices = []
 
-            curr_index = 0
-            all_lines = [line.rstrip() for line in f.readlines()]
-            all_lines = [line for line in all_lines if line]
-            width_of_grid = len(all_lines[0]) # first row length will be width from now on
-            for y, line in enumerate(all_lines):
-                if len(line) != width_of_grid:
-                    raise ValueError("Input text file is not a rectangle")
+        curr_index = 0
+        width_of_grid = len(text_world_lines[0])  # first row length will be width from now on
+        for y, line in enumerate(text_world_lines):
+            if len(line) != width_of_grid:
+                raise ValueError("Input text file is not a rectangle")
 
-                for char in line:
-                    if char == 'T':
-                        self.terminal_states.append(curr_index)
-                    elif char == 'o':
-                        pass
-                    elif char == '#':
-                        walls_indices.append(curr_index)
-                    elif char == 'x':
-                        self.starting_states.append(curr_index)
-                    else:
-                        raise ValueError('Invalid Character "{}". Returning'.format(char))
+            for char in line:
+                if char == 'T':
+                    self.terminal_states.append(curr_index)
+                elif char == 'o':
+                    pass
+                elif char == '#':
+                    walls_indices.append(curr_index)
+                elif char == 'x':
+                    self.starting_states.append(curr_index)
+                else:
+                    raise ValueError('Invalid Character "{}". Returning'.format(char))
 
-                    curr_index += 1
+                curr_index += 1
 
-            self.reset()
+        if len(self.starting_states) == 0:
+            raise ValueError("No starting states set in text file. Place \"x\" within grid. ")
+        if len(self.terminal_states) == 0:
+            raise ValueError("No terminal states set in text file. Place \"T\" within grid. ")
 
-            self.y_max = len(all_lines)
-            self.x_max = width_of_grid
-            self.world = self._generate_world()
+        self.reset()
 
-            self.wall_grid = np.zeros(self.world.shape)
-            self.wall_indices = []
-            self._generate_walls(walls_indices)
+        self.y_max = len(text_world_lines)
+        self.x_max = width_of_grid
+        self.world = self._generate_world()
 
-            self.reward_matrix = np.full(self.world.shape, -1)
-            for terminal_state in self.terminal_states:
-                self.reward_matrix[terminal_state] = 0
+        self.wall_grid = np.zeros(self.world.shape)
+        self.wall_indices = []
+        self._generate_walls(walls_indices)
+
+        self.reward_matrix = np.full(self.world.shape, -1)
+        for terminal_state in self.terminal_states:
+            self.reward_matrix[terminal_state] = 0
+
+    def _create_random_maze(self, width, height):
+        all_textworld_lines = maze_generation.create_random_maze(width, height)
+
+        self._create_custom_world_from_text(all_textworld_lines)
+
 
 if __name__ == '__main__':
     env = GridWorldEnv()
