@@ -22,11 +22,13 @@ def run_random_gridworld():
 
 def run_and_create_gridworld_from_text_file():
     print('\n' + '*' * 20 + 'Creating a pre-made GridWorld from text file and running random agent on it' + '*' * 20 + '\n')
-    env = GridWorldEnv(custom_world_fp='../core/envs/test_env.txt')
+    # env = GridWorldEnv(custom_world_fp='../core/envs/test_env.txt')
+    # env = GridWorldEnv()
+    env = GridWorldEnv(grid_shape=(80, 90))
     for i_episode in range(1):
         observation = env.reset()
         for t in range(100):
-            env.render()
+            env.render(mode='graphic')
             action = env.action_space.sample()
             print('go ' + env.action_descriptors[action])
             observation, reward, done, info = env.step(action)
@@ -113,7 +115,7 @@ def run_monte_carlo():
             break
 
 if __name__ == '__main__':
-    run_random_gridworld()
+    # run_random_gridworld()
     run_and_create_gridworld_from_text_file()
-    run_monte_carlo()
-    run_policy_iteration_gridworld()
+    # run_monte_carlo()
+    # run_policy_iteration_gridworld()

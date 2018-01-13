@@ -1,5 +1,7 @@
 import sys
 import six
+import os
+import math
 
 import pyglet
 
@@ -21,6 +23,10 @@ except ImportError as e:
 
 RAD2DEG = 57.29577951308232
 
+# Zooming constants
+ZOOM_IN_FACTOR = 1.2
+ZOOM_OUT_FACTOR = 1/ZOOM_IN_FACTOR
+
 def get_display(spec):
     """Convert a display specification (such as :0) into an actual Display
     object.
@@ -40,23 +46,90 @@ class Viewer(object):
 
         self.width = width
         self.height = height
-        self.window = pyglet.window.Window(width=width, height=height, display=display)
+        self.window = pyglet.window.Window(width=width, height=height, display=display, resizable=True) # todo resizable remove or keep
         self.window.on_close = self.window_closed_by_user
 
-        pyglet.resource.path = ['../resources']
+        script_dir = os.path.dirname(__file__)
+        resource_path = os.path.join(script_dir, '..', 'resources') # todo broken
+        print(resource_path)
+        # pyglet.resource.path = ['../resources']
+        pyglet.resource.path = [resource_path]
         pyglet.resource.reindex()
 
         self.ground = pyglet.resource.image('wbs_texture_05_resized.jpg')
         self.green = pyglet.resource.image('wbs_texture_05_resized_green.jpg')
         self.red = pyglet.resource.image('wbs_texture_05_resized_red.jpg')
+
         self.batch = pyglet.graphics.Batch()
         self.face_img = pyglet.resource.image('straight-face.png')
         self.face = pyglet.sprite.Sprite(self.face_img, batch=self.batch)
         self.padding = 1
 
+        self.tile_dim = self.ground.width + self.padding
+
+        # todo must accommodate for the bigger dimension but also check smaller dimension so that it fits.
+        # larger dimension check
+        ind = np.argmax((self.env.x_max, self.env.y_max))
+        larger_grid_dimension = np.max((self.env.x_max, self.env.y_max))
+        if ind == 0:
+            larger_pixel_dimension = width
+        elif ind == 1:
+            larger_pixel_dimension = height
+
+        how_many_tiles_you_can_fit_in_larger_dim = math.floor(larger_pixel_dimension / self.tile_dim)
+        self.zoom_level = larger_grid_dimension / how_many_tiles_you_can_fit_in_larger_dim # + 5
+        # smaller dimension check
+        ind = np.argmin([self.env.x_max, self.env.y_max])
+        smaller_grid_dimension = np.min([self.env.x_max, self.env.y_max])
+        if ind == 0:
+            smaller_pixel_dimension = width
+        elif ind == 1:
+            smaller_pixel_dimension = height
+        #
+        how_many_tiles_you_can_fit_in_smaller_dim = math.floor(smaller_pixel_dimension / self.tile_dim)
+        other_zoom_level = smaller_grid_dimension / how_many_tiles_you_can_fit_in_smaller_dim # + 5
+
+        if other_zoom_level > self.zoom_level:
+            self.zoom_level = other_zoom_level
+
+        if how_many_tiles_you_can_fit_in_larger_dim > larger_grid_dimension and how_many_tiles_you_can_fit_in_smaller_dim > smaller_grid_dimension:
+            self.zoom_level = 1
+
+        self.zoomed_width = width * self.zoom_level
+        self.zoomed_height = height * self.zoom_level
+
+        self.left = 0
+        self.right = self.zoomed_width
+        self.bottom = 0
+        self.top = self.zoomed_height
+
+        print('tile_dim: {}. grid_shape: {}, how_many_tiles_you_can_fit_in_larger_dim: {}'.format(
+            self.tile_dim, [self.env.x_max, self.env.y_max], how_many_tiles_you_can_fit_in_larger_dim))
+        print('zoom:', self.zoom_level)
+        print('width: {}, height: {}, zoomed_width: {}, zoomed_height: {}'.format(width, height, self.zoomed_width, self.zoomed_height))
+
         self.geoms = []
         self.onetime_geoms = []
         self.transform = Transform()
+
+        # glScalef(2.0, 2.0, 2.0)
+        # glScalef(0.5, 0.5, 0.5)
+
+        glViewport(0, 0, width, height)
+        # glViewport(0, 0, self.zoomed_width, self.zoomed_height)
+        # Initialize camera values
+        # self.left = 0
+        # self.right = width
+        # self.bottom = 0
+        # self.top = height
+        # self.zoom_level = 1
+        # self.zoomed_width = width
+        # self.zoomed_height = height
+
+        # Set antialiasing
+        glEnable(GL_LINE_SMOOTH)
+        glEnable(GL_POLYGON_SMOOTH)
+        glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
 
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -83,7 +156,18 @@ class Viewer(object):
 
     # def render(self, return_rgb_array=False):
     def render(self, return_rgb_array=False):
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+
+        # Initialize Modelview matrix
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+        # Save the default modelview matrix
+        glPushMatrix() # todo causes stack overflow after resize or always?
+
         glClearColor(0, 0, 0, 1)
+        glOrtho(self.left, self.right, self.bottom, self.top, 1, -1)
+
         self.window.clear()
         self.window.switch_to()
         self.window.dispatch_events()
@@ -98,6 +182,9 @@ class Viewer(object):
 
         # self.ground.blit(self.face.x, self.face.y)
 
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+
         # have to flip pixel location. top-left is initial state = x, y = 0, 0 = state 0
         pix_grid_height = (self.env.y_max - 1) * (self.ground.height + self.padding)
 
@@ -107,6 +194,8 @@ class Viewer(object):
                 self.green.blit(x_pix_loc, y_pix_loc)
             # elif i == 3: # lava
             #     self.red.blit(x_pix_loc, y_pix_loc)
+            elif not self.env._is_wall(i): # todo totally wrong inverse?
+                self.red.blit(x_pix_loc, y_pix_loc)
             else:
                 self.ground.blit(x_pix_loc, y_pix_loc)
 
@@ -116,6 +205,36 @@ class Viewer(object):
         #                                                  self.face.x, self.face.y))
 
         self.face.draw()
+
+        # glBegin(GL_QUADS)
+        # glColor3ub(0xFF, 0, 0)
+        # glVertex2i(10, 10)
+        #
+        # glColor3ub(0xFF, 0xFF, 0)
+        # glVertex2i(110, 10)
+        #
+        # glColor3ub(0, 0xFF, 0)
+        # glVertex2i(110, 110)
+        #
+        # glColor3ub(0, 0, 0xFF)
+        # glVertex2i(10, 110)
+        # glEnd()
+        glPopMatrix()
+
+        # dx, dy = 1, 1
+        # self.left -= dx * self.zoom_level
+        # self.right -= dx * self.zoom_level
+        # self.bottom -= dy * self.zoom_level
+        # self.top -= dy * self.zoom_level
+
+        # self.zoom_level += 1
+        # self.zoomed_width *= 1
+        # self.zoomed_height *= 1
+        #
+        # self.left = mouse_x_in_world - mouse_x * self.zoomed_width
+        # self.right = mouse_x_in_world + (1 - mouse_x) * self.zoomed_width
+        # self.bottom = mouse_y_in_world - mouse_y * self.zoomed_height
+        # self.top = mouse_y_in_world + (1 - mouse_y) * self.zoomed_height
 
         arr = None
         if return_rgb_array:
@@ -359,57 +478,3 @@ class SimpleImageViewer(object):
             self.isopen = False
     def __del__(self):
         self.close()
-
-# window = pyglet.window.Window()
-# first_time = True
-# if first_time:
-#     pyglet.resource.path = ['../resources']
-#     pyglet.resource.reindex()
-#
-#     #global window, face, batch, ground, padding
-#
-#     #window = pyglet.window.Window()
-#
-#     batch = pyglet.graphics.Batch()
-#     ground = pyglet.resource.image('wbs_texture_05_resized.jpg')
-#     #red = pyglet.resource.image('wbs_texture_05_resized_red.jpg')
-#     #green = pyglet.resource.image('wbs_texture_05_resized_green.jpg')
-#     face_img = pyglet.resource.image('straight-face.png')
-#     face = pyglet.sprite.Sprite(face_img, batch=batch)
-#     padding = 1
-#     print(ground.width, ground.height)
-#
-#     # face.x = cur_x * ground.width
-#     # face.y = cur_y * ground.height
-#
-#     # face.x = env.world[env.current_state][0] * (ground.width * padding)
-#     # face.y = env.world[env.current_state][1] * (ground.height * padding)
-#
-#     pyglet.app.run()
-#     first_time = False
-
-# @window.event
-# def on_draw():
-#     window.clear()
-#     # label.draw()
-#
-#     # window.clear()
-#
-#     # for i, (x, y) in enumerate(world):
-#     #     if i == len(world) - 1:
-#     #         green.blit(x * (ground.width + padding), y * (ground.height + padding))
-#     #     elif i == 3:
-#     #         red.blit(x * (ground.width + padding), y * (ground.height + padding))
-#     #     else:
-#     #         ground.blit(x * (ground.width + padding), y * (ground.height + padding))
-#     #
-#     #     # if i == current_state:
-#     #     # face.blit(x * (ground.width + padding), y * (ground.height + padding))
-#     batch.draw()
-
-# def pyg_render(world, env):
-#     face.x = env.world[env.current_state][0] * (ground.width * padding)
-#     face.y = env.world[env.current_state][1] * (ground.height * padding)
-
-
-
