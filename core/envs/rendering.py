@@ -23,10 +23,6 @@ except ImportError as e:
 
 RAD2DEG = 57.29577951308232
 
-# Zooming constants
-ZOOM_IN_FACTOR = 1.2
-ZOOM_OUT_FACTOR = 1/ZOOM_IN_FACTOR
-
 def get_display(spec):
     """Convert a display specification (such as :0) into an actual Display
     object.
@@ -67,31 +63,28 @@ class Viewer(object):
 
         self.tile_dim = self.ground.width + self.padding
 
-        # todo must accommodate for the bigger dimension but also check smaller dimension so that it fits.
+        # must accommodate for the bigger dimension but also check smaller dimension so that it fits.
         # larger dimension check
         ind = np.argmax((self.env.x_max, self.env.y_max))
         larger_grid_dimension = np.max((self.env.x_max, self.env.y_max))
         if ind == 0:
             larger_pixel_dimension = width
+            smaller_pixel_dimension = height
         elif ind == 1:
             larger_pixel_dimension = height
+            smaller_pixel_dimension = width
 
         how_many_tiles_you_can_fit_in_larger_dim = math.floor(larger_pixel_dimension / self.tile_dim)
         self.zoom_level = larger_grid_dimension / how_many_tiles_you_can_fit_in_larger_dim # + 5
         # smaller dimension check
-        ind = np.argmin([self.env.x_max, self.env.y_max])
         smaller_grid_dimension = np.min([self.env.x_max, self.env.y_max])
-        if ind == 0:
-            smaller_pixel_dimension = width
-        elif ind == 1:
-            smaller_pixel_dimension = height
-        #
         how_many_tiles_you_can_fit_in_smaller_dim = math.floor(smaller_pixel_dimension / self.tile_dim)
-        other_zoom_level = smaller_grid_dimension / how_many_tiles_you_can_fit_in_smaller_dim # + 5
-
+        other_zoom_level = smaller_grid_dimension / how_many_tiles_you_can_fit_in_smaller_dim
+        # if other dimension still can't fit the tiles within the map, use its zoom level
         if other_zoom_level > self.zoom_level:
             self.zoom_level = other_zoom_level
 
+        # if you can fit more tiles into the black space, then no need to zoom
         if how_many_tiles_you_can_fit_in_larger_dim > larger_grid_dimension and how_many_tiles_you_can_fit_in_smaller_dim > smaller_grid_dimension:
             self.zoom_level = 1
 
@@ -103,8 +96,8 @@ class Viewer(object):
         self.bottom = 0
         self.top = self.zoomed_height
 
-        print('tile_dim: {}. grid_shape: {}, how_many_tiles_you_can_fit_in_larger_dim: {}'.format(
-            self.tile_dim, [self.env.x_max, self.env.y_max], how_many_tiles_you_can_fit_in_larger_dim))
+        print('tile_dim: {}. grid_shape: {}'.format(self.tile_dim, [self.env.x_max, self.env.y_max]))
+        print('how_many_tiles_you_can_fit_in_smaller_dim: {}, how_many_tiles_you_can_fit_in_larger_dim: {}'.format(how_many_tiles_you_can_fit_in_smaller_dim, how_many_tiles_you_can_fit_in_larger_dim))
         print('zoom:', self.zoom_level)
         print('width: {}, height: {}, zoomed_width: {}, zoomed_height: {}'.format(width, height, self.zoomed_width, self.zoomed_height))
 
@@ -112,19 +105,7 @@ class Viewer(object):
         self.onetime_geoms = []
         self.transform = Transform()
 
-        # glScalef(2.0, 2.0, 2.0)
-        # glScalef(0.5, 0.5, 0.5)
-
         glViewport(0, 0, width, height)
-        # glViewport(0, 0, self.zoomed_width, self.zoomed_height)
-        # Initialize camera values
-        # self.left = 0
-        # self.right = width
-        # self.bottom = 0
-        # self.top = height
-        # self.zoom_level = 1
-        # self.zoomed_width = width
-        # self.zoomed_height = height
 
         # Set antialiasing
         glEnable(GL_LINE_SMOOTH)
@@ -171,16 +152,6 @@ class Viewer(object):
         self.window.clear()
         self.window.switch_to()
         self.window.dispatch_events()
-        # self.transform.enable()
-        # for geom in self.geoms:
-        #     geom.render()
-        # for geom in self.onetime_geoms:
-        #     geom.render()
-        # self.transform.disable()
-
-        # self.batch.draw()
-
-        # self.ground.blit(self.face.x, self.face.y)
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
@@ -220,21 +191,6 @@ class Viewer(object):
         # glVertex2i(10, 110)
         # glEnd()
         glPopMatrix()
-
-        # dx, dy = 1, 1
-        # self.left -= dx * self.zoom_level
-        # self.right -= dx * self.zoom_level
-        # self.bottom -= dy * self.zoom_level
-        # self.top -= dy * self.zoom_level
-
-        # self.zoom_level += 1
-        # self.zoomed_width *= 1
-        # self.zoomed_height *= 1
-        #
-        # self.left = mouse_x_in_world - mouse_x * self.zoomed_width
-        # self.right = mouse_x_in_world + (1 - mouse_x) * self.zoomed_width
-        # self.bottom = mouse_y_in_world - mouse_y * self.zoomed_height
-        # self.top = mouse_y_in_world + (1 - mouse_y) * self.zoomed_height
 
         arr = None
         if return_rgb_array:

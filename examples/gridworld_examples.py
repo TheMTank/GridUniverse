@@ -23,14 +23,15 @@ def run_random_gridworld():
 def run_and_create_gridworld_from_text_file():
     print('\n' + '*' * 20 + 'Creating a pre-made GridWorld from text file and running random agent on it' + '*' * 20 + '\n')
     # env = GridWorldEnv(custom_world_fp='../core/envs/test_env.txt')
-    # env = GridWorldEnv()
-    env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/maze_21x21.txt')
+    # env = GridWorldEnv(grid_shape=(80, 70))
+    # env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/maze_21x21.txt')
+    env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/maze_101x101.txt')
     for i_episode in range(1):
         observation = env.reset()
-        for t in range(100):
+        for t in range(500):
             env.render(mode='graphic')
             action = env.action_space.sample()
-            print('go ' + env.action_descriptors[action])
+            # print('go ' + env.action_descriptors[action])
             observation, reward, done, info = env.step(action)
             if done:
                 print("Episode finished after {} timesteps".format(t + 1))

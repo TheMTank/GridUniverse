@@ -278,11 +278,11 @@ if __name__ == '__main__':
     env = GridWorldEnv()
     for i_episode in range(1):
         observation = env.reset()
-        for t in range(1000):
+        for t in range(10000):
             env.render(mode='graphic')
             # env.render()
             action = env.action_space.sample()
-            print('go ' + env.action_descriptors[action])
+            # print('go ' + env.action_descriptors[action])
             observation, reward, done, info = env.step(action)
 
             if done:
