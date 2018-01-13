@@ -7,12 +7,12 @@ from core.algorithms import utils
 
 
 # Hyperparameters
-alpha = 0.1
-discount_factor = 0.99
+alpha = 0.01
+discount_factor = 0.99 # todo change to 1 to test equivalence
 online = True
-lambda_factor = 0.9
-lambda_return_mode = False
-n = -1 # set to -1 for Monte Carlo
+lambda_factor = 0.9 # todo change to 1 to test equivalence
+lambda_return_mode = True
+n = 5 # set to -1 for Monte Carlo # todo shouldn't work with online == True and lambda_return_mode == True?
 
 def calculate_n_step_return(n_steps, from_step_num, all_states, all_rewards):
     """
@@ -26,9 +26,13 @@ def calculate_n_step_return(n_steps, from_step_num, all_states, all_rewards):
     # todo pass in values better. stop using globals
     # todo instead of complex from_idx, n indexing, I could just pass the right arrays as parameters
     # todo assert that that from_idx + final n == number of steps in episode
+    # todo rename n to n_global_hyperparameter to avoid confusino and check everywhere I use
     # if (discount_factor ** i) < threshold]) todo or not
 
-    if n == -1:
+    if n_steps == 0:
+        raise ValueError('No such thing as 0-step return')
+
+    if n_steps == -1 and not lambda_return_mode: # todo check and cleaner
         # MC uses all rewards from from_step_num
         first_n_rewards = all_rewards[from_step_num:]
     else:
@@ -40,9 +44,9 @@ def calculate_n_step_return(n_steps, from_step_num, all_states, all_rewards):
     discounted_immediate_rewards = sum([(discount_factor ** i) * r for i, r in enumerate(first_n_rewards)])
     # if from_step + n goes over number of states, stop bootstrapping/predicting value
     # and only use correct amount of rewards e.g. 5-step return uses 5 rewards and predicted value
-    if n != -1 and from_step_num + n_steps < len(all_states):
+    if n_steps != -1 and from_step_num + n_steps < len(all_states):
         discounted_future_value = (discount_factor ** n_steps) * value_func[all_states[from_step_num + n_steps]]
-    elif n == -1: # todo better else structure
+    elif n_steps == -1: # todo better else structure
         # MC doesn't estimate future
         discounted_future_value = 0.0
     else:
@@ -63,6 +67,7 @@ if __name__ == '__main__':
     env = GridWorldEnv(world_shape=world_shape)
 
     value_func = np.zeros(env.world.size)
+    eligibility_traces = np.zeros(env.world.size)
     print('Initial value function:', value_func)
 
     # Forward-view TD(lambda)
@@ -71,14 +76,18 @@ if __name__ == '__main__':
     #    2.1. 1-step return, 2-step return, ..., all-step return (MC)
 
     # Make agent act randomly and evaluate policy
-    for i_episode in range(16):
+    for i_episode in range(17):
         curr_state = env.reset()
 
         all_states = [curr_state]
         all_rewards = []
 
+        # todo replacing or accumulating traces?
+        eligibility_traces[curr_state] = discount_factor * lambda_factor * eligibility_traces[curr_state] + 1 # todo check
+
         print('\n\n\nSTARTING NEXT EPISODE!!!!!!!!!!!!!!!!!!!!!!!!! \n\n\n')
         print(value_func)
+        print(eligibility_traces)
 
         for t in range(100):
             action = env.action_space.sample()
@@ -98,12 +107,23 @@ if __name__ == '__main__':
 
             # online n-step return
             if online:
-                if n != -1 and len(all_rewards) > n:
-                    # calculate n-step return for state n-steps ago
-                    n_step_return = calculate_n_step_return(n, t - n, all_states, all_rewards)
+                if lambda_return_mode:
+                    eligibility_traces[curr_state] = eligibility_traces[curr_state] + 1  # todo check
+                    eligibility_traces = discount_factor * lambda_factor * eligibility_traces
+                    n_step_return = calculate_n_step_return(1, t, all_states, all_rewards) # todo check 1-step return
 
-                    TD_error = n_step_return - value_func[all_states[t - n]]
-                    value_func[all_states[t - n]] = value_func[all_states[t - n]] + alpha * TD_error
+                    # for state in
+
+                    TD_error = n_step_return - value_func[all_states[t]]
+                    # value_func[all_states[t]] = value_func[all_states[t]] + alpha * TD_error * eligibility_traces[curr_state]
+                    value_func = value_func + alpha * TD_error * eligibility_traces
+                else: # todo fix to elif?
+                    if n != -1 and len(all_rewards) > n:
+                        # calculate n-step return for state n-steps ago
+                        n_step_return = calculate_n_step_return(n, t - n, all_states, all_rewards)
+
+                        TD_error = n_step_return - value_func[all_states[t - n]]
+                        value_func[all_states[t - n]] = value_func[all_states[t - n]] + alpha * TD_error
 
             if done:
                 if online:
@@ -112,15 +132,16 @@ if __name__ == '__main__':
                     # hence offline (episode is over), we have to calculate the returns for each state that wasn't covered.
                     # e.g. 10 step episode with 5-step return, if there are only 3 steps left,
                     # we wait until the episode is over to calculate returns for the final 3 states/steps.
-                    if n == -1: # Monte-carlo
-                        offline_step_range = range(len(all_rewards))
-                    else:
-                        offline_step_range = range(t - n + 1, len(all_rewards))
-                    for step_no in offline_step_range:
-                        n_step_return = calculate_n_step_return(n, step_no, all_states, all_rewards)
+                    if not lambda_return_mode:
+                        if n == -1: # Monte-carlo
+                            offline_step_range = range(len(all_rewards))
+                        else:
+                            offline_step_range = range(t - n + 1, len(all_rewards))
+                        for step_no in offline_step_range:
+                            n_step_return = calculate_n_step_return(n, step_no, all_states, all_rewards)
 
-                        TD_error = n_step_return - value_func[all_states[step_no]]
-                        value_func[all_states[step_no]] = value_func[all_states[step_no]] + alpha * TD_error
+                            TD_error = n_step_return - value_func[all_states[step_no]]
+                            value_func[all_states[step_no]] = value_func[all_states[step_no]] + alpha * TD_error
 
                 else: # not online
                     # 2. At end of episode (offline) compute, for each step, calculate lambda-return or n-step return
