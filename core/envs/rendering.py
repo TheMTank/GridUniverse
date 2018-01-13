@@ -46,22 +46,36 @@ class Viewer(object):
         self.window.on_close = self.window_closed_by_user
 
         script_dir = os.path.dirname(__file__)
-        resource_path = os.path.join(script_dir, '..', 'resources') # todo broken
-        print(resource_path)
-        # pyglet.resource.path = ['../resources']
+        resource_path = os.path.join(script_dir, '..', 'resources')
         pyglet.resource.path = [resource_path]
         pyglet.resource.reindex()
 
-        self.ground = pyglet.resource.image('wbs_texture_05_resized.jpg')
-        self.green = pyglet.resource.image('wbs_texture_05_resized_green.jpg')
-        self.red = pyglet.resource.image('wbs_texture_05_resized_red.jpg')
+        self.face_img = pyglet.resource.image('straight-face.png')
+        self.ground_img = pyglet.resource.image('wbs_texture_05_resized.jpg')
+        self.terminal_goal_img = pyglet.resource.image('wbs_texture_05_resized_green.jpg')
+        self.wall_img = pyglet.resource.image('wbs_texture_05_resized_red.jpg')
+
+        self.padding = 1
+        self.tile_dim = self.ground_img.width + self.padding
+
+        self.wall_sprites = []
+        self.terminal_sprites = []
+        self.ground_sprites = []
 
         self.batch = pyglet.graphics.Batch()
-        self.face_img = pyglet.resource.image('straight-face.png')
         self.face = pyglet.sprite.Sprite(self.face_img, batch=self.batch)
-        self.padding = 1
 
-        self.tile_dim = self.ground.width + self.padding
+        # have to flip pixel location. top-left is initial state = x, y = 0, 0 = state 0
+        self.pix_grid_height = (self.env.y_max - 1) * self.tile_dim
+
+        for i, (x, y) in enumerate(self.env.world):
+            x_pix_loc, y_pix_loc = x * self.tile_dim, self.pix_grid_height - y * self.tile_dim
+            if self.env.is_terminal(i):  # if terminal
+                self.wall_sprites.append(pyglet.sprite.Sprite(self.terminal_goal_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch))
+            elif not self.env._is_wall(i):  # todo totally wrong inverse?
+                self.wall_sprites.append(pyglet.sprite.Sprite(self.wall_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch))
+            else:
+                self.wall_sprites.append(pyglet.sprite.Sprite(self.ground_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch))
 
         # must accommodate for the bigger dimension but also check smaller dimension so that it fits.
         # larger dimension check
@@ -70,21 +84,22 @@ class Viewer(object):
         if ind == 0:
             larger_pixel_dimension = width
             smaller_pixel_dimension = height
+            smaller_grid_dimension = self.env.y_max
         elif ind == 1:
             larger_pixel_dimension = height
             smaller_pixel_dimension = width
+            smaller_grid_dimension = self.env.x_max
 
         how_many_tiles_you_can_fit_in_larger_dim = math.floor(larger_pixel_dimension / self.tile_dim)
         self.zoom_level = larger_grid_dimension / how_many_tiles_you_can_fit_in_larger_dim # + 5
         # smaller dimension check
-        smaller_grid_dimension = np.min([self.env.x_max, self.env.y_max])
         how_many_tiles_you_can_fit_in_smaller_dim = math.floor(smaller_pixel_dimension / self.tile_dim)
         other_zoom_level = smaller_grid_dimension / how_many_tiles_you_can_fit_in_smaller_dim
         # if other dimension still can't fit the tiles within the map, use its zoom level
         if other_zoom_level > self.zoom_level:
             self.zoom_level = other_zoom_level
 
-        # if you can fit more tiles into the black space, then no need to zoom
+        # if you can fit more tiles into the black space, then no need to zoom. # todo or maybe a bit and centre the maze?
         if how_many_tiles_you_can_fit_in_larger_dim > larger_grid_dimension and how_many_tiles_you_can_fit_in_smaller_dim > smaller_grid_dimension:
             self.zoom_level = 1
 
@@ -144,7 +159,7 @@ class Viewer(object):
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         # Save the default modelview matrix
-        glPushMatrix() # todo causes stack overflow after resize or always?
+        glPushMatrix()
 
         glClearColor(0, 0, 0, 1)
         glOrtho(self.left, self.right, self.bottom, self.top, 1, -1)
@@ -153,28 +168,16 @@ class Viewer(object):
         self.window.switch_to()
         self.window.dispatch_events()
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST) # todo needed?
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
 
-        # have to flip pixel location. top-left is initial state = x, y = 0, 0 = state 0
-        pix_grid_height = (self.env.y_max - 1) * (self.ground.height + self.padding)
-
-        for i, (x, y) in enumerate(self.env.world):
-            x_pix_loc, y_pix_loc = x * (self.ground.width + self.padding), pix_grid_height - y * (self.ground.height + self.padding)
-            if self.env.is_terminal(i): # if terminal
-                self.green.blit(x_pix_loc, y_pix_loc)
-            # elif i == 3: # lava
-            #     self.red.blit(x_pix_loc, y_pix_loc)
-            elif not self.env._is_wall(i): # todo totally wrong inverse?
-                self.red.blit(x_pix_loc, y_pix_loc)
-            else:
-                self.ground.blit(x_pix_loc, y_pix_loc)
-
-        self.face.x = self.env.world[self.env.current_state][0] * (self.ground.width + self.padding)
-        self.face.y = pix_grid_height - self.env.world[self.env.current_state][1] * (self.ground.height + self.padding)
+        # todo set position
+        self.face.x = self.env.world[self.env.current_state][0] * self.tile_dim
+        self.face.y = self.pix_grid_height - self.env.world[self.env.current_state][1] * self.tile_dim
         # print('x, y: {}, {}. x, y pixels: {}, {}'.format(self.env.world[self.env.current_state][0], self.env.world[self.env.current_state][1],
         #                                                  self.face.x, self.face.y))
 
+        self.batch.draw()
         self.face.draw()
 
         # glBegin(GL_QUADS)
