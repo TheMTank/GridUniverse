@@ -71,6 +71,8 @@ class GridWorldEnv(gym.Env):
         for terminal_state in self.terminal_states:
             self.reward_matrix[terminal_state] = 0
         # self.reward_range = [-inf, inf] # default values already
+        self.num_previous_states_to_store = 500
+        self.last_n_states = []
         # set additional parameters for the environment
         self.done = False
         self.info = {}
@@ -149,6 +151,12 @@ class GridWorldEnv(gym.Env):
         """
         self.previous_state = self.current_state
         self.current_state, reward, self.done = self.look_step_ahead(self.current_state, action)
+        # if done: # todo
+        #     env.render(mode='graphic')
+        # self.last_n_states.append(self.current_state)
+        self.last_n_states.append(self.world[self.current_state])
+        if len(self.last_n_states) > self.num_previous_states_to_store:
+            self.last_n_states.pop(0)
         return self.current_state, reward, self.done, self.info
 
     def _reset(self):
@@ -272,21 +280,3 @@ class GridWorldEnv(gym.Env):
         all_textworld_lines = maze_generation.create_random_maze(width, height)
 
         self._create_custom_world_from_text(all_textworld_lines)
-
-
-if __name__ == '__main__':
-    env = GridWorldEnv()
-    for i_episode in range(1):
-        observation = env.reset()
-        for t in range(10000):
-            env.render(mode='graphic')
-            # env.render()
-            action = env.action_space.sample()
-            # print('go ' + env.action_descriptors[action])
-            observation, reward, done, info = env.step(action)
-
-            if done:
-                print("Episode finished after {} timesteps".format(t + 1))
-                env.render(mode='graphic')
-                time.sleep(10)
-                break

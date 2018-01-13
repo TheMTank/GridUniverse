@@ -152,6 +152,7 @@ class Viewer(object):
 
     # def render(self, return_rgb_array=False):
     def render(self, return_rgb_array=False):
+        # todo if close don't crash
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
 
@@ -180,19 +181,37 @@ class Viewer(object):
         self.batch.draw()
         self.face.draw()
 
-        # glBegin(GL_QUADS)
-        # glColor3ub(0xFF, 0, 0)
-        # glVertex2i(10, 10)
-        #
-        # glColor3ub(0xFF, 0xFF, 0)
-        # glVertex2i(110, 10)
-        #
-        # glColor3ub(0, 0xFF, 0)
-        # glVertex2i(110, 110)
-        #
-        # glColor3ub(0, 0, 0xFF)
-        # glVertex2i(10, 110)
-        # glEnd()
+        glBegin(GL_QUADS)
+
+        a = 0.9
+        discount = 0.99
+        padding = 10
+        for i, (x, y) in enumerate(self.env.last_n_states[::-1]):
+            x_pix_loc, y_pix_loc = x * self.tile_dim, self.pix_grid_height - y * self.tile_dim
+
+            a *= discount
+            if x_pix_loc == self.face.x and y_pix_loc == self.face.y:
+                continue
+
+            # todo find best colours
+            # glColor4f(0x8, 0x8, 0x8, a)
+            glColor4f(0xFF, 0, 0, a)
+            # glVertex2i(x_pix_loc + padding, y_pix_loc + padding)
+            glVertex2i(x_pix_loc, y_pix_loc)
+            # glColor4f(0x8, 0x8, 0x8, a)
+            glColor4f(0xFF, 0xFF, 0, a)
+            # glVertex2i(x_pix_loc + self.tile_dim - padding, y_pix_loc + padding)
+            glVertex2i(x_pix_loc + self.tile_dim, y_pix_loc)
+            # glColor4f(0x8, 0x8, 0x8, a)
+            glColor4f(0, 0xFF, 0, a)
+            # glVertex2i(x_pix_loc + self.tile_dim - padding, y_pix_loc + self.tile_dim - padding)
+            glVertex2i(x_pix_loc + self.tile_dim, y_pix_loc + self.tile_dim)
+            # glColor4f(0x8, 0x8, 0x8, a)
+            glColor4f(0, 0, 0xFF, a)
+            # glVertex2i(x_pix_loc + padding, y_pix_loc + self.tile_dim - padding)
+            glVertex2i(x_pix_loc, y_pix_loc + self.tile_dim)
+
+        glEnd()
         glPopMatrix()
 
         arr = None
