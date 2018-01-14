@@ -3,6 +3,7 @@ import six
 import os
 import math
 import time
+import random
 
 import pyglet
 
@@ -51,6 +52,10 @@ class Viewer(object):
         resource_path = os.path.join(script_dir, '..', 'resources')
         pyglet.resource.path = [resource_path]
         pyglet.resource.reindex()
+
+        self.geoms = []
+        self.onetime_geoms = []
+        self.transform = Transform()
 
         self.face_img = pyglet.resource.image('straight-face.png')
         self.ground_img = pyglet.resource.image('wbs_texture_05_resized.jpg')
@@ -120,10 +125,6 @@ class Viewer(object):
         print('zoom:', self.zoom_level)
         print('width: {}, height: {}, zoomed_width: {}, zoomed_height: {}'.format(width, height, self.zoomed_width, self.zoomed_height))
 
-        self.geoms = []
-        self.onetime_geoms = []
-        self.transform = Transform()
-
         glViewport(0, 0, width, height)
 
         # Set antialiasing
@@ -133,6 +134,130 @@ class Viewer(object):
 
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+        # cart = make_circle(500)
+        # cart.set_color(255, 0, 0)
+        # self.carttrans = Transform()
+        # cart.add_attr(self.carttrans)
+        # self.add_geom(cart)
+
+        # self.line = Line((0, 0), (500, 500))
+        # self.add_geom(self.line)
+        # line.
+
+    # def calculate_policy_lines(self, policy_arrows_map): # todo or policy map?
+    def calculate_policy_lines(self, policy): # todo or policy map?
+        # todo show policy probabilities as well?
+        unicode_arrows = np.array([u'\u2191', u'\u2192', u'\u2193', u'\u2190'  # up, right, down, left
+                                                                    u'\u2194', u'\u2195'],
+                                  dtype='<U1')  # left-right, up-down
+        policy_arrows_map = np.empty(policy.shape[0], dtype='<U4')
+        # probs_for_state = np.zeros(policy.shape)
+        for idx, state in enumerate(np.nditer(np.arange(policy.shape[0]))):
+            # probs_for_state[idx] = []
+            # for action in range(4): #self.env.action_space:
+            #     probs_for_state[idx].append(policy[state][action])
+            # probs_for_state[state] = policy_state
+            # find index of actions where the probability is > 0
+            optimal_actions = np.where(np.around(policy[state], 8) > np.around(np.float64(0), 8))[0]
+            # match actions to unicode values of the arrows to be displayed
+            for action in optimal_actions:
+                policy_arrows_map[state] = np.core.defchararray.add(policy_arrows_map[state], unicode_arrows[action])
+        policy_probabilities = np.fromiter((policy[state] for state in np.nditer(np.arange(policy.shape[0]))),
+                                           dtype='float64, float64, float64, float64')
+
+
+        for state_index, (x, y) in enumerate(self.env.world):
+            x_pix_loc, y_pix_loc = x * self.tile_dim, self.pix_grid_height - y * self.tile_dim
+            if self.env.is_terminal(state_index):  # if terminal
+                pass
+            elif not self.env._is_wall(state_index):
+                pass
+            else:
+                center = np.array([x_pix_loc + self.tile_dim / 2, y_pix_loc + self.tile_dim / 2]).astype(int)
+                arrow_base_length_full_prob = 20
+                arrow_width = 5
+                arrow_height = 5
+                # unicode_arrows = np.array([u'\u2191', u'\u2192', u'\u2193', u'\u2190'  # up, right, down, left
+                #                                                             u'\u2194', u'\u2195'],
+                #                           dtype='<U1')  # left-right, up-down
+                # policy_arrows_map[state_index] = np.core.defchararray.add(policy_arrows_map[state_index], u'\u2193')
+                # policy_arrows_map[state_index] += u'\u2193'
+                # print(policy_arrows_map[state_index])
+                # for char in policy_arrows_map[state_index]:
+                # for key in probs_for_state.keys():
+                # for action_idx, probability in enumerate(probs_for_state[state]):
+                #     i = 0
+                    # for action_idx, probability in enumerate(probs_for_state[key]):
+                print(policy[state_index])
+                for action_idx, probability in enumerate(policy[state_index]):
+                        # direction, towards, arrow_head_vertices = None, None, None
+                        # print(action_idx, probability)
+                        # print(probs_for_state[key])
+                        arrow_base_length = round(probability * arrow_base_length_full_prob)
+                        # if arrow_base_length < 3 or probability < 0.1:
+                        if probability < 0.1:
+                            # print('arrow base length too small')
+                            continue
+                            break
+                        # print(policy_arrows_map)
+                        # print(policy_arrows_map[state_index])
+                        # if len(policy_arrows_map[state_index]) > 1:
+                        #     print('WAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARNING')
+                        #     for ch in policy_arrows_map[state_index]:
+                        #         print(ch)
+                        #     print()
+
+                        # if char == u'\u2191': # up
+                        if action_idx == 0: # up
+                            # np because of vector math
+                            # i += 1
+                            # print(i, ' times here for same action')
+                            # assert i == 1
+                            direction = np.array([0, arrow_base_length]).astype(int)
+                            towards = center + direction
+                            arrow_head_vertices = [center + direction + np.array([arrow_width, 0]), # arrow head bottom right vertex
+                                                   center + direction + np.array([-arrow_width, 0]), # arrow head bottom left vertex
+                                                   center + direction + np.array([0, arrow_height])] # arrow pointy bit
+                        # elif char == u'\u2193': # down
+                        elif action_idx == 2: # down
+                            print('arrow_base_length:', arrow_base_length)
+                            direction = np.array([0, - arrow_base_length]).astype(int)
+                            towards = center + direction
+                            arrow_head_vertices = [center + direction + np.array([arrow_width, 0]),
+                                                   center + direction + np.array([-arrow_width, 0]),
+                                                   center + direction + np.array([0, -arrow_height])]
+                        # # elif char == u'\u2192': # right
+                        elif action_idx == 1: # right
+                            # continue
+                            direction = np.array([0 + arrow_base_length, 0]).astype(int)
+                            towards = center + direction
+                            arrow_head_vertices = [center + direction + np.array([0, -arrow_width]),
+                                                   center + direction + np.array([0, +arrow_width]),
+                                                   center + direction + np.array([arrow_height, 0])]
+                        elif action_idx == 3:  # left
+                            # continue
+                            direction = np.array([0 - arrow_base_length, 0]).astype(int)
+                            towards = center + direction
+                            arrow_head_vertices = [center + direction + np.array([0, +arrow_width]),
+                                                   center + direction + np.array([0, -arrow_width]),
+                                                   center + direction + np.array([-arrow_height, 0])]
+
+                        if arrow_base_length < 3 or probability < 0.1:
+                            print('SOMETHING WRONG!!!')
+                            break
+
+                        center = tuple(center)
+                        towards = tuple(towards)
+                        arrow_head_vertices = [tuple(a_h_v) for a_h_v in arrow_head_vertices]
+                        line = Line(center, towards)
+                        arrow_head = FilledPolygon(arrow_head_vertices)
+                        self.add_geom(arrow_head)
+                        self.add_geom(line)
+
+                # self.add_onetime(arrow_head)
+                # self.add_onetime(line)
+
 
     def close(self):
         self.window.close()
@@ -167,7 +292,8 @@ class Viewer(object):
         # Save the default modelview matrix
         glPushMatrix()
 
-        glClearColor(0, 0, 0, 1)
+        # glClearColor(0, 0, 0, 1)
+        glClearColor(75, 75, 75, 1)
         glOrtho(self.left, self.right, self.bottom, self.top, 1, -1)
 
         self.window.clear()
@@ -180,8 +306,6 @@ class Viewer(object):
         # todo set position
         self.face.x = self.env.world[self.env.current_state][0] * self.tile_dim
         self.face.y = self.pix_grid_height - self.env.world[self.env.current_state][1] * self.tile_dim
-        # print('x, y: {}, {}. x, y pixels: {}, {}'.format(self.env.world[self.env.current_state][0], self.env.world[self.env.current_state][1],
-        #                                                  self.face.x, self.face.y))
 
         # Draw text
         if self.FPS:
@@ -189,11 +313,19 @@ class Viewer(object):
             fps_label.draw()
 
         self.batch.draw()
-        # self.face.draw()
+
+        # self.draw_circle(500, 30)
+        # self.line.end = (self.line.end[0], self.line.end[1] - 1)
+        self.transform.enable()
+        for geom in self.geoms:
+            geom.render()
+        for geom in self.onetime_geoms:
+            geom.render()
+        self.transform.disable()
 
         glBegin(GL_QUADS)
 
-        a = 0.1
+        a = 0.3
         discount = 0.99
         padding = 10
         for i, (x, y) in enumerate(self.env.last_n_states[::-1]):
@@ -220,7 +352,6 @@ class Viewer(object):
             glColor4f(0, 0, 0xFF, a)
             # glVertex2i(x_pix_loc + padding, y_pix_loc + self.tile_dim - padding)
             glVertex2i(x_pix_loc, y_pix_loc + self.tile_dim)
-
         glEnd()
 
         glPopMatrix()
@@ -243,7 +374,7 @@ class Viewer(object):
 
 
         self.FPS = math.floor(1 / (time.time() - start_time))
-        print('Time taken for render: {}, {} FPS'.format(round(time.time() - start_time, 4), self.FPS))
+        # print('Time taken for render: {}, {} FPS'.format(round(time.time() - start_time, 4), self.FPS))
         return arr
 
     # Convenience
