@@ -190,14 +190,14 @@ class GridWorldEnv(gym.Env):
                     self.viewer = None
                 return
 
-            screen_width = 600
-            screen_height = 400
+            screen_width = 1200
+            screen_height = 800
             if self.viewer is None:
                 # import render
                 from core.envs import rendering
                 self.viewer = rendering.Viewer(self, screen_width, screen_height)
 
-            # time.sleep(0.3)
+            # time.sleep(0.3) # if you want it to go slower. Best way?
 
             return self.viewer.render(return_rgb_array=mode == 'rgb_array')
         else:

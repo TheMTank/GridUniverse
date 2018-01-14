@@ -2,6 +2,7 @@ import sys
 import six
 import os
 import math
+import time
 
 import pyglet
 
@@ -44,6 +45,7 @@ class Viewer(object):
         self.height = height
         self.window = pyglet.window.Window(width=width, height=height, display=display, resizable=True) # todo resizable remove or keep
         self.window.on_close = self.window_closed_by_user
+        self.FPS = None
 
         script_dir = os.path.dirname(__file__)
         resource_path = os.path.join(script_dir, '..', 'resources')
@@ -63,7 +65,9 @@ class Viewer(object):
         self.ground_sprites = []
 
         self.batch = pyglet.graphics.Batch()
-        self.face = pyglet.sprite.Sprite(self.face_img, batch=self.batch)
+        background = pyglet.graphics.OrderedGroup(0)
+        foreground = pyglet.graphics.OrderedGroup(1)
+        self.face = pyglet.sprite.Sprite(self.face_img, batch=self.batch, group=foreground)
 
         # have to flip pixel location. top-left is initial state = x, y = 0, 0 = state 0
         self.pix_grid_height = (self.env.y_max - 1) * self.tile_dim
@@ -71,11 +75,11 @@ class Viewer(object):
         for i, (x, y) in enumerate(self.env.world):
             x_pix_loc, y_pix_loc = x * self.tile_dim, self.pix_grid_height - y * self.tile_dim
             if self.env.is_terminal(i):  # if terminal
-                self.wall_sprites.append(pyglet.sprite.Sprite(self.terminal_goal_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch))
+                self.wall_sprites.append(pyglet.sprite.Sprite(self.terminal_goal_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
             elif not self.env._is_wall(i):  # todo totally wrong inverse?
-                self.wall_sprites.append(pyglet.sprite.Sprite(self.wall_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch))
+                self.wall_sprites.append(pyglet.sprite.Sprite(self.wall_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
             else:
-                self.wall_sprites.append(pyglet.sprite.Sprite(self.ground_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch))
+                self.wall_sprites.append(pyglet.sprite.Sprite(self.ground_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
 
         # must accommodate for the bigger dimension but also check smaller dimension so that it fits.
         # larger dimension check
@@ -152,6 +156,7 @@ class Viewer(object):
 
     # def render(self, return_rgb_array=False):
     def render(self, return_rgb_array=False):
+        start_time = time.time()
         # todo if close don't crash
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
@@ -178,12 +183,17 @@ class Viewer(object):
         # print('x, y: {}, {}. x, y pixels: {}, {}'.format(self.env.world[self.env.current_state][0], self.env.world[self.env.current_state][1],
         #                                                  self.face.x, self.face.y))
 
+        # Draw text
+        if self.FPS:
+            fps_label = pyglet.text.Label(text="FPS: {}".format(self.FPS), x=self.zoomed_width - 300, y=self.zoomed_height - 80, font_size=50)
+            fps_label.draw()
+
         self.batch.draw()
-        self.face.draw()
+        # self.face.draw()
 
         glBegin(GL_QUADS)
 
-        a = 0.9
+        a = 0.1
         discount = 0.99
         padding = 10
         for i, (x, y) in enumerate(self.env.last_n_states[::-1]):
@@ -212,6 +222,7 @@ class Viewer(object):
             glVertex2i(x_pix_loc, y_pix_loc + self.tile_dim)
 
         glEnd()
+
         glPopMatrix()
 
         arr = None
@@ -229,6 +240,10 @@ class Viewer(object):
             arr = arr[::-1, :, 0:3]
         self.window.flip()
         self.onetime_geoms = []
+
+
+        self.FPS = math.floor(1 / (time.time() - start_time))
+        print('Time taken for render: {}, {} FPS'.format(round(time.time() - start_time, 4), self.FPS))
         return arr
 
     # Convenience

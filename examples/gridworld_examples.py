@@ -56,13 +56,22 @@ def run_policy_iteration_gridworld():
     print('\n' + '*' * 20 + 'Starting value and policy iteration' + '*' * 20 + '\n')
     # test policy evaluation
     world_shape = (4, 4)
-    env = GridWorldEnv(grid_shape=world_shape, terminal_states=[3, 12])
+    world_shape = (41, 41) # odd mazes only
+    # env = GridWorldEnv(grid_shape=world_shape, terminal_states=[3, 12])
+    # todo even maze gridsize mazes messes this up
+    env = GridWorldEnv(grid_shape=world_shape, random_maze=True)
     policy0 = np.ones([env.world.size, len(env.action_state_to_next_state)]) / len(env.action_state_to_next_state)
     v0 = np.zeros(env.world.size)
     val_fun = v0
     for k in range(500):
         val_fun = utils.single_step_policy_evaluation(policy0, env, value_function=val_fun)
     print(utils.reshape_as_gridworld(val_fun, world_shape))
+
+    # comment: mention that for DP there is no concept of an agent.
+    # todo why do the walls of policy map have arrows? don't draw them?
+    # todo print everthing below better
+
+    env.render()
 
     # test greedy policy
     policy1 = utils.greedy_policy_from_value_function(policy0, env, val_fun)
@@ -95,6 +104,7 @@ def run_policy_iteration_gridworld():
 def run_monte_carlo():
     print('\n' + '*' * 20 + 'Starting Monte Carlo evaluation and greedy policy' + '*' * 20 + '\n')
     env = GridWorldEnv()
+    # env = GridWorldEnv(grid_shape=(40, 40), random_maze=True)
     policy0 = np.ones([env.world.size, env.action_space.n]) / env.action_space.n
 
     print('Running an episode with a random agent (with initial policy)')
@@ -120,7 +130,7 @@ def run_monte_carlo():
     curr_state = env.reset()
 
     for t in range(100):
-        env.render()
+        env.render(mode='graphic')
 
         action = np.argmax(policy1[curr_state])
         print('go ' + env.action_descriptors[action])
