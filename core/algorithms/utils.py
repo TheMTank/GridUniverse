@@ -35,7 +35,7 @@ def get_policy_map(policy, world_shape, mode='human'):
                       u'\u2194', u'\u2195'], dtype='<U1')  # left-right, up-down
     policy_arrows_map = np.empty(policy.shape[0], dtype='<U4')
     for state in np.nditer(np.arange(policy.shape[0])):
-        # find index of actions where the probability is > 0
+        # find index of actions where the probability is > 0 # todo could be cleaner
         optimal_actions = np.where(np.around(policy[state], 8) > np.around(np.float64(0), 8))[0]
         # match actions to unicode values of the arrows to be displayed
         for action in optimal_actions:

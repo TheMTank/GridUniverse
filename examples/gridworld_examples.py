@@ -41,8 +41,10 @@ def run_and_create_gridworld_from_text_file():
 
 def run_random_maze():
     print('\n' + '*' * 20 + 'Creating a random GridWorld and running random agent on it' + '*' * 20 + '\n')
-    env = GridWorldEnv(grid_shape=(11, 11), random_maze=True)
+    # env = GridWorldEnv(grid_shape=(11, 11), random_maze=True)
     # env = GridWorldEnv(grid_shape=(101, 101), random_maze=True)
+    # env = GridWorldEnv(grid_shape=(11, 11), random_maze=True)
+    env = GridWorldEnv(grid_shape=(40, 40), random_maze=True)
     for i_episode in range(1):
         observation = env.reset()
         for t in range(10000000):
@@ -61,8 +63,9 @@ def run_policy_iteration_gridworld():
 
     # env = GridWorldEnv(grid_shape=world_shape, terminal_states=[3, 12])
     # todo even maze gridsize mazes messes this up
-    world_shape = (21, 31)  # odd mazes only
+    # world_shape = (21, 31)  # odd mazes only
     # world_shape = (11, 11)  # odd mazes only
+    world_shape = (11, 11)  # odd mazes only
     env = GridWorldEnv(grid_shape=world_shape, random_maze=True)
     policy0 = np.ones([env.world.size, len(env.action_state_to_next_state)]) / len(env.action_state_to_next_state)
     v0 = np.zeros(env.world.size)

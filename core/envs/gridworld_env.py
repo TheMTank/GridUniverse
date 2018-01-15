@@ -1,10 +1,12 @@
 import sys
 import random
+import time
 
 import numpy as np
 from six import StringIO
 import gym
 from gym import spaces
+from gym.utils import seeding
 
 from core.envs import maze_generation
 
@@ -69,6 +71,8 @@ class GridWorldEnv(gym.Env):
         for terminal_state in self.terminal_states:
             self.reward_matrix[terminal_state] = 0
         # self.reward_range = [-inf, inf] # default values already
+        self.num_previous_states_to_store = 500
+        self.last_n_states = []
         # set additional parameters for the environment
         self.done = False
         self.info = {}
@@ -76,6 +80,10 @@ class GridWorldEnv(gym.Env):
         if custom_world_fp:
             self._create_custom_world_from_file(custom_world_fp)
 
+        self.viewer = None
+
+        self._seed()
+        self.np_random, seed = seeding.np_random(55)
         if random_maze:
             self._create_random_maze(self.x_max, self.y_max)
 
@@ -125,7 +133,7 @@ class GridWorldEnv(gym.Env):
         """
         Checks if a given state is a wall or any other element that shall not be trespassed.
         """
-        if self.wall_grid[state] == 1:
+        if self.wall_grid[state] == 1: # todo totally wrong inverse?
             return False
         return True
 
@@ -143,6 +151,12 @@ class GridWorldEnv(gym.Env):
         """
         self.previous_state = self.current_state
         self.current_state, reward, self.done = self.look_step_ahead(self.current_state, action)
+        # if done: # todo
+        #     env.render(mode='graphic')
+        # self.last_n_states.append(self.current_state)
+        self.last_n_states.append(self.world[self.current_state])
+        if len(self.last_n_states) > self.num_previous_states_to_store:
+            self.last_n_states.pop(0)
         return self.current_state, reward, self.done, self.info
 
     def _reset(self):
@@ -170,7 +184,22 @@ class GridWorldEnv(gym.Env):
             return outfile
 
         elif mode == 'graphic':
-            raise NotImplementedError
+            if close: # code needed for pressing x on window to close
+                if self.viewer is not None:
+                    self.viewer.close()
+                    self.viewer = None
+                return
+
+            screen_width = 1200
+            screen_height = 800
+            if self.viewer is None:
+                # import render
+                from core.envs import rendering
+                self.viewer = rendering.Viewer(self, screen_width, screen_height)
+
+            # time.sleep(0.3) # if you want it to go slower. Best way?
+
+            return self.viewer.render(return_rgb_array=mode == 'rgb_array')
         else:
             super(GridWorldEnv, self).render(mode=mode)
 
@@ -178,7 +207,8 @@ class GridWorldEnv(gym.Env):
         pass
 
     def _seed(self, seed=None):
-        raise NotImplementedError
+        self.np_random, seed = seeding.np_random(seed)
+        return [seed]
 
     def _create_custom_world_from_file(self, fp):
         with open(fp, 'r') as f:
@@ -208,7 +238,7 @@ class GridWorldEnv(gym.Env):
         walls_indices = []
 
         curr_index = 0
-        width_of_grid = len(text_world_lines[0]) # first row length will be width from now on
+        width_of_grid = len(text_world_lines[0])  # first row length will be width from now on
         for y, line in enumerate(text_world_lines):
             if len(line) != width_of_grid:
                 raise ValueError("Input text file is not a rectangle")
