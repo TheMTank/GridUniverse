@@ -146,8 +146,11 @@ class Viewer(object):
         # line.
 
     # def calculate_policy_lines(self, policy_arrows_map): # todo or policy map?
-    def calculate_policy_lines(self, policy): # todo or policy map?
+    def render_policy_arrows(self, policy): # todo or policy map?
         # todo show policy probabilities as well?
+        # remove all previous arrows and recalculate
+        self.geoms = [] # todo only remove arrows
+
         unicode_arrows = np.array([u'\u2191', u'\u2192', u'\u2193', u'\u2190'  # up, right, down, left
                                                                     u'\u2194', u'\u2195'],
                                   dtype='<U1')  # left-right, up-down
@@ -292,8 +295,7 @@ class Viewer(object):
         # Save the default modelview matrix
         glPushMatrix()
 
-        # glClearColor(0, 0, 0, 1)
-        glClearColor(75, 75, 75, 1)
+        glClearColor(0, 0, 0, 1)
         glOrtho(self.left, self.right, self.bottom, self.top, 1, -1)
 
         self.window.clear()

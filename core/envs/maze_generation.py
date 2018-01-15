@@ -37,10 +37,16 @@ def odd_maze(width=81, height=51, complexity=.75, density=.75):
     return Z
 
 def recursive_backtracker(width=20, height=20):
-    shape = (width, height)
+    shape = (height, width)
     print('Maze grid shape:', shape)
     # Build actual maze
     # Z = np.zeros(shape, dtype=bool)
+
+    # todo don't make environment, create a new app, All it needs is Z
+    # env = GridWorldEnv(grid_shape=shape)
+    # env.render(mode='graphic') # needs so many changes to get this to work
+    # time.sleep(3)
+
     Z = np.ones(shape, dtype=bool) # begin everything as walls
     # Fill borders?
     # Z[0, :] = Z[-1, :] = 1
@@ -50,9 +56,10 @@ def recursive_backtracker(width=20, height=20):
     stack = []
 
     # 1. Make the initial cell the current cell and mark it as visited
-    current_cell = initial_cell = rand(0, shape[0] - 1), rand(0, shape[1] - 1) # inclusive
+    # everything is x, y but indexing is y, x
+    current_cell = initial_cell = rand(0, shape[1] - 1), rand(0, shape[0] - 1) # inclusive
     print('initial_cell:', initial_cell)
-    visited[current_cell[1], current_cell[0]] = True
+    visited[current_cell[1], current_cell[0]] = True  # must index by y, x
 
     # 2. While there are unvisited cells
     while not visited.all():
@@ -100,13 +107,10 @@ def recursive_backtracker(width=20, height=20):
             else:
                 break
 
+        # for printing out variations
         # time.sleep(0.4)
-
-        print(Z.astype(int))
-        print((visited == True).sum(), visited.size)
-        # if visited
-        # todo while any are zero
-        # unvisited_cells_flag = False
+        # print(Z.astype(int))
+        # print((visited == True).sum(), visited.size)
     return Z
 
 def create_random_maze(width, height):
@@ -145,10 +149,10 @@ def create_random_maze(width, height):
 
     x = start_idx % num_cols  # state number 9 => 9 % 4 = 1
     y = start_idx // num_cols  # state number 9 = > 9 // 4 = 1
-    all_lines[x][y] = 'x'
+    all_lines[y][x] = 'x'
     x = T_idx % num_cols
     y = T_idx // num_cols
-    all_lines[x][y] = 'T'
+    all_lines[y][x] = 'T'
 
     for line in all_lines:
         for char in line:
