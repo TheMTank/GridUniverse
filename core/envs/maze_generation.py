@@ -71,10 +71,10 @@ def create_random_maze(width, height):
 
     x = start_idx % num_cols  # state number 9 => 9 % 4 = 1
     y = start_idx // num_cols  # state number 9 = > 9 // 4 = 1
-    all_lines[x][y] = 'x'
+    all_lines[y][x] = 'x'
     x = T_idx % num_cols
     y = T_idx // num_cols
-    all_lines[x][y] = 'T'
+    all_lines[y][x] = 'T'
 
     for line in all_lines:
         for char in line:
