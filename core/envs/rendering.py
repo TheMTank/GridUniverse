@@ -80,11 +80,11 @@ class Viewer(object):
         for i, (x, y) in enumerate(self.env.world):
             x_pix_loc, y_pix_loc = x * self.tile_dim, self.pix_grid_height - y * self.tile_dim
             if self.env.is_terminal(i):  # if terminal
-                self.wall_sprites.append(pyglet.sprite.Sprite(self.terminal_goal_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
+                self.terminal_sprites.append(pyglet.sprite.Sprite(self.terminal_goal_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
             elif not self.env._is_wall(i):  # todo totally wrong inverse?
                 self.wall_sprites.append(pyglet.sprite.Sprite(self.wall_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
             else:
-                self.wall_sprites.append(pyglet.sprite.Sprite(self.ground_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
+                self.ground_sprites.append(pyglet.sprite.Sprite(self.ground_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
 
         # must accommodate for the bigger dimension but also check smaller dimension so that it fits.
         # larger dimension check
