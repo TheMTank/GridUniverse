@@ -132,22 +132,19 @@ def run_policy_iteration_gridworld():
 
 def run_monte_carlo():
     print('\n' + '*' * 20 + 'Starting Monte Carlo evaluation and greedy policy' + '*' * 20 + '\n')
-    world_shape = (16, 16)
-    # world_shape = (5, 5)
+    world_shape = (8, 8)
     # env = GridWorldEnv(grid_shape=world_shape)
-    env = GridWorldEnv(grid_shape=(15, 15), random_maze=True)
+    env = GridWorldEnv(world_shape, random_maze=True)
     policy0 = np.ones([env.world.size, env.action_space.n]) / env.action_space.n
 
     print('Running an episode with a random agent (with initial policy)')
-    st_history, rw_history = run_episode(policy0, env)
+    st_history, rw_history, done = run_episode(policy0, env)
     print('States history: ' + str(st_history))
     print('Rewards history: ' + str(rw_history))
 
     print('Starting Monte-Carlo evaluation of random policy')
-    value0 = monte_carlo_evaluation(policy0, env, every_visit=True, stationary_env=False)
+    value0 = monte_carlo_evaluation(policy0, env, every_visit=True)
     print(value0)
-    for state, value in value0.items():
-        print(state, value)
 
     # Create greedy policy from value function and run it on environment
     policy1 = utils.greedy_policy_from_value_function(policy0, env, value0)
@@ -159,7 +156,7 @@ def run_monte_carlo():
     print('Starting greedy policy episode')
     curr_state = env.reset()
 
-    for t in range(100):
+    for t in range(500):
         env.render(mode='graphic')
 
         action = np.argmax(policy1[curr_state])
@@ -168,6 +165,8 @@ def run_monte_carlo():
 
         if done:
             print('DONE in {} steps'.format(t + 1))
+            env.render(mode='graphic')
+            time.sleep(5)
             break
 
 if __name__ == '__main__':

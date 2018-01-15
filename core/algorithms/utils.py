@@ -9,7 +9,7 @@ def reshape_as_gridworld(input_matrix, world_shape):
     Helper function to reshape a gridworld state matrix into a visual representation of the gridworld with origin on the
     low left corner and x,y corresponding to cartesian coordinates.
     """
-    return np.reshape(input_matrix, (world_shape[0], world_shape[1]))[:, ::-1].T
+    return np.reshape(input_matrix, (world_shape[0], world_shape[1]))
 
 
 def single_step_policy_evaluation(policy, env, discount_factor=1.0, value_function=None):

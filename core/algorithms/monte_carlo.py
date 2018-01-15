@@ -4,7 +4,7 @@ import numpy as np
 from six import StringIO
 
 
-def run_episode(policy, env, max_steps_per_episode=100):
+def run_episode(policy, env, max_steps_per_episode=1000):
     """
     Generates an agent and runs actions until the agent either gets to a terminal state or executes a number of 
     max_steps_per_episode steps.
@@ -22,7 +22,7 @@ def run_episode(policy, env, max_steps_per_episode=100):
         rewards_hist.append(reward)
         if done:
             break
-    return states_hist, rewards_hist
+    return states_hist, rewards_hist, done
 
 
 def monte_carlo_evaluation(policy, env, every_visit=False, incremental_mean=True, stationary_env=True,
@@ -42,26 +42,23 @@ def monte_carlo_evaluation(policy, env, every_visit=False, incremental_mean=True
     4. If non-stationary environment use alpha instead of (1 / (total_visit_counter[state]))
     """
 
-    # could do "total_visit_counter = np.zeros(env.world.size)" but that isn't model-free
-    # This way we can run on procedurally generated environments that grown in size
-    total_visit_counter = {}
-    total_return = {}
-    value_function = {}
+    total_visit_counter = np.zeros(env.world.size)
+    total_return = np.zeros(env.world.size)
+    value_function = np.zeros(env.world.size)
     for episode in range(n_episodes):
-        episode_state_hist, episode_reward_hist = run_episode(policy, env)
+        episode_state_hist, episode_reward_hist, done = run_episode(policy, env)
+        print('Episode: {}, terminal found: {}'.format(episode, done))
 
-        visits_from_last_episode = {}
-        returns_from_last_episode = {}
+        visits_from_last_episode = np.zeros(env.world.size)
+        returns_from_last_episode = np.zeros(env.world.size)
         # Store visit counts and returns from each state from last episode depending on whether first or every visit MC
         for idx, (state, reward) in enumerate(zip(episode_state_hist, episode_reward_hist)):
-            if state not in visits_from_last_episode:
-                visits_from_last_episode[state] = 0
-                returns_from_last_episode[state] = 0.0
-            else:
-                if not every_visit:
-                    # State was already seen before in episode, don't add more return to that state if First Visit MC
-                    # Also don't increase it's visit count
-                    continue
+            if visits_from_last_episode[state] == 0:
+                pass # calculate first-first below
+            elif not every_visit:
+                # State was already seen before in episode, don't add more return to that state if First Visit MC
+                # Also don't increase it's visit count
+                continue
 
             # If first-visit MC, the code below only runs for the first encounter of a state within an episode
             # Calculation depends heavily if whether it is first or every visit MC.
@@ -73,13 +70,7 @@ def monte_carlo_evaluation(policy, env, every_visit=False, incremental_mean=True
             returns_from_last_episode[state] += return_from_state
 
         # Update total_visit_counter, total_return, and value function for each state
-        for state in visits_from_last_episode:
-            # if state hasn't been seen before, setup defaults
-            if state not in total_visit_counter:
-                total_visit_counter[state] = 0
-                total_return[state] = 0.0
-                value_function[state] = 0.0
-
+        for state in range(visits_from_last_episode.size):
             # Update visits from last episode
             total_visit_counter[state] += visits_from_last_episode[state]
             # Update total return. Only used for non-incremental mean.
