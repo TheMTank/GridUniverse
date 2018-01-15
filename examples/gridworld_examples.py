@@ -47,6 +47,7 @@ def run_random_maze():
         observation = env.reset()
         for t in range(10000000):
             env.render(mode='graphic')
+            env.step_num = t
             action = env.action_space.sample()
             # print('go ' + env.action_descriptors[action])
             observation, reward, done, info = env.step(action)
@@ -167,9 +168,9 @@ def run_monte_carlo():
 
 if __name__ == '__main__':
     # Run random agent on environment variations
-    run_and_create_gridworld_from_text_file()
+    # run_and_create_gridworld_from_text_file()
     run_random_maze()
 
     # Run specific algorithms on gridworld
-    run_monte_carlo()
-    run_policy_iteration_gridworld()
+    # run_monte_carlo()
+    # run_policy_iteration_gridworld()

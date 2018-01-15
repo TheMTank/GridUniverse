@@ -46,7 +46,7 @@ class Viewer(object):
         self.height = height
         self.window = pyglet.window.Window(width=width, height=height, display=display, resizable=True) # todo resizable remove or keep
         self.window.on_close = self.window_closed_by_user
-        self.FPS = None
+        self.FPS = 0
 
         script_dir = os.path.dirname(__file__)
         resource_path = os.path.join(script_dir, '..', 'resources')
@@ -255,10 +255,6 @@ class Viewer(object):
                         self.add_geom(arrow_head)
                         self.add_geom(line)
 
-                # self.add_onetime(arrow_head)
-                # self.add_onetime(line)
-
-
     def close(self):
         self.window.close()
 
@@ -292,8 +288,7 @@ class Viewer(object):
         # Save the default modelview matrix
         glPushMatrix()
 
-        # glClearColor(0, 0, 0, 1)
-        glClearColor(75, 75, 75, 1)
+        glClearColor(0, 0, 0, 1)
         glOrtho(self.left, self.right, self.bottom, self.top, 1, -1)
 
         self.window.clear()
@@ -308,9 +303,12 @@ class Viewer(object):
         self.face.y = self.pix_grid_height - self.env.world[self.env.current_state][1] * self.tile_dim
 
         # Draw text
-        if self.FPS:
-            fps_label = pyglet.text.Label(text="FPS: {}".format(self.FPS), x=self.zoomed_width - 300, y=self.zoomed_height - 80, font_size=50)
-            fps_label.draw()
+        fps_label = pyglet.text.Label(text="FPS: {}".format(self.FPS), x=self.zoomed_width - 300, y=self.zoomed_height - 80, font_size=50)
+        fps_label.draw()
+
+        if hasattr(self.env, 'step_num'):
+            step_num_label = pyglet.text.Label(text="Step: {}".format(self.env.step_num), x=self.zoomed_width - 400, y=self.zoomed_height - 160, font_size=50)
+            step_num_label.draw()
 
         self.batch.draw()
 
