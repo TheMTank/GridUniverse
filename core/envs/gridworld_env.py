@@ -114,18 +114,19 @@ class GridWorldEnv(gym.Env):
                 self.wall_grid[wall_state] = 1
                 self.wall_indices.append(wall_state)
 
-    def look_step_ahead(self, state, action):
+    def look_step_ahead(self, state, action, care_about_terminal=True):
         """
         Computes the results of a hypothetical action taking place at the given state.
 
         Returns the state to what that action would lead, the reward at that new state and a boolean value that
         determines if the next state is terminal
         """
-        if self.is_terminal(state):
-            next_state = state
-        else:
-            next_state = self.action_state_to_next_state[action](state)
-            next_state = next_state if self._is_wall(next_state) else state
+        if care_about_terminal:
+            if self.is_terminal(state):
+                next_state = state
+                return next_state, self.reward_matrix[next_state], self.is_terminal(next_state)
+        next_state = self.action_state_to_next_state[action](state)
+        next_state = next_state if self._is_wall(next_state) else state
 
         return next_state, self.reward_matrix[next_state], self.is_terminal(next_state)
 
