@@ -43,7 +43,9 @@ def run_random_maze():
     print('\n' + '*' * 20 + 'Creating a random GridWorld and running random agent on it' + '*' * 20 + '\n')
     # env = GridWorldEnv(grid_shape=(11, 11), random_maze=True)
     # env = GridWorldEnv(grid_shape=(50, 20), random_maze=True)
-    env = GridWorldEnv(grid_shape=(20, 50), random_maze=True)
+    # env = GridWorldEnv(grid_shape=(20, 50), random_maze=True)
+    # env = GridWorldEnv(grid_shape=(49, 51), random_maze=True)
+    env = GridWorldEnv(grid_shape=(51, 49), random_maze=True)
     for i_episode in range(1):
         observation = env.reset()
         for t in range(10000000):
