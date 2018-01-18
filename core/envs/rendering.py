@@ -311,12 +311,16 @@ class Viewer(object):
 
 
         # Draw text
-        fps_label = pyglet.text.Label(text="FPS: {}".format(self.FPS), x=self.zoomed_width - 300, y=self.zoomed_height - 80, font_size=50)
+        font_size = 50
+        fps_string = "FPS: {}".format(self.FPS)
+        fps_label = pyglet.text.Label(text=fps_string, x=self.zoomed_width - len(fps_string) * font_size, y=self.zoomed_height - 80, font_size=font_size)
         fps_label.draw()
 
         if hasattr(self.env, 'step_num'):
             # todo get text size to properly align
-            step_num_label = pyglet.text.Label(text="Step: {}".format(self.env.step_num), x=self.zoomed_width - 400, y=self.zoomed_height - 160, font_size=50)
+            step_string = "Step: {}".format(self.env.step_num)
+
+            step_num_label = pyglet.text.Label(text=step_string, x=self.zoomed_width - len(step_string) * font_size, y=self.zoomed_height - 160, font_size=font_size)
             step_num_label.draw()
 
         # Render agent
@@ -344,7 +348,8 @@ class Viewer(object):
             y_pix_loc = int(self.pix_grid_height - y * self.tile_dim)
 
             a *= discount
-            if x_pix_loc == self.face.x and y_pix_loc == self.face.y:
+            # if x_pix_loc == self.face.x and y_pix_loc == self.face.y:
+            if x == self.env.world[self.env.current_state][0] and y == self.env.world[self.env.current_state][1]:
                 continue
 
             # todo find best colours
