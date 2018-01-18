@@ -74,6 +74,14 @@ class Viewer(object):
         foreground = pyglet.graphics.OrderedGroup(1)
         self.face = pyglet.sprite.Sprite(self.face_img, batch=self.batch, group=foreground)
 
+        # Lets say I want to fit 5 tiles + x_max tiles + 5 tiles always on the x dimension
+        # Therefore start x should be 5 tiles * tile_dim
+        # Therefore larger_grid_dimension is x_max + 10 tiles
+        # Therefore larger_pixel_dimension is width
+        # Therefore how_many_tiles_you_can_fit_in_larger_dim = math.floor(larger_pixel_dimension / self.tile_dim)
+        # Therefore self.zoom_level = larger_grid_dimension / how_many_tiles_you_can_fit_in_larger_dim
+        # Therefore same for y_level
+
         num_extra_tiles = 10
 
         # have to flip pixel location. top-left is initial state = x, y = 0, 0 = state 0
@@ -90,38 +98,47 @@ class Viewer(object):
 
         # must accommodate for the bigger dimension but also check smaller dimension so that it fits.
         # larger dimension check
-        ind = np.argmax((self.env.x_max, self.env.y_max))
+        x_y_grid_dimension_tuple = (self.env.x_max + num_extra_tiles, self.env.y_max + num_extra_tiles)
 
 
 
-        larger_grid_dimension = np.max((self.env.x_max, self.env.y_max)) + num_extra_tiles
+
+        ind = np.argmax(x_y_grid_dimension_tuple)
+
+        larger_grid_dimension = np.max(x_y_grid_dimension_tuple)
+        smaller_grid_dimension = np.min(x_y_grid_dimension_tuple)
+        # larger_pixel_dimension = np.max((width, height))
+        # smaller_pixel_dimension = np.min((width, height))
         if ind == 0:
-            larger_pixel_dimension = width + num_extra_tiles * self.tile_dim
-            smaller_pixel_dimension = height
-            smaller_grid_dimension = self.env.y_max
+            # smaller_grid_dimension = self.env.y_max
+            smaller_grid_dimension = x_y_grid_dimension_tuple[1]
+            larger_pixel_dimension_by_grid_size = width
+            smaller_pixel_dimension_by_grid_size = height
         elif ind == 1:
-            larger_pixel_dimension = height
-            smaller_pixel_dimension = width
-            smaller_grid_dimension = self.env.x_max
+            # smaller_grid_dimension = self.env.x_max
+            smaller_grid_dimension = x_y_grid_dimension_tuple[0]
+            larger_pixel_dimension_by_grid_size = height
+            smaller_pixel_dimension_by_grid_size = width
 
-        how_many_tiles_you_can_fit_in_larger_dim = math.floor(larger_pixel_dimension / self.tile_dim)
+        how_many_tiles_you_can_fit_in_larger_dim = math.floor(larger_pixel_dimension_by_grid_size / self.tile_dim)
         self.zoom_level = larger_grid_dimension / how_many_tiles_you_can_fit_in_larger_dim # + 5
-        # todo, how to center safely?
+
         # smaller dimension check
-        how_many_tiles_you_can_fit_in_smaller_dim = math.floor(smaller_pixel_dimension / self.tile_dim)
+        how_many_tiles_you_can_fit_in_smaller_dim = math.floor(smaller_pixel_dimension_by_grid_size / self.tile_dim)
         other_zoom_level = smaller_grid_dimension / how_many_tiles_you_can_fit_in_smaller_dim
         # if other dimension still can't fit the tiles within the map, use its zoom level
         if other_zoom_level > self.zoom_level:
+            print('using other zoom level')
             self.zoom_level = other_zoom_level
 
         # if you can fit more tiles into the black space, then no need to zoom. # todo or maybe a bit and centre the maze?
-        if how_many_tiles_you_can_fit_in_larger_dim > larger_grid_dimension and how_many_tiles_you_can_fit_in_smaller_dim > smaller_grid_dimension:
-            self.zoom_level = 1
+        # if how_many_tiles_you_can_fit_in_larger_dim > larger_grid_dimension and how_many_tiles_you_can_fit_in_smaller_dim > smaller_grid_dimension:
+        #     self.zoom_level = 1 # todo need to change
 
-        # self.zoomed_width = width * self.zoom_level
-        # self.zoomed_height = height * self.zoom_level
-        self.zoomed_width = (width + num_extra_tiles * self.tile_dim) * self.zoom_level
+        self.zoomed_width = width * self.zoom_level
         self.zoomed_height = height * self.zoom_level
+        # self.zoomed_width = (width + num_extra_tiles * self.tile_dim) * self.zoom_level
+        # self.zoomed_height = height * self.zoom_level
 
         self.left = 0
         self.right = self.zoomed_width
@@ -130,7 +147,7 @@ class Viewer(object):
 
         print('tile_dim: {}. grid_shape: {}'.format(self.tile_dim, [self.env.x_max, self.env.y_max]))
         print('how_many_tiles_you_can_fit_in_smaller_dim: {}, how_many_tiles_you_can_fit_in_larger_dim: {}'.format(how_many_tiles_you_can_fit_in_smaller_dim, how_many_tiles_you_can_fit_in_larger_dim))
-        print('zoom:', self.zoom_level)
+        print('zoom:', round(self.zoom_level, 4))
         print('width: {}, height: {}, zoomed_width: {}, zoomed_height: {}'.format(width, height, self.zoomed_width, self.zoomed_height))
 
         glViewport(0, 0, width, height)
