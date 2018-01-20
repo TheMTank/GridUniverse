@@ -43,14 +43,15 @@ def run_random_maze():
     print('\n' + '*' * 20 + 'Creating a random GridWorld and running random agent on it' + '*' * 20 + '\n')
     # env = GridWorldEnv(grid_shape=(11, 11), random_maze=True)
     # env = GridWorldEnv(grid_shape=(101, 101), random_maze=True)
-    # env = GridWorldEnv(grid_shape=(11, 11), random_maze=True)
-    env = GridWorldEnv(grid_shape=(40, 40), random_maze=True)
     # todo print to user how long is left, so they can get comfortable with how constrained random search works
     # todo exiting shouldn't crash everything
+    env = GridWorldEnv(grid_shape=(49, 51), random_maze=True)
+    # env = GridWorldEnv(grid_shape=(51, 49), random_maze=True)
     for i_episode in range(1):
         observation = env.reset()
         for t in range(1000):
             env.render(mode='graphic')
+            env.step_num = t
             action = env.action_space.sample()
             # print('go ' + env.action_descriptors[action])
             observation, reward, done, info = env.step(action)
@@ -172,9 +173,9 @@ def run_monte_carlo():
 
 if __name__ == '__main__':
     # Run random agent on environment variations
-    run_and_create_gridworld_from_text_file()
+    # run_and_create_gridworld_from_text_file()
     run_random_maze()
 
     # Run specific algorithms on gridworld
-    run_monte_carlo()
-    run_policy_iteration_gridworld()
+    # run_monte_carlo()
+    # run_policy_iteration_gridworld()

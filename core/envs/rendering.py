@@ -46,7 +46,7 @@ class Viewer(object):
         self.height = height
         self.window = pyglet.window.Window(width=width, height=height, display=display, resizable=True) # todo resizable remove or keep
         self.window.on_close = self.window_closed_by_user
-        self.FPS = None
+        self.FPS = 0
 
         script_dir = os.path.dirname(__file__)
         resource_path = os.path.join(script_dir, '..', 'resources')
@@ -74,56 +74,67 @@ class Viewer(object):
         foreground = pyglet.graphics.OrderedGroup(1)
         self.face = pyglet.sprite.Sprite(self.face_img, batch=self.batch, group=foreground)
 
-        # have to flip pixel location. top-left is initial state = x, y = 0, 0 = state 0
-        self.pix_grid_height = (self.env.y_max - 1) * self.tile_dim
+        # Lets say I want to fit 5 tiles + x_max tiles + 5 tiles always on the x dimension
+        # Therefore start x should be 5 tiles * tile_dim
+        # Therefore larger_grid_dimension is x_max + 10 tiles
+        # Therefore larger_pixel_dimension is width
+        # Therefore how_many_tiles_you_can_fit_in_larger_dim = math.floor(larger_pixel_dimension / self.tile_dim)
+        # Therefore self.zoom_level = larger_grid_dimension / how_many_tiles_you_can_fit_in_larger_dim
+        # Therefore same for y_level
 
-        for i, (x, y) in enumerate(self.env.world):
-            x_pix_loc, y_pix_loc = x * self.tile_dim, self.pix_grid_height - y * self.tile_dim
-            if self.env.is_terminal(i):  # if terminal
-                self.wall_sprites.append(pyglet.sprite.Sprite(self.terminal_goal_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
-            elif not self.env._is_wall(i):  # todo totally wrong inverse?
-                self.wall_sprites.append(pyglet.sprite.Sprite(self.wall_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
-            else:
-                self.wall_sprites.append(pyglet.sprite.Sprite(self.ground_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
+        # Don't use extra tiles. Just center it.
+        # Larger dimension by num tiles should just fit into screen with z pixels on each side
+
+        # self.num_extra_tiles = 10
+        self.num_extra_tiles = 4
 
         # must accommodate for the bigger dimension but also check smaller dimension so that it fits.
-        # larger dimension check
-        ind = np.argmax((self.env.x_max, self.env.y_max))
-        larger_grid_dimension = np.max((self.env.x_max, self.env.y_max))
-        if ind == 0:
-            larger_pixel_dimension = width
-            smaller_pixel_dimension = height
-            smaller_grid_dimension = self.env.y_max
-        elif ind == 1:
-            larger_pixel_dimension = height
-            smaller_pixel_dimension = width
-            smaller_grid_dimension = self.env.x_max
+        num_tiles_to_fit_in_width = math.floor(width / self.tile_dim)
+        zoom_level_for_width = (self.env.x_max + self.num_extra_tiles) / num_tiles_to_fit_in_width
+        pixel_width_of_grid = math.floor(zoom_level_for_width * width) # why width?
 
-        how_many_tiles_you_can_fit_in_larger_dim = math.floor(larger_pixel_dimension / self.tile_dim)
-        self.zoom_level = larger_grid_dimension / how_many_tiles_you_can_fit_in_larger_dim # + 5
-        # smaller dimension check
-        how_many_tiles_you_can_fit_in_smaller_dim = math.floor(smaller_pixel_dimension / self.tile_dim)
-        other_zoom_level = smaller_grid_dimension / how_many_tiles_you_can_fit_in_smaller_dim
-        # if other dimension still can't fit the tiles within the map, use its zoom level
-        if other_zoom_level > self.zoom_level:
-            self.zoom_level = other_zoom_level
+        num_tiles_to_fit_in_height = math.floor(height / self.tile_dim)
+        zoom_level_for_height = (self.env.y_max + self.num_extra_tiles) / num_tiles_to_fit_in_height
+        pixel_height_of_grid = math.floor(zoom_level_for_height * height)
 
-        # if you can fit more tiles into the black space, then no need to zoom. # todo or maybe a bit and centre the maze?
-        if how_many_tiles_you_can_fit_in_larger_dim > larger_grid_dimension and how_many_tiles_you_can_fit_in_smaller_dim > smaller_grid_dimension:
-            self.zoom_level = 1
+        self.zoom_level = np.max((zoom_level_for_width, zoom_level_for_height))
+
+        print('zoom_level_for_width: {}, zoom_level_for_height: {}, zoom_level: {}'.format(zoom_level_for_width, zoom_level_for_height, self.zoom_level))
+        print('pixel_width_of_grid: {}, pixel_height_of_grid: {}'.format(pixel_width_of_grid, pixel_height_of_grid))
 
         self.zoomed_width = width * self.zoom_level
         self.zoomed_height = height * self.zoom_level
+
+        # because width is always the bigger dimension we will always move the grid in the x
+        self.x_distance_to_move = self.zoomed_width / 2 - pixel_width_of_grid / 2
 
         self.left = 0
         self.right = self.zoomed_width
         self.bottom = 0
         self.top = self.zoomed_height
 
+        print('x_distance_to_move:', self.x_distance_to_move)
         print('tile_dim: {}. grid_shape: {}'.format(self.tile_dim, [self.env.x_max, self.env.y_max]))
-        print('how_many_tiles_you_can_fit_in_smaller_dim: {}, how_many_tiles_you_can_fit_in_larger_dim: {}'.format(how_many_tiles_you_can_fit_in_smaller_dim, how_many_tiles_you_can_fit_in_larger_dim))
-        print('zoom:', self.zoom_level)
+        # print('how_many_tiles_you_can_fit_in_smaller_dim: {}, how_many_tiles_you_can_fit_in_larger_dim: {}'.format(how_many_tiles_you_can_fit_in_smaller_dim, how_many_tiles_you_can_fit_in_larger_dim))
+        print('zoom:', round(self.zoom_level, 4))
         print('width: {}, height: {}, zoomed_width: {}, zoomed_height: {}'.format(width, height, self.zoomed_width, self.zoomed_height))
+
+        # todo create function to calculate x and y pixel position from grid position for face, arrows and agent path
+        # have to flip pixel location. top-left is initial state = x, y = 0, 0 = state 0
+        self.pix_grid_height = (self.env.y_max) * self.tile_dim + (self.num_extra_tiles // 2) * self.tile_dim
+
+        for i, (x, y) in enumerate(self.env.world):
+            x_pix_loc = x * self.tile_dim + self.x_distance_to_move + (self.num_extra_tiles // 2) * self.tile_dim
+            y_pix_loc = self.pix_grid_height - (y * self.tile_dim)
+            if self.env.is_terminal(i):  # if terminal
+                self.wall_sprites.append(
+                    pyglet.sprite.Sprite(self.terminal_goal_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
+            elif self.env._is_wall(i):
+                self.wall_sprites.append(
+                    pyglet.sprite.Sprite(self.wall_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
+            else:
+                self.wall_sprites.append(
+                    pyglet.sprite.Sprite(self.ground_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
 
         glViewport(0, 0, width, height)
 
@@ -174,7 +185,7 @@ class Viewer(object):
             x_pix_loc, y_pix_loc = x * self.tile_dim, self.pix_grid_height - y * self.tile_dim
             if self.env.is_terminal(state_index):  # if terminal
                 pass
-            elif not self.env._is_wall(state_index):
+            elif self.env._is_wall(state_index):
                 pass
             else:
                 center = np.array([x_pix_loc + self.tile_dim / 2, y_pix_loc + self.tile_dim / 2]).astype(int)
@@ -258,10 +269,6 @@ class Viewer(object):
                         self.add_geom(arrow_head)
                         self.add_geom(line)
 
-                # self.add_onetime(arrow_head)
-                # self.add_onetime(line)
-
-
     def close(self):
         self.window.close()
 
@@ -305,17 +312,26 @@ class Viewer(object):
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST) # todo needed?
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
 
-        # todo set position
-        self.face.x = self.env.world[self.env.current_state][0] * self.tile_dim
-        self.face.y = self.pix_grid_height - self.env.world[self.env.current_state][1] * self.tile_dim
 
         # Draw text
-        if self.FPS:
-            fps_label = pyglet.text.Label(text="FPS: {}".format(self.FPS), x=self.zoomed_width - 300, y=self.zoomed_height - 80, font_size=50)
-            fps_label.draw()
+        font_size = 50
+        fps_string = "FPS: {}".format(self.FPS)
+        fps_label = pyglet.text.Label(text=fps_string, x=self.zoomed_width - len(fps_string) * font_size, y=self.zoomed_height - 80, font_size=font_size)
+        fps_label.draw()
 
+        if hasattr(self.env, 'step_num'):
+            # todo get text size to properly align
+            step_string = "Step: {}".format(self.env.step_num)
+
+            step_num_label = pyglet.text.Label(text=step_string, x=self.zoomed_width - len(step_string) * font_size, y=self.zoomed_height - 160, font_size=font_size)
+            step_num_label.draw()
+
+        # Render agent
+        self.face.x = self.env.world[self.env.current_state][0] * self.tile_dim + self.x_distance_to_move + (self.num_extra_tiles // 2) * self.tile_dim
+        self.face.y = self.pix_grid_height - self.env.world[self.env.current_state][1] * self.tile_dim
         self.batch.draw()
 
+        # Render all geoms e.g. policy arrows
         # self.draw_circle(500, 30)
         # self.line.end = (self.line.end[0], self.line.end[1] - 1)
         self.transform.enable()
@@ -325,16 +341,18 @@ class Viewer(object):
             geom.render()
         self.transform.disable()
 
+        # Render agent path
         glBegin(GL_QUADS)
-
         a = 0.3
-        discount = 0.99
+        discount = 0.96
         padding = 10
         for i, (x, y) in enumerate(self.env.last_n_states[::-1]):
-            x_pix_loc, y_pix_loc = x * self.tile_dim, self.pix_grid_height - y * self.tile_dim
+            x_pix_loc = int(x * self.tile_dim + self.x_distance_to_move + (self.num_extra_tiles // 2) * self.tile_dim)
+            y_pix_loc = int(self.pix_grid_height - y * self.tile_dim)
 
             a *= discount
-            if x_pix_loc == self.face.x and y_pix_loc == self.face.y:
+            # if x_pix_loc == self.face.x and y_pix_loc == self.face.y:
+            if x == self.env.world[self.env.current_state][0] and y == self.env.world[self.env.current_state][1]:
                 continue
 
             # todo find best colours

@@ -104,7 +104,7 @@ class GridWorldEnv(gym.Env):
         and places "1"s appropriately within self.walls numpy array
 
         self.walls: need index positioning for efficient check in _is_wall() but
-        self.wall_indices: we also need list to easily access each wall sequentially (e.g in render())
+        self.wall_indices: we also need list of indices to easily access each wall sequentially (e.g in render())
         """
         if walls is not None:
             for wall_state in walls:
@@ -121,12 +121,13 @@ class GridWorldEnv(gym.Env):
         Returns the state to what that action would lead, the reward at that new state and a boolean value that
         determines if the next state is terminal
         """
-        if care_about_terminal:
-            if self.is_terminal(state):
-                next_state = state
-                return next_state, self.reward_matrix[next_state], self.is_terminal(next_state)
-        next_state = self.action_state_to_next_state[action](state)
-        next_state = next_state if self._is_wall(next_state) else state
+
+        # todo if care_about_terminal
+        if self.is_terminal(state):
+            next_state = state
+        else:
+            next_state = self.action_state_to_next_state[action](state)
+            next_state = next_state if not self._is_wall(next_state) else state
 
         return next_state, self.reward_matrix[next_state], self.is_terminal(next_state)
 
@@ -134,9 +135,9 @@ class GridWorldEnv(gym.Env):
         """
         Checks if a given state is a wall or any other element that shall not be trespassed.
         """
-        if self.wall_grid[state] == 1: # todo totally wrong inverse?
-            return False
-        return True
+        if self.wall_grid[state] == 1:
+            return True
+        return False
 
     def is_terminal(self, state):
         """
