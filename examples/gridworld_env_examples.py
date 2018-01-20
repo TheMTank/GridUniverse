@@ -1,0 +1,58 @@
+from core.envs.gridworld_env import GridWorldEnv
+
+def run_random_gridworld():
+    print('\n' + '*' * 20 + 'Starting to run random agent on GridWorld' + '*' * 20 + '\n')
+    env = GridWorldEnv()
+    for i_episode in range(1):
+        observation = env.reset()
+        for t in range(100):
+            env.render()
+            action = env.action_space.sample()
+            print('go ' + env.action_descriptors[action])
+            observation, reward, done, info = env.step(action)
+
+            if done:
+                print("Episode finished after {} timesteps".format(t + 1))
+                break
+
+def run_and_create_gridworld_from_text_file():
+    print('\n' + '*' * 20 + 'Creating a pre-made GridWorld from text file and running random agent on it' + '*' * 20 + '\n')
+    # env = GridWorldEnv(custom_world_fp='../core/envs/test_env.txt')
+    # env = GridWorldEnv(grid_shape=(10, 10))
+    # env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/maze_21x21.txt')
+    env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/maze_101x101.txt')
+    for i_episode in range(1):
+        observation = env.reset()
+        for t in range(1000):
+            env.render(mode='graphic')
+            action = env.action_space.sample()
+            # print('go ' + env.action_descriptors[action])
+            observation, reward, done, info = env.step(action)
+            if done:
+                print("Episode finished after {} timesteps".format(t + 1))
+                break
+
+def run_random_maze():
+    print('\n' + '*' * 20 + 'Creating a random GridWorld and running random agent on it' + '*' * 20 + '\n')
+    env = GridWorldEnv(grid_shape=(11, 11), random_maze=True)
+    # env = GridWorldEnv(grid_shape=(101, 101), random_maze=True)
+    # env = GridWorldEnv(grid_shape=(49, 51), random_maze=True)
+    # env = GridWorldEnv(grid_shape=(51, 49), random_maze=True)
+    # todo print to user how long is left, so they can get comfortable with how constrained random search works
+    # todo exiting shouldn't crash everything
+    for i_episode in range(1):
+        observation = env.reset()
+        for t in range(1000):
+            env.render(mode='graphic')
+            env.step_num = t
+            action = env.action_space.sample()
+            # print('go ' + env.action_descriptors[action])
+            observation, reward, done, info = env.step(action)
+            if done:
+                print("Episode finished after {} timesteps".format(t + 1))
+                break
+
+if __name__ == '__main__':
+    # Run random agent on environment variations
+    run_and_create_gridworld_from_text_file()
+    run_random_maze()
