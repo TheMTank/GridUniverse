@@ -57,7 +57,10 @@ class Viewer(object):
         self.onetime_geoms = []
         self.transform = Transform()
 
-        self.face_img = pyglet.resource.image('straight-face.png')
+        if random.randint(0, 1) == 0:
+            self.face_img = pyglet.resource.image('awesomeface-resized.png')
+        else:
+            self.face_img = pyglet.resource.image('shockedface-resized.png')
         self.ground_img = pyglet.resource.image('wbs_texture_05_resized.jpg')
         self.terminal_goal_img = pyglet.resource.image('wbs_texture_05_resized_green.jpg')
         self.wall_img = pyglet.resource.image('wbs_texture_05_resized_red.jpg')
@@ -247,6 +250,7 @@ class Viewer(object):
 
         # Draw text
         font_size = 50
+        # todo fix font-size if maze is covering most of the screen
         fps_string = "FPS: {}".format(self.FPS)
         fps_label = pyglet.text.Label(text=fps_string, x=self.zoomed_width - len(fps_string) * font_size, y=self.zoomed_height - 80, font_size=font_size)
         fps_label.draw()

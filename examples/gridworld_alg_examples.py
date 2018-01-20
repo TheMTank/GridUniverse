@@ -7,13 +7,25 @@ from core.algorithms.monte_carlo import run_episode, monte_carlo_evaluation
 from core.algorithms import utils
 import core.algorithms.dynamic_programming as dp
 
-def run_policy_iteration_gridworld():
+def run_policy_and_value_iteration_gridworld():
+    """
+    Majority of code is within utils.py and dynamic_programming.py for this function
+    This function does 4 things:
+
+    1. Evaluate the value function of a random policy a number of times
+    2. Create a greedy policy created from from this value function
+    3. Run Policy Iteration
+    4. Run Value Iteration
+    5. Run agent on environment on policy found from Value Iteration
+    """
+
     print('\n' + '*' * 20 + 'Starting value and policy iteration' + '*' * 20 + '\n')
-    # test policy evaluation
+
+    # 1. Evaluate the value function of a random policy a number of times
     # world_shape = (4, 4)
-    # env = GridWorldEnv(grid_shape=world_shape, terminal_states=[3, 12])
+    # env = GridWorldEnv(grid_shape=world_shape, terminal_states=[3, 12]) # Sutton and Barlo/David Silver example
     world_shape = (21, 31)
-    # world_shape = (11, 11)
+    world_shape = (11, 11)
     env = GridWorldEnv(grid_shape=world_shape, random_maze=True)
     policy0 = np.ones([env.world.size, len(env.action_state_to_next_state)]) / len(env.action_state_to_next_state)
     v0 = np.zeros(env.world.size)
@@ -27,7 +39,7 @@ def run_policy_iteration_gridworld():
     # todo shouldn't have two outputs for policy_map! better name or better handling # todo have to make clear about tuple...
     # policy_arrow_array, policy_probabilities = utils.get_policy_map(optimal_policy, world_shape) # todo have to make clear about tuple...
 
-    # test greedy policy
+    # 2. Create a greedy policy created from from this value function
     policy1 = utils.greedy_policy_from_value_function(policy0, env, val_fun)
     policy_map1 = utils.get_policy_map(policy1, world_shape)
     print('Policy: (0=up, 1=right, 2=down, 3=left)\n', policy_map1)
@@ -35,7 +47,7 @@ def run_policy_iteration_gridworld():
     print('Policy: (up, right, down, left)\n', utils.get_policy_map(policy1, world_shape))
     np.set_printoptions(linewidth=75, precision=8)
 
-    # test policy iteration
+    # 3. Run Policy Iteration
     print('Policy iteration:')
     policy0 = np.ones([env.world.size, len(env.action_state_to_next_state)]) / len(env.action_state_to_next_state)
     optimal_value, optimal_policy = dp.policy_iteration(policy0, env, v0, threshold=0.001, max_steps=1000)
@@ -45,7 +57,7 @@ def run_policy_iteration_gridworld():
     print('Policy: (up, right, down, left)\n', utils.get_policy_map(optimal_policy, world_shape))
     np.set_printoptions(linewidth=75, precision=8)
 
-    # # test value iteration
+    # 4. Run Value Iteration
     print('Value iteration:')
     policy0 = np.ones([env.world.size, len(env.action_state_to_next_state)]) / len(env.action_state_to_next_state)
     optimal_value, optimal_policy = dp.value_iteration(policy0, env, v0, threshold=0.001, max_steps=100)
@@ -55,8 +67,9 @@ def run_policy_iteration_gridworld():
     print('Policy: (up, right, down, left)\n', utils.get_policy_map(optimal_policy, world_shape))
     np.set_printoptions(linewidth=75, precision=8)
 
+    # 5. Run agent on environment on policy found from Value Iteration
+    print('Starting to run agent on environment with optimal policy')
     curr_state = env.reset()
-
     env.render_policy_arrows(optimal_policy)
 
     # Dynamic programming doesn't necessarily have the concept of an agent.
@@ -72,12 +85,18 @@ def run_policy_iteration_gridworld():
             print('DONE in {} steps'.format(t + 1))
             env.render(mode='graphic') # must render here to see agent in final state
             time.sleep(6)
+            env.close()
             break
 
-def run_monte_carlo():
+def run_monte_carlo_evaluation():
+    """
+    Run Monte Carlo evaluation on random policy and then act greedily with respect to the value function
+    after the evaluation is complete
+    """
+
     print('\n' + '*' * 20 + 'Starting Monte Carlo evaluation and greedy policy' + '*' * 20 + '\n')
     world_shape = (8, 8)
-    # env = GridWorldEnv(grid_shape=world_shape)
+    # env = GridWorldEnv(grid_shape=world_shape) # Default GridWorld
     env = GridWorldEnv(world_shape, random_maze=True)
     policy0 = np.ones([env.world.size, env.action_space.n]) / env.action_space.n
 
@@ -116,5 +135,5 @@ def run_monte_carlo():
 
 if __name__ == '__main__':
     # Run specific algorithms on gridworld
-    run_policy_iteration_gridworld()
-    run_monte_carlo()
+    run_policy_and_value_iteration_gridworld()
+    run_monte_carlo_evaluation()
