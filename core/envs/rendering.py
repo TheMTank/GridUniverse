@@ -63,7 +63,8 @@ class Viewer(object):
             self.face_img = pyglet.resource.image('shockedface-resized.png')
         self.ground_img = pyglet.resource.image('wbs_texture_05_resized.jpg')
         self.terminal_goal_img = pyglet.resource.image('wbs_texture_05_resized_green.jpg')
-        self.wall_img = pyglet.resource.image('wbs_texture_05_resized_red.jpg')
+        # self.wall_img = pyglet.resource.image('wbs_texture_05_resized_red.jpg')
+        self.wall_img = pyglet.resource.image('wbs_texture_05_resized_wall.jpg')
 
         self.padding = 1
         self.tile_dim = self.ground_img.width + self.padding
@@ -103,6 +104,11 @@ class Viewer(object):
         self.right = self.zoomed_width
         self.bottom = 0
         self.top = self.zoomed_height
+
+        if int(round(self.zoom_level)) == 1:
+            self.font_size = 25
+        else:
+            self.font_size = 50
 
         print('zoom_level_for_width: {}, zoom_level_for_height: {}, zoom_level: {}'.format(round(zoom_level_for_width, 4), round(zoom_level_for_height, 4), round(self.zoom_level)))
         print('pixel_width_of_grid: {}, pixel_height_of_grid: {}'.format(pixel_width_of_grid, pixel_height_of_grid))
@@ -249,17 +255,16 @@ class Viewer(object):
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
 
         # Draw text
-        font_size = 50
         # todo fix font-size if maze is covering most of the screen
         fps_string = "FPS: {}".format(self.FPS)
-        fps_label = pyglet.text.Label(text=fps_string, x=self.zoomed_width - len(fps_string) * font_size, y=self.zoomed_height - 80, font_size=font_size)
+        fps_label = pyglet.text.Label(text=fps_string, x=self.zoomed_width - len(fps_string) * self.font_size, y=self.zoomed_height - 80, font_size=self.font_size)
         fps_label.draw()
 
         if hasattr(self.env, 'step_num'):
             # todo get text size to properly align
             step_string = "Step: {}".format(self.env.step_num)
 
-            step_num_label = pyglet.text.Label(text=step_string, x=self.zoomed_width - len(step_string) * font_size, y=self.zoomed_height - 160, font_size=font_size)
+            step_num_label = pyglet.text.Label(text=step_string, x=self.zoomed_width - len(step_string) * self.font_size, y=self.zoomed_height - 160, font_size=self.font_size)
             step_num_label.draw()
 
         # Render agent
