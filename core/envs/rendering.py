@@ -129,7 +129,7 @@ class Viewer(object):
             if self.env.is_terminal(i):  # if terminal
                 self.wall_sprites.append(
                     pyglet.sprite.Sprite(self.terminal_goal_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
-            elif not self.env._is_wall(i):  # todo totally wrong inverse?
+            elif self.env._is_wall(i):
                 self.wall_sprites.append(
                     pyglet.sprite.Sprite(self.wall_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
             else:
@@ -182,7 +182,7 @@ class Viewer(object):
             x_pix_loc, y_pix_loc = x * self.tile_dim, self.pix_grid_height - y * self.tile_dim
             if self.env.is_terminal(state_index):  # if terminal
                 pass
-            elif not self.env._is_wall(state_index):
+            elif self.env._is_wall(state_index):
                 pass
             else:
                 center = np.array([x_pix_loc + self.tile_dim / 2, y_pix_loc + self.tile_dim / 2]).astype(int)
