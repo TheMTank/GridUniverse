@@ -77,6 +77,7 @@ def run_policy_iteration_gridworld():
     # todo comment: mention that for DP there is no concept of an agent.
     # todo why do the walls of policy map have ascii arrows? don't draw them?
     # todo print everthing below better
+    # todo shouldn't have two outputs for policy_map! better name or better handling
 
     env.render(mode='graphic')
 
@@ -85,7 +86,7 @@ def run_policy_iteration_gridworld():
     policy_map1 = utils.get_policy_map(policy1, world_shape)
     print('Policy: (0=up, 1=right, 2=down, 3=left)\n', policy_map1)
     np.set_printoptions(linewidth=75 * 2, precision=4)
-    print('Policy: (up, right, down, left)\n', utils.get_policy_map(policy1, world_shape)) #todo shouldn't have two outputs! better name or bettr handling
+    print('Policy: (up, right, down, left)\n', utils.get_policy_map(policy1, world_shape))
     np.set_printoptions(linewidth=75, precision=8)
 
     # test policy iteration
@@ -98,7 +99,7 @@ def run_policy_iteration_gridworld():
     print('Policy: (up, right, down, left)\n', utils.get_policy_map(optimal_policy, world_shape))
     np.set_printoptions(linewidth=75, precision=8)
 
-    # test value iteration
+    # # test value iteration
     print('Value iteration:')
     policy0 = np.ones([env.world.size, len(env.action_state_to_next_state)]) / len(env.action_state_to_next_state)
     optimal_value, optimal_policy = dp.value_iteration(policy0, env, v0, threshold=0.001, max_steps=100)
@@ -110,17 +111,17 @@ def run_policy_iteration_gridworld():
 
     curr_state = env.reset()
 
-    # has to be done after after env.render(mode='graphic')
-    policy_arrow_array, policy_probabilities = utils.get_policy_map(policy1, world_shape)
+    # has to be done after after env.render(mode='graphic') # todo: shouldn't have to
+    policy_arrow_array, policy_probabilities = utils.get_policy_map(optimal_policy, world_shape) # todo have to make clear about tuple...
 
     # todo make an env function not viewer.
-    env.viewer.render_policy_arrows(policy1)
+    env.viewer.render_policy_arrows(optimal_policy)
     # env.viewer.render_policy_arrows(policy0)
 
     for t in range(100):
         env.render(mode='graphic')
 
-        action = np.argmax(policy1[curr_state])
+        action = np.argmax(optimal_policy[curr_state])
         # action = np.argmax(policy0[curr_state])
         print('go ' + env.action_descriptors[action])
         curr_state, reward, done, info = env.step(action)
@@ -157,6 +158,9 @@ def run_monte_carlo():
     print('Starting greedy policy episode')
     curr_state = env.reset()
 
+    env.render(mode='graphic')
+    env.viewer.render_policy_arrows(policy1)
+
     for t in range(500):
         env.render(mode='graphic')
 
@@ -173,8 +177,8 @@ def run_monte_carlo():
 if __name__ == '__main__':
     # Run random agent on environment variations
     # run_and_create_gridworld_from_text_file()
-    run_random_maze()
+    # run_random_maze()
 
     # Run specific algorithms on gridworld
     # run_monte_carlo()
-    # run_policy_iteration_gridworld()
+    run_policy_iteration_gridworld()
