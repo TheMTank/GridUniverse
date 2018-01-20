@@ -76,6 +76,8 @@ class GridWorldEnv(gym.Env):
         # set additional parameters for the environment
         self.done = False
         self.info = {}
+        self.screen_width = 1200
+        self.screen_height = 800
 
         if custom_world_fp:
             self._create_custom_world_from_file(custom_world_fp)
@@ -192,18 +194,22 @@ class GridWorldEnv(gym.Env):
                     self.viewer = None
                 return
 
-            screen_width = 1200
-            screen_height = 800
             if self.viewer is None:
-                # import render
                 from core.envs import rendering
-                self.viewer = rendering.Viewer(self, screen_width, screen_height)
+                self.viewer = rendering.Viewer(self, self.screen_width, self.screen_height)
 
             # time.sleep(0.3) # if you want it to go slower. Best way?
 
             return self.viewer.render(return_rgb_array=mode == 'rgb_array')
         else:
             super(GridWorldEnv, self).render(mode=mode)
+
+    def render_policy_arrows(self, policy):
+        if self.viewer is None:
+            from core.envs import rendering
+            self.viewer = rendering.Viewer(self, self.screen_width, self.screen_height)
+
+        self.viewer.render_policy_arrows(policy)
 
     def _close(self):
         pass

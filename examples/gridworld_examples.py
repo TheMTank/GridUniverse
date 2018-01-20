@@ -74,12 +74,10 @@ def run_policy_iteration_gridworld():
         val_fun = utils.single_step_policy_evaluation(policy0, env, value_function=val_fun)
     print(utils.reshape_as_gridworld(val_fun, world_shape))
 
-    # todo comment: mention that for DP there is no concept of an agent.
     # todo why do the walls of policy map have ascii arrows? don't draw them?
     # todo print everthing below better
-    # todo shouldn't have two outputs for policy_map! better name or better handling
-
-    env.render(mode='graphic')
+    # todo shouldn't have two outputs for policy_map! better name or better handling # todo have to make clear about tuple...
+    # policy_arrow_array, policy_probabilities = utils.get_policy_map(optimal_policy, world_shape) # todo have to make clear about tuple...
 
     # test greedy policy
     policy1 = utils.greedy_policy_from_value_function(policy0, env, val_fun)
@@ -111,18 +109,14 @@ def run_policy_iteration_gridworld():
 
     curr_state = env.reset()
 
-    # has to be done after after env.render(mode='graphic') # todo: shouldn't have to
-    policy_arrow_array, policy_probabilities = utils.get_policy_map(optimal_policy, world_shape) # todo have to make clear about tuple...
+    env.render_policy_arrows(optimal_policy)
 
-    # todo make an env function not viewer.
-    env.viewer.render_policy_arrows(optimal_policy)
-    # env.viewer.render_policy_arrows(policy0)
-
+    # Dynamic programming doesn't necessarily have the concept of an agent.
+    # But you can create an agent to run on the environment using the found policy
     for t in range(100):
         env.render(mode='graphic')
 
         action = np.argmax(optimal_policy[curr_state])
-        # action = np.argmax(policy0[curr_state])
         print('go ' + env.action_descriptors[action])
         curr_state, reward, done, info = env.step(action)
 
@@ -157,9 +151,7 @@ def run_monte_carlo():
 
     print('Starting greedy policy episode')
     curr_state = env.reset()
-
-    env.render(mode='graphic')
-    env.viewer.render_policy_arrows(policy1)
+    env.render_policy_arrows(policy1)
 
     for t in range(500):
         env.render(mode='graphic')
@@ -176,9 +168,9 @@ def run_monte_carlo():
 
 if __name__ == '__main__':
     # Run random agent on environment variations
-    # run_and_create_gridworld_from_text_file()
-    # run_random_maze()
+    run_and_create_gridworld_from_text_file()
+    run_random_maze()
 
     # Run specific algorithms on gridworld
-    # run_monte_carlo()
+    run_monte_carlo()
     run_policy_iteration_gridworld()
