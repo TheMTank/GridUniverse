@@ -57,10 +57,12 @@ class Viewer(object):
         self.onetime_geoms = []
         self.transform = Transform()
 
+        self.awesome_face = pyglet.resource.image('awesomeface-resized.png')
+        self.shocked_face = pyglet.resource.image('shockedface-resized.png')
         if random.randint(0, 1) == 0:
-            self.face_img = pyglet.resource.image('awesomeface-resized.png')
+            self.face_img = self.awesome_face
         else:
-            self.face_img = pyglet.resource.image('shockedface-resized.png')
+            self.face_img = self.shocked_face
         self.ground_img = pyglet.resource.image('wbs_texture_05_resized.jpg')
         self.terminal_goal_img = pyglet.resource.image('wbs_texture_05_resized_green.jpg')
         # self.wall_img = pyglet.resource.image('wbs_texture_05_resized_red.jpg')
@@ -76,7 +78,7 @@ class Viewer(object):
         self.batch = pyglet.graphics.Batch()
         background = pyglet.graphics.OrderedGroup(0)
         foreground = pyglet.graphics.OrderedGroup(1)
-        self.face = pyglet.sprite.Sprite(self.face_img, batch=self.batch, group=foreground)
+        self.agent_sprite = pyglet.sprite.Sprite(self.face_img, batch=self.batch, group=foreground)
 
         # Calculate zoom level depending on how many tiles are in each grid dimension
         # This is to fit them all into the screen and center the maze
@@ -150,13 +152,20 @@ class Viewer(object):
         # self.line = Line((0, 0), (500, 500))
         # self.add_geom(self.line)
 
+    def change_face_sprite(self):
+        if self.face_img is self.awesome_face:
+            self.face_img = self.shocked_face
+        else:
+            self.face_img = self.awesome_face
+        self.agent_sprite.image = self.face_img
+
     def get_x_y_pix_location(self, x, y):
         x_pix_loc = x * self.tile_dim + self.x_distance_to_move + (self.num_extra_tiles // 2) * self.tile_dim
         y_pix_loc = self.pix_grid_height - (y * self.tile_dim)
         return int(x_pix_loc), int(y_pix_loc)
 
     def render_policy_arrows(self, policy):
-        # todo show policy probabilities as well?
+        # todo show policy probabilities as well/value function
         # remove all previous arrows and recalculate
         self.geoms = [] # todo only remove arrows
 
@@ -268,7 +277,7 @@ class Viewer(object):
             step_num_label.draw()
 
         # Render agent
-        self.face.x, self.face.y = self.get_x_y_pix_location(self.env.world[self.env.current_state][0], self.env.world[self.env.current_state][1])
+        self.agent_sprite.x, self.agent_sprite.y = self.get_x_y_pix_location(self.env.world[self.env.current_state][0], self.env.world[self.env.current_state][1])
         self.batch.draw()
 
         # Render all geoms e.g. policy arrows

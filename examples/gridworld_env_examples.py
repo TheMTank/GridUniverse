@@ -1,3 +1,5 @@
+import time
+
 from core.envs.gridworld_env import GridWorldEnv
 
 def run_default_gridworld():
@@ -36,6 +38,7 @@ def run_gridworld_from_text_file():
             env.render(mode='graphic')
             action = env.action_space.sample()
             # print('go ' + env.action_descriptors[action])
+            # time.sleep(0.1) # uncomment to watch slower
             observation, reward, done, info = env.step(action)
             if done:
                 print("Episode finished after {} timesteps".format(t + 1))
