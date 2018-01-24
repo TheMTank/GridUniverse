@@ -6,6 +6,8 @@ environments as well as our own custom environments.
 
 Currently working exclusively on OpenAI gym and a Gridworld environment made by us.
 
+![Alt Text](docs/maze_solver_BFS_10_times_gimp.gif)
+
 ## Examples of use
 
 To run an example of policy and value iteration on our Gridworld environment run:  
