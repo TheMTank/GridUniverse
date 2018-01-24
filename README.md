@@ -4,19 +4,23 @@ This repository was created with the goal of developing and reproducing many dif
 and then being able to run large scale experiments using these algorithms on different open-source 
 environments as well as our own custom environments.  
 
-Currently working exclusively on OpenAI gym and a Gridworld environment made by us.
+Currently working exclusively on OpenAI gym and a GridWorld environment made by us.
 
-![Alt Text](docs/maze_solver_BFS_10_times_gimp.gif)
+![GIF](docs/maze_solver_BFS_10_times.gif)
 
 ## Examples of use
 
-To run an example of policy and value iteration on our Gridworld environment run:  
+To run an example of policy/value iteration or Monte Carlo evaluation on our GridWorld environment run:  
 
-`python examples/gridworld_examples.py`
+`python examples/gridworld_alg_examples.py`
+
+To run random agents on random or preset grids run:
+
+`python examples/gridworld_env_examples.py`
 
 To run tests:  
 
-`python tests/tests.py`
+`python tests/tests_gridworld.py`
 
 ## Installation
 
@@ -34,11 +38,13 @@ For a general documentation on how the environment works refer to the [official 
 
 ## Running GridWorld
 
-To run our custom environment explore the code within:
+To see how the environment is used explore the code within:
 
-`python examples/gridworld_examples.py`
+`examples/gridworld_alg_examples.py`
 
-The `run_random_gridworld()` function shows the simplest way to use the environment.  
+`examples/gridworld_env_examples.py`
+
+The `run_default_gridworld()` function shows the simplest way to use the environment.  
 For more info check the [GridWorld Documentation](https://github.com/beduffy/RL_problems/tree/master/docs/GridWorld.md)
 
 ## API Reference
