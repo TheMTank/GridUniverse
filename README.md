@@ -20,7 +20,7 @@ To run random agents on random or preset grids run:
 
 To run tests:  
 
-`python tests/tests_gridworld.py`
+`python tests/test_gridworld.py`
 
 ## Installation
 
