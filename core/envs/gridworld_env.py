@@ -46,7 +46,8 @@ class GridWorldEnv(gym.Env):
                                            lambda s: s + self.x_max if self.world[s][1] < (self.y_max - 1) else s, # down
                                            lambda s: s - 1 if self.world[s][0] > 0 else s]                         # left
 
-        self.action_descriptors = ['up', 'right', 'down', 'left']
+        self.action_descriptors = ['UP', 'RIGHT', 'DOWN', 'LEFT']
+        self.action_descriptor_to_int = {desc:idx for idx, desc in enumerate(self.action_descriptors)}
         # set observed params: [current state, world state]
         self.observation_space = spaces.Discrete(self.world.size)
         # set initial state for the agent. If initial_state is a list, choose randomly
@@ -76,14 +77,15 @@ class GridWorldEnv(gym.Env):
         # set additional parameters for the environment
         self.done = False
         self.info = {}
+        self.screen_width = 1200
+        self.screen_height = 800
+
+        self.viewer = None
+        self._seed()
+        self.np_random, seed = seeding.np_random(55)
 
         if custom_world_fp:
             self._create_custom_world_from_file(custom_world_fp)
-
-        self.viewer = None
-
-        self._seed()
-        self.np_random, seed = seeding.np_random(55)
         if random_maze:
             self._create_random_maze(self.x_max, self.y_max)
 
@@ -114,16 +116,22 @@ class GridWorldEnv(gym.Env):
                 self.wall_grid[wall_state] = 1
                 self.wall_indices.append(wall_state)
 
-    def look_step_ahead(self, state, action):
+    def look_step_ahead(self, state, action, care_about_terminal=True):
         """
         Computes the results of a hypothetical action taking place at the given state.
 
         Returns the state to what that action would lead, the reward at that new state and a boolean value that
         determines if the next state is terminal
         """
-        if self.is_terminal(state):
-            next_state = state
+
+        if care_about_terminal:
+            if self.is_terminal(state):
+                next_state = state
+            else:
+                next_state = self.action_state_to_next_state[action](state)
+                next_state = next_state if not self._is_wall(next_state) else state
         else:
+            # repeating code for now, but for good reason
             next_state = self.action_state_to_next_state[action](state)
             next_state = next_state if not self._is_wall(next_state) else state
 
@@ -162,6 +170,9 @@ class GridWorldEnv(gym.Env):
     def _reset(self):
         self.done = False
         self.previous_state = self.current_state = self.initial_state = random.choice(self.starting_states)
+        self.last_n_states = []
+        if self.viewer:
+            self.viewer.change_face_sprite()
         return self.current_state
 
     def _render(self, mode='human', close=False):
@@ -190,18 +201,22 @@ class GridWorldEnv(gym.Env):
                     self.viewer = None
                 return
 
-            screen_width = 1200
-            screen_height = 800
             if self.viewer is None:
-                # import render
                 from core.envs import rendering
-                self.viewer = rendering.Viewer(self, screen_width, screen_height)
+                self.viewer = rendering.Viewer(self, self.screen_width, self.screen_height)
 
             # time.sleep(0.3) # if you want it to go slower. Best way?
 
             return self.viewer.render(return_rgb_array=mode == 'rgb_array')
         else:
             super(GridWorldEnv, self).render(mode=mode)
+
+    def render_policy_arrows(self, policy):
+        if self.viewer is None:
+            from core.envs import rendering
+            self.viewer = rendering.Viewer(self, self.screen_width, self.screen_height)
+
+        self.viewer.render_policy_arrows(policy)
 
     def _close(self):
         pass

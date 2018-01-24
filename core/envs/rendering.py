@@ -57,10 +57,16 @@ class Viewer(object):
         self.onetime_geoms = []
         self.transform = Transform()
 
-        self.face_img = pyglet.resource.image('straight-face.png')
+        self.awesome_face = pyglet.resource.image('awesomeface-resized.png')
+        self.shocked_face = pyglet.resource.image('shockedface-resized.png')
+        if random.randint(0, 1) == 0:
+            self.face_img = self.awesome_face
+        else:
+            self.face_img = self.shocked_face
         self.ground_img = pyglet.resource.image('wbs_texture_05_resized.jpg')
         self.terminal_goal_img = pyglet.resource.image('wbs_texture_05_resized_green.jpg')
-        self.wall_img = pyglet.resource.image('wbs_texture_05_resized_red.jpg')
+        # self.wall_img = pyglet.resource.image('wbs_texture_05_resized_red.jpg')
+        self.wall_img = pyglet.resource.image('wbs_texture_05_resized_wall.jpg')
 
         self.padding = 1
         self.tile_dim = self.ground_img.width + self.padding
@@ -72,19 +78,10 @@ class Viewer(object):
         self.batch = pyglet.graphics.Batch()
         background = pyglet.graphics.OrderedGroup(0)
         foreground = pyglet.graphics.OrderedGroup(1)
-        self.face = pyglet.sprite.Sprite(self.face_img, batch=self.batch, group=foreground)
+        self.agent_sprite = pyglet.sprite.Sprite(self.face_img, batch=self.batch, group=foreground)
 
-        # Lets say I want to fit 5 tiles + x_max tiles + 5 tiles always on the x dimension
-        # Therefore start x should be 5 tiles * tile_dim
-        # Therefore larger_grid_dimension is x_max + 10 tiles
-        # Therefore larger_pixel_dimension is width
-        # Therefore how_many_tiles_you_can_fit_in_larger_dim = math.floor(larger_pixel_dimension / self.tile_dim)
-        # Therefore self.zoom_level = larger_grid_dimension / how_many_tiles_you_can_fit_in_larger_dim
-        # Therefore same for y_level
-
-        # Don't use extra tiles. Just center it.
-        # Larger dimension by num tiles should just fit into screen with z pixels on each side
-
+        # Calculate zoom level depending on how many tiles are in each grid dimension
+        # This is to fit them all into the screen and center the maze
         # self.num_extra_tiles = 10
         self.num_extra_tiles = 4
 
@@ -99,9 +96,6 @@ class Viewer(object):
 
         self.zoom_level = np.max((zoom_level_for_width, zoom_level_for_height))
 
-        print('zoom_level_for_width: {}, zoom_level_for_height: {}, zoom_level: {}'.format(zoom_level_for_width, zoom_level_for_height, self.zoom_level))
-        print('pixel_width_of_grid: {}, pixel_height_of_grid: {}'.format(pixel_width_of_grid, pixel_height_of_grid))
-
         self.zoomed_width = width * self.zoom_level
         self.zoomed_height = height * self.zoom_level
 
@@ -113,19 +107,22 @@ class Viewer(object):
         self.bottom = 0
         self.top = self.zoomed_height
 
+        if int(round(self.zoom_level)) == 1:
+            self.font_size = 25
+        else:
+            self.font_size = 50
+
+        print('zoom_level_for_width: {}, zoom_level_for_height: {}, zoom_level: {}'.format(round(zoom_level_for_width, 4), round(zoom_level_for_height, 4), round(self.zoom_level)))
+        print('pixel_width_of_grid: {}, pixel_height_of_grid: {}'.format(pixel_width_of_grid, pixel_height_of_grid))
         print('x_distance_to_move:', self.x_distance_to_move)
         print('tile_dim: {}. grid_shape: {}'.format(self.tile_dim, [self.env.x_max, self.env.y_max]))
-        # print('how_many_tiles_you_can_fit_in_smaller_dim: {}, how_many_tiles_you_can_fit_in_larger_dim: {}'.format(how_many_tiles_you_can_fit_in_smaller_dim, how_many_tiles_you_can_fit_in_larger_dim))
-        print('zoom:', round(self.zoom_level, 4))
         print('width: {}, height: {}, zoomed_width: {}, zoomed_height: {}'.format(width, height, self.zoomed_width, self.zoomed_height))
 
-        # todo create function to calculate x and y pixel position from grid position for face, arrows and agent path
         # have to flip pixel location. top-left is initial state = x, y = 0, 0 = state 0
         self.pix_grid_height = (self.env.y_max) * self.tile_dim + (self.num_extra_tiles // 2) * self.tile_dim
 
         for i, (x, y) in enumerate(self.env.world):
-            x_pix_loc = x * self.tile_dim + self.x_distance_to_move + (self.num_extra_tiles // 2) * self.tile_dim
-            y_pix_loc = self.pix_grid_height - (y * self.tile_dim)
+            x_pix_loc, y_pix_loc = self.get_x_y_pix_location(x, y)
             if self.env.is_terminal(i):  # if terminal
                 self.wall_sprites.append(
                     pyglet.sprite.Sprite(self.terminal_goal_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
@@ -154,35 +151,26 @@ class Viewer(object):
 
         # self.line = Line((0, 0), (500, 500))
         # self.add_geom(self.line)
-        # line.
 
-    # def calculate_policy_lines(self, policy_arrows_map): # todo or policy map?
-    def render_policy_arrows(self, policy): # todo or policy map?
-        # todo show policy probabilities as well?
+    def change_face_sprite(self):
+        if self.face_img is self.awesome_face:
+            self.face_img = self.shocked_face
+        else:
+            self.face_img = self.awesome_face
+        self.agent_sprite.image = self.face_img
+
+    def get_x_y_pix_location(self, x, y):
+        x_pix_loc = x * self.tile_dim + self.x_distance_to_move + (self.num_extra_tiles // 2) * self.tile_dim
+        y_pix_loc = self.pix_grid_height - (y * self.tile_dim)
+        return int(x_pix_loc), int(y_pix_loc)
+
+    def render_policy_arrows(self, policy):
+        # todo show policy probabilities as well/value function
         # remove all previous arrows and recalculate
         self.geoms = [] # todo only remove arrows
 
-        unicode_arrows = np.array([u'\u2191', u'\u2192', u'\u2193', u'\u2190'  # up, right, down, left
-                                                                    u'\u2194', u'\u2195'],
-                                  dtype='<U1')  # left-right, up-down
-        policy_arrows_map = np.empty(policy.shape[0], dtype='<U4')
-        # probs_for_state = np.zeros(policy.shape)
-        for idx, state in enumerate(np.nditer(np.arange(policy.shape[0]))):
-            # probs_for_state[idx] = []
-            # for action in range(4): #self.env.action_space:
-            #     probs_for_state[idx].append(policy[state][action])
-            # probs_for_state[state] = policy_state
-            # find index of actions where the probability is > 0
-            optimal_actions = np.where(np.around(policy[state], 8) > np.around(np.float64(0), 8))[0]
-            # match actions to unicode values of the arrows to be displayed
-            for action in optimal_actions:
-                policy_arrows_map[state] = np.core.defchararray.add(policy_arrows_map[state], unicode_arrows[action])
-        policy_probabilities = np.fromiter((policy[state] for state in np.nditer(np.arange(policy.shape[0]))),
-                                           dtype='float64, float64, float64, float64')
-
-
         for state_index, (x, y) in enumerate(self.env.world):
-            x_pix_loc, y_pix_loc = x * self.tile_dim, self.pix_grid_height - y * self.tile_dim
+            x_pix_loc, y_pix_loc = self.get_x_y_pix_location(x, y)
             if self.env.is_terminal(state_index):  # if terminal
                 pass
             elif self.env._is_wall(state_index):
@@ -192,74 +180,37 @@ class Viewer(object):
                 arrow_base_length_full_prob = 20
                 arrow_width = 5
                 arrow_height = 5
-                # unicode_arrows = np.array([u'\u2191', u'\u2192', u'\u2193', u'\u2190'  # up, right, down, left
-                #                                                             u'\u2194', u'\u2195'],
-                #                           dtype='<U1')  # left-right, up-down
-                # policy_arrows_map[state_index] = np.core.defchararray.add(policy_arrows_map[state_index], u'\u2193')
-                # policy_arrows_map[state_index] += u'\u2193'
-                # print(policy_arrows_map[state_index])
-                # for char in policy_arrows_map[state_index]:
-                # for key in probs_for_state.keys():
-                # for action_idx, probability in enumerate(probs_for_state[state]):
-                #     i = 0
-                    # for action_idx, probability in enumerate(probs_for_state[key]):
-                print(policy[state_index])
                 for action_idx, probability in enumerate(policy[state_index]):
-                        # direction, towards, arrow_head_vertices = None, None, None
-                        # print(action_idx, probability)
-                        # print(probs_for_state[key])
                         arrow_base_length = round(probability * arrow_base_length_full_prob)
-                        # if arrow_base_length < 3 or probability < 0.1:
                         if probability < 0.1:
-                            # print('arrow base length too small')
+                            # arrow base length too small to render
                             continue
-                            break
-                        # print(policy_arrows_map)
-                        # print(policy_arrows_map[state_index])
-                        # if len(policy_arrows_map[state_index]) > 1:
-                        #     print('WAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARNING')
-                        #     for ch in policy_arrows_map[state_index]:
-                        #         print(ch)
-                        #     print()
 
-                        # if char == u'\u2191': # up
                         if action_idx == 0: # up
                             # np because of vector math
-                            # i += 1
-                            # print(i, ' times here for same action')
-                            # assert i == 1
                             direction = np.array([0, arrow_base_length]).astype(int)
                             towards = center + direction
                             arrow_head_vertices = [center + direction + np.array([arrow_width, 0]), # arrow head bottom right vertex
                                                    center + direction + np.array([-arrow_width, 0]), # arrow head bottom left vertex
                                                    center + direction + np.array([0, arrow_height])] # arrow pointy bit
-                        # elif char == u'\u2193': # down
                         elif action_idx == 2: # down
-                            print('arrow_base_length:', arrow_base_length)
                             direction = np.array([0, - arrow_base_length]).astype(int)
                             towards = center + direction
                             arrow_head_vertices = [center + direction + np.array([arrow_width, 0]),
                                                    center + direction + np.array([-arrow_width, 0]),
                                                    center + direction + np.array([0, -arrow_height])]
-                        # # elif char == u'\u2192': # right
                         elif action_idx == 1: # right
-                            # continue
                             direction = np.array([0 + arrow_base_length, 0]).astype(int)
                             towards = center + direction
                             arrow_head_vertices = [center + direction + np.array([0, -arrow_width]),
                                                    center + direction + np.array([0, +arrow_width]),
                                                    center + direction + np.array([arrow_height, 0])]
                         elif action_idx == 3:  # left
-                            # continue
                             direction = np.array([0 - arrow_base_length, 0]).astype(int)
                             towards = center + direction
                             arrow_head_vertices = [center + direction + np.array([0, +arrow_width]),
                                                    center + direction + np.array([0, -arrow_width]),
                                                    center + direction + np.array([-arrow_height, 0])]
-
-                        if arrow_base_length < 3 or probability < 0.1:
-                            print('SOMETHING WRONG!!!')
-                            break
 
                         center = tuple(center)
                         towards = tuple(towards)
@@ -312,23 +263,21 @@ class Viewer(object):
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST) # todo needed?
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
 
-
         # Draw text
-        font_size = 50
+        # todo fix font-size if maze is covering most of the screen
         fps_string = "FPS: {}".format(self.FPS)
-        fps_label = pyglet.text.Label(text=fps_string, x=self.zoomed_width - len(fps_string) * font_size, y=self.zoomed_height - 80, font_size=font_size)
+        fps_label = pyglet.text.Label(text=fps_string, x=self.zoomed_width - len(fps_string) * self.font_size, y=self.zoomed_height - 80, font_size=self.font_size)
         fps_label.draw()
 
         if hasattr(self.env, 'step_num'):
             # todo get text size to properly align
             step_string = "Step: {}".format(self.env.step_num)
 
-            step_num_label = pyglet.text.Label(text=step_string, x=self.zoomed_width - len(step_string) * font_size, y=self.zoomed_height - 160, font_size=font_size)
+            step_num_label = pyglet.text.Label(text=step_string, x=self.zoomed_width - len(step_string) * self.font_size, y=self.zoomed_height - 160, font_size=self.font_size)
             step_num_label.draw()
 
         # Render agent
-        self.face.x = self.env.world[self.env.current_state][0] * self.tile_dim + self.x_distance_to_move + (self.num_extra_tiles // 2) * self.tile_dim
-        self.face.y = self.pix_grid_height - self.env.world[self.env.current_state][1] * self.tile_dim
+        self.agent_sprite.x, self.agent_sprite.y = self.get_x_y_pix_location(self.env.world[self.env.current_state][0], self.env.world[self.env.current_state][1])
         self.batch.draw()
 
         # Render all geoms e.g. policy arrows
@@ -347,11 +296,9 @@ class Viewer(object):
         discount = 0.96
         padding = 10
         for i, (x, y) in enumerate(self.env.last_n_states[::-1]):
-            x_pix_loc = int(x * self.tile_dim + self.x_distance_to_move + (self.num_extra_tiles // 2) * self.tile_dim)
-            y_pix_loc = int(self.pix_grid_height - y * self.tile_dim)
+            x_pix_loc, y_pix_loc = self.get_x_y_pix_location(x, y)
 
             a *= discount
-            # if x_pix_loc == self.face.x and y_pix_loc == self.face.y:
             if x == self.env.world[self.env.current_state][0] and y == self.env.world[self.env.current_state][1]:
                 continue
 
@@ -392,7 +339,7 @@ class Viewer(object):
         self.window.flip()
         self.onetime_geoms = []
 
-
+        # Calculate FPS last
         self.FPS = math.floor(1 / (time.time() - start_time))
         # print('Time taken for render: {}, {} FPS'.format(round(time.time() - start_time, 4), self.FPS))
         return arr
