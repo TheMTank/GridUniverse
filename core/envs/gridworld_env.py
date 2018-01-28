@@ -14,7 +14,7 @@ class GridWorldEnv(gym.Env):
     metadata = {'render.modes': ['human', 'ansi', 'graphic']}
 
     def __init__(self, grid_shape=(4, 4), initial_state=0, terminal_goal_states=None, lava_states=None, walls=None,
-                 custom_world_fp=None, random_maze=False):
+                 lemons=None, melons=None, apples=None, custom_world_fp=None, random_maze=False):
         """
         Main constructor to create a GridWorld environment. The default GridWorld is a square grid of 4x4 where the
         agent starts at the top left corner and the terminal state is at the bottom right corner.
@@ -26,6 +26,9 @@ class GridWorldEnv(gym.Env):
         :param lava_states: like terminal_goal_states (episode ends if agent reaches one of them),
                             but agent receives negative reward
         :param walls: list of walls. These are blocked states where the agent can't walk
+        :param lemons: If agent lands on a state containing a lemon: small negative reward
+        :param melons: If agent lands on a state containing a melon: large reward
+        :param apples: If agent lands on a state containing an apple: small reward
         :param custom_world_fp: optional parameter to create the grid from a text file.
         :param random_maze: optional parameter to randomly generate a maze from the algorithm within maze_generation.py
                             This will override the terminal_goal_states, initial_state, walls and custom_world_fp params
@@ -37,6 +40,12 @@ class GridWorldEnv(gym.Env):
             raise TypeError("lava_states parameter must be a list of integer indices")
         if walls is not None and not isinstance(walls, list):
             raise TypeError("walls parameter must be a list of integer indices")
+        if lemons is not None and not isinstance(lemons, list):
+            raise TypeError("lemons parameter must be a list of integer indices")
+        if melons is not None and not isinstance(melons, list):
+            raise TypeError("melons parameter must be a list of integer indices")
+        if apples is not None and not isinstance(apples, list):
+            raise TypeError("apples parameter must be a list of integer indices")
         if not isinstance(grid_shape, tuple) or len(grid_shape) != 2 or not isinstance(grid_shape[0], int):
             raise TypeError("grid_shape parameter must be tuple of two integers")
         self.x_max = grid_shape[0] # num columns
@@ -76,16 +85,30 @@ class GridWorldEnv(gym.Env):
         for t_s in self.lava_states:
             if t_s < 0 or t_s > (self.world.size - 1):
                 raise ValueError("lava state {} is out of grid bounds".format(t_s))
+        # set lemons, melons and apples
+        # Initial fruit lists
+        if lemons is None: self.lemons = []
+        else: self.lemons = lemons
+        if apples is None: self.apples = []
+        else: self.apples = apples
+        if melons is None: self.melons = []
+        else: self.melons = melons
+        # current fruit can get eaten and has to placed back after reset
+        self.current_lemons = self.lemons[:]
+        self.current_apples = self.apples[:]
+        self.current_melons = self.melons[:]
         # set walls
         self.wall_indices = []
         self.wall_grid = np.zeros(self.world.shape)
         self._generate_walls(walls)
         # set reward matrix
+        self.LEMON_REWARD = -2
+        self.APPLE_REWARD = 2
+        self.MELON_REWARD = 5
+        self.LAVA_REWARD = -10
+        self.TERMINAL_GOAL_REWARD = 10
         self.reward_matrix = np.full(self.world.shape, -1)
-        for terminal_state in self.terminal_goal_states:
-            self.reward_matrix[terminal_state] = 10
-        for terminal_state in self.lava_states:
-            self.reward_matrix[terminal_state] = -10
+        self._generate_reward_matrix()
         # self.reward_range = [-inf, inf] # default values already
         self.num_previous_states_to_store = 500
         self.last_n_states = []
@@ -131,6 +154,56 @@ class GridWorldEnv(gym.Env):
                 self.wall_grid[wall_state] = 1
                 self.wall_indices.append(wall_state)
 
+    def _generate_reward_matrix(self):
+        """
+        Set reward matrix accordingly between non-terminal and terminal states.
+        apples, lemons and melons (small positive, small negative, large positive respectively)
+        Terminal states: terminal_goal_states and lava_states
+        Every walkable state (except terminal states) you lose -1
+        so if there is fruit you gain the fruit's reward added to -1.
+        """
+
+        # non-terminal specific rewards
+        for state in self.current_apples:
+            self.reward_matrix[state] += self.APPLE_REWARD
+        for state in self.current_lemons:
+            self.reward_matrix[state] += self.LEMON_REWARD
+        for state in self.current_melons:
+            self.reward_matrix[state] += self.MELON_REWARD
+        # terminal states override melons, lemons and apples. Also no immediate reward obtained within them.
+        for terminal_state in self.terminal_goal_states:
+            self.reward_matrix[terminal_state] = self.TERMINAL_GOAL_REWARD
+        for terminal_state in self.lava_states:
+            self.reward_matrix[terminal_state] = self.LAVA_REWARD
+
+    def reward_function(self, next_state, collect=False):
+        """
+        Reward function which handles removing fruit from grid in case they are collected.
+        """
+
+        if collect:
+            reward = self.reward_matrix[next_state]
+            # todo fruit function
+            if next_state in self.current_lemons:
+                print('Collecting lemon at:', next_state)
+                reward = self.reward_matrix[next_state]
+                self.reward_matrix[next_state] = -1
+                self.current_lemons.remove(next_state)
+            elif next_state in self.current_apples:
+                print('Collecting apple at:', next_state)
+                reward = self.reward_matrix[next_state]
+                self.reward_matrix[next_state] = -1
+                self.current_apples.remove(next_state)
+            elif next_state in self.current_melons:
+                print('Collecting melon at:', next_state)
+                reward = self.reward_matrix[next_state]
+                self.reward_matrix[next_state] = -1
+                self.current_melons.remove(next_state)
+
+            return reward
+        else:
+            return self.reward_matrix[next_state]
+
     def look_step_ahead(self, state, action, care_about_terminal=True):
         """
         Computes the results of a hypothetical action taking place at the given state.
@@ -150,7 +223,7 @@ class GridWorldEnv(gym.Env):
             next_state = self.action_state_to_next_state[action](state)
             next_state = next_state if not self._is_wall(next_state) else state
 
-        return next_state, self.reward_matrix[next_state], self.is_terminal(next_state)
+        return next_state, self.reward_function(next_state, collect=True), self.is_terminal(next_state)
 
     def _is_wall(self, state):
         """
@@ -199,6 +272,10 @@ class GridWorldEnv(gym.Env):
         self.done = False
         self.previous_state = self.current_state = self.initial_state = random.choice(self.starting_states)
         self.last_n_states = []
+        self.current_lemons = self.lemons[:]
+        self.current_apples = self.apples[:]
+        self.current_melons = self.melons[:]
+        self._generate_reward_matrix()
         if self.viewer:
             self.viewer.change_face_sprite()
         return self.current_state
@@ -209,12 +286,16 @@ class GridWorldEnv(gym.Env):
         new_world[self.current_state] = 'x'
         for t_state in self.terminal_goal_states:
             new_world[t_state] = 'G'
-
         for t_state in self.lava_states:
             new_world[t_state] = 'L'
-
         for w_state in self.wall_indices:
             new_world[w_state] = '#'
+        for m_state in self.current_melons:
+            new_world[m_state] = 'm'
+        for l_state in self.current_lemons:
+            new_world[l_state] = 'l'
+        for a_state in self.current_apples:
+            new_world[a_state] = 'a'
 
         if mode == 'human' or mode == 'ansi':
             outfile = StringIO() if mode == 'ansi' else sys.stdout
@@ -266,7 +347,7 @@ class GridWorldEnv(gym.Env):
         Creates the world from a rectangular text file in the format of:
 
         ooo#
-        oxoo
+        oxol
         oooL
         oooG
 
@@ -275,12 +356,18 @@ class GridWorldEnv(gym.Env):
          "#" is a blocked "wall"
          "G" is a terminal goal state
          "L" is a lava terminal state
+         "l" is a lemon
+         "a" is an apple
+         "m" is a melon
          "x" is a possible starting location. Chosen uniform randomly if multiple "x"s.
         """
 
         self.terminal_goal_states = []
-        self.starting_states = []
         self.lava_states = []
+        self.starting_states = []
+        self.lemons = []
+        self.apples = []
+        self.melons = []
         walls_indices = []
 
         curr_index = 0
@@ -294,6 +381,12 @@ class GridWorldEnv(gym.Env):
                     self.terminal_goal_states.append(curr_index)
                 elif char == 'L':
                     self.lava_states.append(curr_index)
+                elif char == 'l':
+                    self.lemons.append(curr_index)
+                elif char == 'a':
+                    self.apples.append(curr_index)
+                elif char == 'm':
+                    self.melons.append(curr_index)
                 elif char == 'o':
                     pass
                 elif char == '#':
@@ -310,8 +403,6 @@ class GridWorldEnv(gym.Env):
         if len(self.terminal_goal_states) == 0:
             raise ValueError("No terminal goal states set in text file. Place \"T\" within grid. ")
 
-        self.reset()
-
         self.y_max = len(text_world_lines)
         self.x_max = width_of_grid
         self.world = self._generate_world()
@@ -321,10 +412,7 @@ class GridWorldEnv(gym.Env):
         self._generate_walls(walls_indices)
 
         self.reward_matrix = np.full(self.world.shape, -1)
-        for terminal_state in self.terminal_goal_states:
-            self.reward_matrix[terminal_state] = 10
-        for terminal_state in self.lava_states:
-            self.reward_matrix[terminal_state] = -10
+        self.reset()
 
     def _create_random_maze(self, width, height):
         all_textworld_lines = maze_generation.create_random_maze(width, height)
