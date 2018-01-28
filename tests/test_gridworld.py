@@ -104,5 +104,18 @@ class TestGridWorld(unittest.TestCase):
         print(all(boolean_elementwise_comparison))
         self.assertTrue(all(boolean_elementwise_comparison))
 
+    def test_lava(self):
+        """
+        Run agent into lava, test to see if episode ends and negative reward
+        """
+
+        env = GridWorldEnv(lava_states=[1])
+
+        env.render()
+        action = env.action_descriptor_to_int['RIGHT']
+        observation, reward, done, info = env.step(action)
+
+        self.assertTrue(reward == -10 and done)
+
 if __name__ == '__main__':
     unittest.main()
