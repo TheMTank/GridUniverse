@@ -72,7 +72,7 @@ class TestGridWorld(unittest.TestCase):
 
         self.assertTrue((step_no + 1) == len(actions_to_take) and done)
 
-    def test_each_boundary(self):
+    def test_each_boundary_within_default_env(self):
         """
         The agent follows a sequence of steps to check each boundary acts as expected (the current
         observation should be the same as the previous if you move into a boundary).
@@ -106,7 +106,7 @@ class TestGridWorld(unittest.TestCase):
 
     def test_lava(self):
         """
-        Run agent into lava, test to see if episode ends and negative reward
+        Run agent into lava, test to see if episode ends with negative reward
         """
 
         env = GridWorldEnv(lava_states=[1])
@@ -114,6 +114,22 @@ class TestGridWorld(unittest.TestCase):
         env.render()
         action = env.action_descriptor_to_int['RIGHT']
         observation, reward, done, info = env.step(action)
+
+        self.assertTrue(reward == -10 and done)
+
+    def test_lava_works_from_text_file(self):
+        """
+        Test whether we can end the episode by making the agent travel into lava in environment created from text file
+        """
+
+        env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/test_env.txt')
+        actions_to_take = [env.action_descriptor_to_int[action_desc] for action_desc in ['DOWN', 'DOWN', 'DOWN', 'RIGHT', 'RIGHT']]
+        for step_no, action in enumerate(actions_to_take):
+            env.render()
+            print('go ' + env.action_descriptors[action])
+            observation, reward, done, info = env.step(action)
+            if done:
+                print("Episode finished after {} timesteps".format(step_no + 1))
 
         self.assertTrue(reward == -10 and done)
 

@@ -52,7 +52,7 @@ class GridWorldEnv(gym.Env):
                                            lambda s: s - 1 if self.world[s][0] > 0 else s]                         # left
 
         self.action_descriptors = ['UP', 'RIGHT', 'DOWN', 'LEFT']
-        self.action_descriptor_to_int = {desc:idx for idx, desc in enumerate(self.action_descriptors)}
+        self.action_descriptor_to_int = {desc: idx for idx, desc in enumerate(self.action_descriptors)}
         # set observed params: [current state, world state]
         self.observation_space = spaces.Discrete(self.world.size)
         # set initial state for the agent. If initial_state is a list, choose randomly
@@ -323,6 +323,8 @@ class GridWorldEnv(gym.Env):
         self.reward_matrix = np.full(self.world.shape, -1)
         for terminal_state in self.terminal_goal_states:
             self.reward_matrix[terminal_state] = 10
+        for terminal_state in self.lava_states:
+            self.reward_matrix[terminal_state] = -10
 
     def _create_random_maze(self, width, height):
         all_textworld_lines = maze_generation.create_random_maze(width, height)
