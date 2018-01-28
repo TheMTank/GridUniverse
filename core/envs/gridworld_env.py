@@ -107,7 +107,8 @@ class GridWorldEnv(gym.Env):
         self.MELON_REWARD = 5
         self.LAVA_REWARD = -10
         self.TERMINAL_GOAL_REWARD = 10
-        self.reward_matrix = np.full(self.world.shape, -1)
+        self.MOVEMENT_REWARD = -1
+        self.reward_matrix = np.full(self.world.shape, self.MOVEMENT_REWARD)
         self._generate_reward_matrix()
         # self.reward_range = [-inf, inf] # default values already
         self.num_previous_states_to_store = 500
@@ -159,8 +160,8 @@ class GridWorldEnv(gym.Env):
         Set reward matrix accordingly between non-terminal and terminal states.
         apples, lemons and melons (small positive, small negative, large positive respectively)
         Terminal states: terminal_goal_states and lava_states
-        Every walkable state (except terminal states) you lose -1
-        so if there is fruit you gain the fruit's reward added to -1.
+        Every walkable state (except terminal states) you lose -1 (self.MOVEMENT_REWARD)
+        so if there is fruit you gain the fruit's reward added to -1 self.MOVEMENT_REWARD.
         """
 
         # non-terminal specific rewards
@@ -187,17 +188,17 @@ class GridWorldEnv(gym.Env):
             if next_state in self.current_lemons:
                 print('Collecting lemon at:', next_state)
                 reward = self.reward_matrix[next_state]
-                self.reward_matrix[next_state] = -1
+                self.reward_matrix[next_state] = self.MOVEMENT_REWARD
                 self.current_lemons.remove(next_state)
             elif next_state in self.current_apples:
                 print('Collecting apple at:', next_state)
                 reward = self.reward_matrix[next_state]
-                self.reward_matrix[next_state] = -1
+                self.reward_matrix[next_state] = self.MOVEMENT_REWARD
                 self.current_apples.remove(next_state)
             elif next_state in self.current_melons:
                 print('Collecting melon at:', next_state)
                 reward = self.reward_matrix[next_state]
-                self.reward_matrix[next_state] = -1
+                self.reward_matrix[next_state] = self.MOVEMENT_REWARD
                 self.current_melons.remove(next_state)
 
             return reward
@@ -262,7 +263,6 @@ class GridWorldEnv(gym.Env):
         self.current_state, reward, self.done = self.look_step_ahead(self.current_state, action)
         # if done: # todo
         #     env.render(mode='graphic')
-        # self.last_n_states.append(self.current_state)
         self.last_n_states.append(self.world[self.current_state])
         if len(self.last_n_states) > self.num_previous_states_to_store:
             self.last_n_states.pop(0)
@@ -411,7 +411,7 @@ class GridWorldEnv(gym.Env):
         self.wall_indices = []
         self._generate_walls(walls_indices)
 
-        self.reward_matrix = np.full(self.world.shape, -1)
+        self.reward_matrix = np.full(self.world.shape, self.MOVEMENT_REWARD)
         self.reset()
 
     def _create_random_maze(self, width, height):

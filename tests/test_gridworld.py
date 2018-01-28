@@ -133,5 +133,73 @@ class TestGridWorld(unittest.TestCase):
 
         self.assertTrue(reward == -10 and done)
 
+    def test_lemons_melons_apples(self):
+        """
+        Test whether correct cumulative reward is received for collecting certain number of melons, lemons and apples.
+        In places where there are no fruit, we lose -1 immediate reward (self.MOVEMENT_REWARD)
+        """
+
+        env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/melons_lemons_apples_env.txt')
+        actions_to_take = [env.action_descriptor_to_int[action_desc] for action_desc in
+                           ['RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT',
+                            'DOWN', 'LEFT', 'LEFT', 'DOWN', 'RIGHT', 'RIGHT']]
+
+        num_lemons = num_apples = num_melons = 3
+        expected_total_reward = num_apples * env.APPLE_REWARD + num_lemons * env.LEMON_REWARD + \
+                                num_melons * env.MELON_REWARD + len(actions_to_take) * self.MOVEMENT_REWARD  # -1 for immediate reward
+        cumulative_reward = 0
+
+        for step_no, action in enumerate(actions_to_take):
+            env.render()
+            print('go ' + env.action_descriptors[action])
+            observation, reward, done, info = env.step(action)
+            cumulative_reward += reward
+
+        print(cumulative_reward, expected_total_reward)
+        self.assertTrue(cumulative_reward == expected_total_reward)
+
+    def test_fruit_disappears(self):
+        """
+        Test that if you collect fruit, it disappears. Apples in this case
+        """
+
+        env = GridWorldEnv(apples=[1])
+
+        env.render()
+        action = env.action_descriptor_to_int['RIGHT']
+        observation, reward1, done, info = env.step(action)
+
+        env.render()
+        action = env.action_descriptor_to_int['LEFT']
+        observation, reward2, done, info = env.step(action)
+
+        env.render()
+        action = env.action_descriptor_to_int['RIGHT']
+        observation, reward3, done, info = env.step(action)
+        env.render()
+
+        self.assertTrue(reward1 == (env.APPLE_REWARD - 1) and reward3 != (env.APPLE_REWARD - 1))
+
+    def test_fruit_reset(self):
+        """
+        Test that after collecting fruit and the environment is reset, fruit reappears
+        and that you still get same reward. Melon in this case
+        """
+
+        env = GridWorldEnv(melons=[1])
+
+        env.render()
+        action = env.action_descriptor_to_int['RIGHT']
+        observation, reward1, done, info = env.step(action)
+        env.render()
+
+        print('Resetting environment')
+        env.reset()
+        env.render()
+        observation, reward2, done, info = env.step(action)
+        env.render()
+
+        self.assertTrue(reward1 == reward2 and reward1 == (env.MELON_REWARD - 1))
+
 if __name__ == '__main__':
     unittest.main()
