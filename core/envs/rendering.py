@@ -65,14 +65,15 @@ class Viewer(object):
             self.face_img = self.shocked_face
         self.ground_img = pyglet.resource.image('wbs_texture_05_resized.jpg')
         self.terminal_goal_img = pyglet.resource.image('wbs_texture_05_resized_green.jpg')
-        # self.wall_img = pyglet.resource.image('wbs_texture_05_resized_red.jpg')
+        self.terminal_lava_img = pyglet.resource.image('wbs_texture_05_resized_red.jpg')
         self.wall_img = pyglet.resource.image('wbs_texture_05_resized_wall.jpg')
 
         self.padding = 1
         self.tile_dim = self.ground_img.width + self.padding
 
         self.wall_sprites = []
-        self.terminal_sprites = []
+        self.terminal_goal_sprites = []
+        self.terminal_lava_sprites = []
         self.ground_sprites = []
 
         self.batch = pyglet.graphics.Batch()
@@ -123,14 +124,18 @@ class Viewer(object):
 
         for i, (x, y) in enumerate(self.env.world):
             x_pix_loc, y_pix_loc = self.get_x_y_pix_location(x, y)
-            if self.env.is_terminal(i):  # if terminal
-                self.wall_sprites.append(
+            if self.env.is_terminal_goal(i):  # if terminal
+                self.terminal_goal_sprites.append(
                     pyglet.sprite.Sprite(self.terminal_goal_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
+            elif self.env.is_lava(i):
+                self.terminal_lava_sprites.append(
+                    pyglet.sprite.Sprite(self.terminal_lava_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch,
+                                         group=background))
             elif self.env._is_wall(i):
                 self.wall_sprites.append(
                     pyglet.sprite.Sprite(self.wall_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
             else:
-                self.wall_sprites.append(
+                self.ground_sprites.append(
                     pyglet.sprite.Sprite(self.ground_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
 
         glViewport(0, 0, width, height)
