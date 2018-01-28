@@ -192,9 +192,14 @@ class GridWorldEnv(gym.Env):
                 self.current_lemons.remove(next_state)
             elif next_state in self.current_apples:
                 print('Collecting apple at:', next_state)
+                next_state_index = self.current_apples.index(next_state)
                 reward = self.reward_matrix[next_state]
                 self.reward_matrix[next_state] = self.MOVEMENT_REWARD
-                self.current_apples.remove(next_state)
+                #self.current_apples.remove(next_state) # todo not removing it fixes below problem
+
+                if self.viewer:
+                    # todo have to do smart for reset.
+                    self.viewer.apple_sprites[next_state_index].visible = False
             elif next_state in self.current_melons:
                 print('Collecting melon at:', next_state)
                 reward = self.reward_matrix[next_state]
@@ -278,6 +283,8 @@ class GridWorldEnv(gym.Env):
         self._generate_reward_matrix()
         if self.viewer:
             self.viewer.change_face_sprite()
+            for a_sprite in self.viewer.apple_sprites:
+                a_sprite.visible = True
         return self.current_state
 
     def _render(self, mode='human', close=False):
