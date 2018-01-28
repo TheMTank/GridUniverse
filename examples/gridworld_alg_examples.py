@@ -22,8 +22,10 @@ def run_policy_and_value_iteration_gridworld():
     print('\n' + '*' * 20 + 'Starting value and policy iteration' + '*' * 20 + '\n')
 
     # 1. Evaluate the value function of a random policy a number of times
-    # world_shape = (4, 4)
-    # env = GridWorldEnv(grid_shape=world_shape, terminal_states=[3, 12]) # Sutton and Barlo/David Silver example
+    world_shape = (4, 4)
+    # env = GridWorldEnv(grid_shape=world_shape, terminal_goal_states=[3, 12]) # Sutton and Barlo/David Silver example
+    # specific case with lava and path true it
+    # env = GridWorldEnv(grid_shape=world_shape, lava_states=[i for i in range(15) if i not in [0, 4, 8, 12, 13, 14, 15]])
     world_shape = (11, 11)
     env = GridWorldEnv(grid_shape=world_shape, random_maze=True)
     policy0 = np.ones([env.world.size, len(env.action_state_to_next_state)]) / len(env.action_state_to_next_state)
