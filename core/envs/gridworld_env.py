@@ -48,6 +48,7 @@ class GridWorldEnv(gym.Env):
             raise TypeError("apples parameter must be a list of integer indices")
         if not isinstance(grid_shape, tuple) or len(grid_shape) != 2 or not isinstance(grid_shape[0], int):
             raise TypeError("grid_shape parameter must be tuple of two integers")
+        # todo set each list so no duplicates?
         self.x_max = grid_shape[0] # num columns
         self.y_max = grid_shape[1] # num rows
         self.world = self._generate_world()
@@ -187,25 +188,31 @@ class GridWorldEnv(gym.Env):
             # todo fruit function
             if next_state in self.current_lemons:
                 print('Collecting lemon at:', next_state)
+                next_state_index = self.lemons.index(next_state)
                 reward = self.reward_matrix[next_state]
                 self.reward_matrix[next_state] = self.MOVEMENT_REWARD
                 self.current_lemons.remove(next_state)
-            elif next_state in self.current_apples:
-                print('Collecting apple at:', next_state)
-                next_state_index = self.current_apples.index(next_state)
-                reward = self.reward_matrix[next_state]
-                self.reward_matrix[next_state] = self.MOVEMENT_REWARD
-                #self.current_apples.remove(next_state) # todo not removing it fixes below problem
 
                 if self.viewer:
-                    # todo have to do smart for reset.
+                    self.viewer.lemon_sprites[next_state_index].visible = False
+            elif next_state in self.current_apples:
+                print('Collecting apple at:', next_state)
+                next_state_index = self.apples.index(next_state)
+                reward = self.reward_matrix[next_state]
+                self.reward_matrix[next_state] = self.MOVEMENT_REWARD
+                self.current_apples.remove(next_state)
+
+                if self.viewer:
                     self.viewer.apple_sprites[next_state_index].visible = False
             elif next_state in self.current_melons:
                 print('Collecting melon at:', next_state)
+                next_state_index = self.melons.index(next_state)
                 reward = self.reward_matrix[next_state]
                 self.reward_matrix[next_state] = self.MOVEMENT_REWARD
                 self.current_melons.remove(next_state)
 
+                if self.viewer:
+                    self.viewer.melon_sprites[next_state_index].visible = False
             return reward
         else:
             return self.reward_matrix[next_state]
@@ -283,8 +290,12 @@ class GridWorldEnv(gym.Env):
         self._generate_reward_matrix()
         if self.viewer:
             self.viewer.change_face_sprite()
-            for a_sprite in self.viewer.apple_sprites:
-                a_sprite.visible = True
+            for sprite in self.viewer.apple_sprites:
+                sprite.visible = True
+            for sprite in self.viewer.lemon_sprites:
+                sprite.visible = True
+            for sprite in self.viewer.melon_sprites:
+                sprite.visible = True
         return self.current_state
 
     def _render(self, mode='human', close=False):
