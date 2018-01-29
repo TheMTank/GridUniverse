@@ -90,18 +90,41 @@ def run_gridworld_with_lava():
 
 def run_gridworld_with_fruit():
     """
-    Run a random agent on an environment with fruit
+    Run a random agent on an environment with fruit. Fill whole grid with fruit.
     """
 
     print('\n' + '*' * 20 + 'Starting to run random agent on GridWorld with fruit' + '*' * 20 + '\n')
-    env = GridWorldEnv(grid_shape=(10, 10), apples=[4, 14, 24, 34, 44, 54, 64, 74])
+    #env = GridWorldEnv(grid_shape=(10, 10), apples=[4, 14, 24, 34, 44, 54, 64, 74])
+    # env = GridWorldEnv(grid_shape=(10, 10), apples=[i for i in range(100)])
+
+    world_shape = (10, 10)
+    # world_shape = (30, 30)
+    # world_shape = (100, 100)
+    world_size = world_shape[0] * world_shape[1]
+
+    apples = [i for i in range(world_size // 3)]
+    lemons = [i for i in range(world_size // 3, int(2 * world_size // 3))]
+    melons = [i for i in range(int(2 * world_size // 3), world_size)]
+
+    # first_time = True
+
+    # env = GridWorldEnv(grid_shape=world_shape, apples=[5, 4, 3], melons=[10, 15, 22], lemons=[55, 33, 22])
+    env = GridWorldEnv(grid_shape=world_shape, apples=apples, melons=melons, lemons=lemons)
+    string_actions_to_take = (['DOWN'] * world_shape[1] + ['RIGHT'] + ['UP'] * world_shape[1] + ['RIGHT']) * world_shape[1]
+
+    actions_to_take = [env.action_descriptor_to_int[action_desc] for action_desc in string_actions_to_take]
     for i_episode in range(5):
         observation = env.reset()
-        for t in range(300):
+        # for t in range(1000):
+        for t, action in enumerate(actions_to_take):
             env.render(mode='graphic')  # set mode='graphic for pyglet render
-            action = env.action_space.sample()
-            observation, reward, done, info = env.step(action)
 
+            # if first_time:
+            #     first_time = False
+            #     time.sleep(7)
+            # action = env.action_space.sample()
+            observation, reward, done, info = env.step(action)
+            # time.sleep(1)
             if done:
                 print("Episode finished after {} timesteps".format(t + 1))
                 print('Final states reward: ', reward)
