@@ -4,6 +4,48 @@ from core.envs.gridworld_env import GridWorldEnv
 
 
 class TestGridWorld(unittest.TestCase):
+    def test_terminal_out_of_bounds_error(self):
+        """
+        Default Env contains 16 states (0-15) so state 16 should crash environment.
+        """
+
+        with self.assertRaises(IndexError):
+            GridWorldEnv(terminal_goal_states=[16])
+
+    def test_wrong_terminal_type_error(self):
+        with self.assertRaises(IndexError):
+            GridWorldEnv(terminal_goal_states=['a'])
+
+    def test_incorrect_parameter_types(self):
+        """
+        Test that TypeError is raised if terminal_goal_states, lava_states, walls are not a list.
+        Test that TypeError is raised if grid_shape is over 2 dimensions, not a tuple/list or contains non-int
+        """
+
+        # todo don't show errors/red writing (env.close() is always called) for testing aesthetics
+        with self.assertRaises(TypeError):
+            GridWorldEnv(terminal_goal_states=5.0)
+
+        with self.assertRaises(TypeError):
+            GridWorldEnv(lava_states='a')
+
+        with self.assertRaises(TypeError):
+            GridWorldEnv(walls='aaaa')
+
+        # Test grid_shape with over 2 dimensions
+        with self.assertRaises(TypeError):
+            GridWorldEnv(grid_shape=(2, 2, 2))
+
+        # Test grid_shape if not a tuple/list
+        with self.assertRaises(TypeError):
+            GridWorldEnv(grid_shape=set([2, 3]))
+
+        with self.assertRaises(TypeError):
+            GridWorldEnv(grid_shape=[2, 2.0])
+
+        with self.assertRaises(TypeError):
+            GridWorldEnv(grid_shape=2)
+
     def test_gridworld_wall_not_trespassed(self):
         """
         Test whether agent is still in the same place after moving into a wall

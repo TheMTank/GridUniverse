@@ -37,8 +37,9 @@ class GridWorldEnv(gym.Env):
             raise TypeError("lava_states parameter must be a list of integer indices")
         if walls is not None and not isinstance(walls, list):
             raise TypeError("walls parameter must be a list of integer indices")
-        if not isinstance(grid_shape, tuple) or len(grid_shape) != 2 or not isinstance(grid_shape[0], int):
-            raise TypeError("grid_shape parameter must be tuple of two integers")
+        if not (isinstance(grid_shape, list) or isinstance(grid_shape, tuple)) or len(grid_shape) != 2 \
+                or not isinstance(grid_shape[0], int) or not isinstance(grid_shape[1], int):
+            raise TypeError("grid_shape parameter must be tuple/list of two integers")
         self.x_max = grid_shape[0] # num columns
         self.y_max = grid_shape[1] # num rows
         self.world = self._generate_world()
@@ -80,16 +81,12 @@ class GridWorldEnv(gym.Env):
             try:
                 self.reward_matrix[terminal_state] = 10
             except IndexError:
-                raise IndexError("Terminal goal state {} is out of grid bounds".format(terminal_state))
-            except TypeError:
-                raise TypeError("Terminal goal state {} is wrong type. Should be an integer".format(terminal_state))
+                raise IndexError("Terminal goal state {} is out of grid bounds or is wrong type. Should be an integer.".format(terminal_state))
         for terminal_state in self.lava_states:
             try:
                 self.reward_matrix[terminal_state] = -10
             except IndexError:
-                raise IndexError("Lava terminal state {} is out of grid bounds".format(terminal_state))
-            except TypeError:
-                raise TypeError("Lava terminal state {} is wrong type. Should be an integer".format(terminal_state))
+                raise IndexError("Lava terminal state {} is out of grid bounds or is wrong type. Should be an integer.".format(terminal_state))
         # self.reward_range = [-inf, inf] # default values already
         self.num_previous_states_to_store = 500
         self.last_n_states = []
