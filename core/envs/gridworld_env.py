@@ -13,10 +13,10 @@ from core.envs import maze_generation
 class GridWorldEnv(gym.Env):
     metadata = {'render.modes': ['human', 'ansi', 'graphic']}
 
-    def __init__(self, grid_shape=(4, 4), initial_state=0, terminal_goal_states=None, lava_states=None, walls=None,
+    def __init__(self, grid_shape=(4, 4), *, initial_state=0, terminal_goal_states=None, lava_states=None, walls=None,
                  custom_world_fp=None, random_maze=False):
         """
-        Main constructor to create a GridWorld environment. The default GridWorld is a square grid of 4x4 where the
+        The constructor for creating a GridWorld environment. The default GridWorld is a square grid of 4x4 where the
         agent starts at the top left corner and the terminal state is at the bottom right corner.
 
         :param grid_shape: Tuple of size 2 to specify (width, height) of grid
@@ -65,17 +65,11 @@ class GridWorldEnv(gym.Env):
             self.terminal_goal_states = [self.world.size - 1]
         else:
             self.terminal_goal_states = terminal_goal_states
-        for t_s in self.terminal_goal_states:
-            if t_s < 0 or t_s > (self.world.size - 1):
-                raise ValueError("Terminal goal state {} is out of grid bounds".format(t_s))
         # set lava terminal states
         if lava_states is None:
             self.lava_states = []
         else:
             self.lava_states = lava_states
-        for t_s in self.lava_states:
-            if t_s < 0 or t_s > (self.world.size - 1):
-                raise ValueError("lava state {} is out of grid bounds".format(t_s))
         # set walls
         self.wall_indices = []
         self.wall_grid = np.zeros(self.world.shape)
@@ -83,9 +77,19 @@ class GridWorldEnv(gym.Env):
         # set reward matrix
         self.reward_matrix = np.full(self.world.shape, -1)
         for terminal_state in self.terminal_goal_states:
-            self.reward_matrix[terminal_state] = 10
+            try:
+                self.reward_matrix[terminal_state] = 10
+            except IndexError:
+                raise IndexError("Terminal goal state {} is out of grid bounds".format(terminal_state))
+            except TypeError:
+                raise TypeError("Terminal goal state {} is wrong type. Should be an integer".format(terminal_state))
         for terminal_state in self.lava_states:
-            self.reward_matrix[terminal_state] = -10
+            try:
+                self.reward_matrix[terminal_state] = -10
+            except IndexError:
+                raise IndexError("Lava terminal state {} is out of grid bounds".format(terminal_state))
+            except TypeError:
+                raise TypeError("Lava terminal state {} is wrong type. Should be an integer".format(terminal_state))
         # self.reward_range = [-inf, inf] # default values already
         self.num_previous_states_to_store = 500
         self.last_n_states = []
