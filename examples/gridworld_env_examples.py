@@ -102,6 +102,7 @@ def run_gridworld_with_fruit():
     # world_shape = (100, 100)
     world_size = world_shape[0] * world_shape[1]
 
+    #todo random fill no replacement
     apples = [i for i in range(world_size // 3)]
     lemons = [i for i in range(world_size // 3, int(2 * world_size // 3))]
     melons = [i for i in range(int(2 * world_size // 3), world_size)]
@@ -132,9 +133,8 @@ def run_gridworld_with_fruit():
 
 if __name__ == '__main__':
     # Run random agent on environment variations
-    # run_default_gridworld()
-    # run_gridworld_from_text_file()
-    # run_random_maze()
-    # run_gridworld_with_lava()
-
+    run_default_gridworld()
+    run_gridworld_from_text_file()
+    run_random_maze()
+    run_gridworld_with_lava()
     run_gridworld_with_fruit()
