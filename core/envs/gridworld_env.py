@@ -156,30 +156,20 @@ class GridWorldEnv(gym.Env):
         """
         Checks if a given state is a wall or any other element that shall not be trespassed.
         """
-        if self.wall_grid[state] == 1:
-            return True
-        return False
+        return True if self.wall_grid[state] == 1 else False
 
     def is_terminal(self, state):
         """
         Check if the input state is terminal.
         Which can either be a lava (negative reward) or goal state (positive reward)
         """
-        if self.is_lava(state):
-            return True
-        if self.is_terminal_goal(state):
-            return True
-        return False
+        return True if self.is_lava(state) or self.is_terminal_goal(state) else False
 
     def is_lava(self, state):
-        if state in self.lava_states:
-            return True
-        return False
+        return True if state in self.lava_states else False
 
     def is_terminal_goal(self, state):
-        if state in self.terminal_goal_states:
-            return True
-        return False
+        return True if state in self.terminal_goal_states else False
 
     def _step(self, action):
         """
