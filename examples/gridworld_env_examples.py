@@ -72,6 +72,7 @@ def run_random_maze():
 def run_human_control():
     print('\n' + '*' * 20 + 'Starting to run human controlled agent on GridWorld' + '*' * 20 + '\n')
     env = GridWorldEnv((100, 100), random_maze=True)
+    # env = GridWorldEnv((100, 100))
     for i_episode in range(1):
         observation = env.reset()
         for t in range(1000000):
@@ -89,7 +90,7 @@ def run_human_control():
 
 if __name__ == '__main__':
     # Run random agent on environment variations
-    # run_default_gridworld()
-    # run_gridworld_from_text_file()
-    # run_random_maze()
+    run_default_gridworld()
+    run_gridworld_from_text_file()
+    run_random_maze()
     run_human_control()

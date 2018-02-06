@@ -168,16 +168,14 @@ class GridWorldEnv(gym.Env):
         return self.current_state, reward, self.done, self.info
 
     def get_human_action(self):
-        self.waiting_for_human = True
         # todo do it with ascii and raw input?
+        # todo check 10-30 a second (e.g. in render loop) and then hold outer loop somehow??? Maybe impossible
 
         # while True:
         for i in range(10000):
             action = self.viewer.check_keys()
             if isinstance(action, int) and action < 4 and action >= 0:
-                # print ('action: ', action)
                 return action
-            # print ('No action!!!!')
 
         return None
 
