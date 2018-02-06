@@ -23,6 +23,8 @@ try:
 except ImportError as e:
     reraise(prefix="Error occured while running `from pyglet.gl import *`",suffix="HINT: make sure you have OpenGL install. On Ubuntu, you can run 'apt-get install python-opengl'. If you're running on a server, you may need a virtual frame buffer; something like this should work: 'xvfb-run -s \"-screen 0 1400x900x24\" python <your_script.py>'")
 
+from pyglet.window import key
+
 RAD2DEG = 57.29577951308232
 
 def get_display(spec):
@@ -46,6 +48,9 @@ class Viewer(object):
         self.height = height
         self.window = pyglet.window.Window(width=width, height=height, display=display, resizable=True) # todo resizable remove or keep
         self.window.on_close = self.window_closed_by_user
+        self.window.on_key_release = self.arrow_key_release
+        self.keys = key.KeyStateHandler()
+        self.window.push_handlers(self.keys)
         self.FPS = 0
 
         script_dir = os.path.dirname(__file__)
@@ -225,6 +230,32 @@ class Viewer(object):
 
     def window_closed_by_user(self):
         self.close()
+
+    def arrow_key_release(self, symbol, modifiers):#
+        self.env.waiting_for_human = False
+        # if symbol == pyglet.window.key.W:
+        #     print('W was pressed')
+        # elif symbol == pyglet.window.key.S:
+        #     print('S was pressed')
+        # elif symbol == pyglet.window.key.A:
+        #     print('A was pressed')
+        # elif symbol == pyglet.window.key.D:
+        #     print('D was pressed')
+
+    def check_keys(self):
+        if self.keys[key.W]:
+            print('Return up')
+            return self.env.action_descriptor_to_int['UP']
+        elif self.keys[key.S]:
+            print('Return down')
+            return self.env.action_descriptor_to_int['DOWN']
+        elif self.keys[key.A]:
+            print('Return left')
+            return self.env.action_descriptor_to_int['LEFT']
+        elif self.keys[key.D]:
+            print('Return right')
+            return self.env.action_descriptor_to_int['RIGHT']
+        return None
 
     def set_bounds(self, left, right, bottom, top):
         assert right > left and top > bottom

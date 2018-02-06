@@ -167,6 +167,20 @@ class GridWorldEnv(gym.Env):
             self.last_n_states.pop(0)
         return self.current_state, reward, self.done, self.info
 
+    def get_human_action(self):
+        self.waiting_for_human = True
+        # todo do it with ascii and raw input?
+
+        # while True:
+        for i in range(10000):
+            action = self.viewer.check_keys()
+            if isinstance(action, int) and action < 4 and action >= 0:
+                # print ('action: ', action)
+                return action
+            # print ('No action!!!!')
+
+        return None
+
     def _reset(self):
         self.done = False
         self.previous_state = self.current_state = self.initial_state = random.choice(self.starting_states)

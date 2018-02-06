@@ -69,8 +69,27 @@ def run_random_maze():
                 print("Episode finished after {} timesteps".format(t + 1))
                 break
 
+def run_human_control():
+    print('\n' + '*' * 20 + 'Starting to run human controlled agent on GridWorld' + '*' * 20 + '\n')
+    env = GridWorldEnv((100, 100), random_maze=True)
+    for i_episode in range(1):
+        observation = env.reset()
+        for t in range(1000000):
+            env.render(mode='graphic')
+            action = env.get_human_action()
+            if not isinstance(action, int) or action > 3 or action < 0:
+                print('Continue')
+                continue
+            print('go ' + env.action_descriptors[action])
+            observation, reward, done, info = env.step(action)
+
+            if done:
+                print("Episode finished after {} timesteps".format(t + 1))
+                break
+
 if __name__ == '__main__':
     # Run random agent on environment variations
-    run_default_gridworld()
-    run_gridworld_from_text_file()
-    run_random_maze()
+    # run_default_gridworld()
+    # run_gridworld_from_text_file()
+    # run_random_maze()
+    run_human_control()
