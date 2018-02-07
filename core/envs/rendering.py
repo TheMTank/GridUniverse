@@ -67,6 +67,7 @@ class Viewer(object):
         self.terminal_goal_img = pyglet.resource.image('wbs_texture_05_resized_green.jpg')
         # self.wall_img = pyglet.resource.image('wbs_texture_05_resized_red.jpg')
         self.wall_img = pyglet.resource.image('wbs_texture_05_resized_wall.jpg')
+        self.lever_img = pyglet.resource.image('lemon-resized.png')
 
         self.padding = 1
         self.tile_dim = self.ground_img.width + self.padding
@@ -74,6 +75,9 @@ class Viewer(object):
         self.wall_sprites = []
         self.terminal_sprites = []
         self.ground_sprites = []
+        self.lever_sprites = []
+
+        self.wall_indices_to_wall_sprite_index = {}
 
         self.batch = pyglet.graphics.Batch()
         background = pyglet.graphics.OrderedGroup(0)
@@ -121,17 +125,29 @@ class Viewer(object):
         # have to flip pixel location. top-left is initial state = x, y = 0, 0 = state 0
         self.pix_grid_height = (self.env.y_max) * self.tile_dim + (self.num_extra_tiles // 2) * self.tile_dim
 
-        for i, (x, y) in enumerate(self.env.world):
+        for state, (x, y) in enumerate(self.env.world):
             x_pix_loc, y_pix_loc = self.get_x_y_pix_location(x, y)
-            if self.env.is_terminal(i):  # if terminal
-                self.wall_sprites.append(
+            if self.env.is_terminal(state):  # if terminal
+                self.terminal_sprites.append(
                     pyglet.sprite.Sprite(self.terminal_goal_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
-            elif self.env._is_wall(i):
+            elif self.env._is_wall(state):
+                # only if lever is connected to this wall place ground underneath
+                if state in list(self.env.levers.values()):
+                    self.ground_sprites.append(
+                        pyglet.sprite.Sprite(self.ground_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch,
+                                             group=background))
+
+                # Must collect each index. Not the best solution.
+                self.wall_indices_to_wall_sprite_index[state] = len(self.wall_indices_to_wall_sprite_index.keys())
+
                 self.wall_sprites.append(
                     pyglet.sprite.Sprite(self.wall_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
             else:
-                self.wall_sprites.append(
+                self.ground_sprites.append(
                     pyglet.sprite.Sprite(self.ground_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
+
+            if state in self.env.levers.keys():
+                self.lever_sprites.append(pyglet.sprite.Sprite(self.lever_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=foreground))
 
         glViewport(0, 0, width, height)
 

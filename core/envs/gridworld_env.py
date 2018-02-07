@@ -75,15 +75,15 @@ class GridWorldEnv(gym.Env):
         self.wall_grid = np.zeros(self.world.shape)
         self._generate_walls(walls)
         # set levers
-        # lever dict contains key (int where lever is) and value (int of wall index)
-        # todo add sprite and remove sprite in rendering accordingly, add ascii figure.
+        # lever dict contains key (int where lever is) and value (int of wall index/door)
+        # todo add ascii figure. To remove lever or change lever sprite once used?
         # todo no way to make custom text world contain lever right?
-        # todo Find way to add to params to add after custom text world is created? Could add an extra line in maze file to delimet a section describing a dictionary/json representation of lever/door combos
+        # todo Find way to add to params to add after custom text world is created? Could add an extra line in maze file to delimit a section describing a dictionary/json representation of lever/door combos
+
         if not levers:
             self.levers = {}
         else:
             self.levers = levers
-
         # Parameter checks to see if correct
         for lever_state in self.levers.keys():
             # Check lever state can't equal a wall. Key and value can't equal the same if any of the below is raised
@@ -167,6 +167,9 @@ class GridWorldEnv(gym.Env):
 
                 if next_state in self.levers.keys():
                     print('STEPPED ON LEVER REMOVING SPECIFIC WALL LINKED TO LEVER!!!!!')
+                    if self.viewer:
+                        wall_sprite_index = self.viewer.wall_indices_to_wall_sprite_index[self.levers[next_state]]
+                        self.viewer.wall_sprites[wall_sprite_index].visible = False
                     self.wall_indices.remove(self.levers[next_state])
                     self.wall_grid[self.levers[next_state]] = 0
                     del self.levers[next_state]
@@ -199,7 +202,7 @@ class GridWorldEnv(gym.Env):
         """
         self.previous_state = self.current_state
         self.current_state, reward, self.done = self.look_step_ahead(self.current_state, action)
-        # if done: # todo
+        # if self.done: # todo
         #     env.render(mode='graphic')
         # self.last_n_states.append(self.current_state)
         self.last_n_states.append(self.world[self.current_state])
@@ -213,6 +216,8 @@ class GridWorldEnv(gym.Env):
         self.last_n_states = []
         if self.viewer:
             self.viewer.change_face_sprite()
+            for sprite in self.viewer.wall_sprites:
+                sprite.visible = True
         return self.current_state
 
     def _render(self, mode='human', close=False):
@@ -244,8 +249,6 @@ class GridWorldEnv(gym.Env):
             if self.viewer is None:
                 from core.envs import rendering
                 self.viewer = rendering.Viewer(self, self.screen_width, self.screen_height)
-
-            # time.sleep(0.3) # if you want it to go slower. Best way?
 
             return self.viewer.render(return_rgb_array=mode == 'rgb_array')
         else:
@@ -290,6 +293,7 @@ class GridWorldEnv(gym.Env):
 
         self.terminal_states = []
         self.starting_states = []
+        self.levers = []
         walls_indices = []
 
         curr_index = 0

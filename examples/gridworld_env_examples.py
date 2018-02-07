@@ -102,19 +102,21 @@ def run_lever_gridworld():
     for i_episode in range(1):
         observation = env.reset()
         for t in range(1000000):
-            env.render()  # set mode='graphic for pyglet render
+            #env.render()  # set mode='graphic' for pyglet render
+            env.render(mode='graphic')  # set mode='graphic' for pyglet render
             action = env.action_space.sample()
             # print('go ' + env.action_descriptors[action])
             observation, reward, done, info = env.step(action)
 
             if done:
-                env.render()
+                env.render(mode='graphic')
+                time.sleep(5)
                 print("Episode finished after {} timesteps".format(t + 1))
                 break
 
 if __name__ == '__main__':
     # Run random agent on environment variations
-    # run_default_gridworld()
-    # run_gridworld_from_text_file()
-    # run_random_maze()
+    run_default_gridworld()
+    run_gridworld_from_text_file()
+    run_random_maze()
     run_lever_gridworld()
