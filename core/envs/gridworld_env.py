@@ -23,6 +23,8 @@ class GridWorldEnv(gym.Env):
         :param terminal_states: list of terminal states. If agent walks into any, done = True,
                                 and no actions are possible
         :param walls: list of walls. These are blocked states where the agent can't walk
+        :param levers: dictionary of with integer keys being the location of lever and
+                        the values being the wall index (door) to be removed if lever is reached by agent
         :param custom_world_fp: optional parameter to create the grid from a text file.
         :param random_maze: optional parameter to randomly generate a maze from the algorithm within maze_generation.py
                             This will override the terminal_states, initial_state, walls and custom_world_fp params
@@ -32,6 +34,9 @@ class GridWorldEnv(gym.Env):
             raise TypeError("terminal_states parameter must be a list of integer indices")
         if walls is not None and not isinstance(walls, list):
             raise TypeError("walls parameter must be a list of integer indices")
+        if levers is not None and not isinstance(levers, dict):
+            raise TypeError("levers parameter must be a dictionary with integer keys being location of lever state \
+                             and values being wall index (door) to be removed.")
         if not isinstance(grid_shape, tuple) or len(grid_shape) != 2 or not isinstance(grid_shape[0], int):
             raise TypeError("grid_shape parameter must be tuple of two integers")
         self.x_max = grid_shape[0] # num columns
@@ -61,6 +66,8 @@ class GridWorldEnv(gym.Env):
         else:
             self.terminal_states = terminal_states
         for t_s in self.terminal_states:
+            if not isinstance(t_s, int):
+                raise TypeError("Terminal state {} is not an integer".format(t_s))
             if t_s < 0 or t_s > (self.world.size - 1):
                 raise ValueError("Terminal state {} is out of grid bounds".format(t_s))
         # set walls
@@ -69,15 +76,28 @@ class GridWorldEnv(gym.Env):
         self._generate_walls(walls)
         # set levers
         # lever dict contains key (int where lever is) and value (int of wall index)
-        # todo must check key and value don't equal the same
-        # todo must check key is always non-wall and value is always wall
         # todo add sprite and remove sprite in rendering accordingly, add ascii figure.
-        # todo no way to make custom text world contain lever right? Find way to add to params to add after custom text world is created?
-
+        # todo no way to make custom text world contain lever right?
+        # todo Find way to add to params to add after custom text world is created? Could add an extra line in maze file to delimet a section describing a dictionary/json representation of lever/door combos
         if not levers:
             self.levers = {}
         else:
             self.levers = levers
+
+        # Parameter checks to see if correct
+        for lever_state in self.levers.keys():
+            # Check lever state can't equal a wall. Key and value can't equal the same if any of the below is raised
+            # Check value is always wall
+            if self.levers[lever_state] not in self.wall_indices:
+                raise ValueError("Wall linked to lever state {} is not a wall state".format(lever_state))
+            # Check key is always non-wall
+            if lever_state in self.wall_indices:
+                raise ValueError("Lever state {} can not be placed on top of a wall".format(lever_state))
+            if not isinstance(lever_state, int):
+                raise TypeError("Lever state {} is not an integer".format(lever_state))
+            # Check if within bounds
+            if lever_state < 0 or lever_state > (self.world.size - 1):
+                raise ValueError("Lever state {} is out of grid bounds".format(lever_state))
 
         # set reward matrix
         self.reward_matrix = np.full(self.world.shape, -1)
@@ -122,6 +142,8 @@ class GridWorldEnv(gym.Env):
         """
         if walls is not None:
             for wall_state in walls:
+                if not isinstance(wall_state, int):
+                    raise TypeError("Wall state {} is not an integer".format(wall_state))
                 if wall_state < 0 or wall_state > (self.world.size - 1):
                     raise ValueError("Wall state {} is out of grid bounds".format(wall_state))
 

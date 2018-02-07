@@ -4,6 +4,36 @@ from core.envs.gridworld_env import GridWorldEnv
 
 
 class TestGridWorld(unittest.TestCase):
+    def test_lever_parameter_raise_correct_exceptions(self):
+        """
+        Test the numerous ways in which levers should raise exceptions
+        """
+        # Check if crashes if not a dictionary
+        with self.assertRaises(TypeError):
+            GridWorldEnv(levers=[5, 3])
+
+        # Need walls for levers
+        with self.assertRaises(ValueError):
+            GridWorldEnv(levers={5: 3})
+
+        # Wall (3) linked to lever state (5) is not a wall state
+        with self.assertRaises(ValueError):
+            GridWorldEnv(walls=[4], levers={5: 3})
+
+        # How it should work
+        try:
+            GridWorldEnv(walls=[3], levers={5: 3})
+        except:
+            self.fail("Should not crash here. Wall state 3 is the value of lever state 5. ")
+
+        # Lever state can not be placed on top of a wall
+        with self.assertRaises(ValueError):
+            GridWorldEnv(walls=[4, 8], levers={4: 8})
+
+        # non-int key
+        with self.assertRaises(TypeError):
+            GridWorldEnv(walls=[4, 8], levers={'a': 8})
+
     def test_gridworld_wall_not_trespassed(self):
         """
         Test whether agent is still in the same place after moving into a wall
