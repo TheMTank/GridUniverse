@@ -92,6 +92,7 @@ def run_lever_gridworld():
                 print("Episode finished after {} timesteps".format(t + 1))
                 break
 
+    env.close()
     # test if random agent ever opens door to terminal and then goes to terminal
     # Both very difficult for random agent to pass
 
@@ -100,10 +101,8 @@ def run_lever_gridworld():
     env = GridWorldEnv((7, 7), walls=[47, 47 - 7, 48 - 7], levers={42: 47}) # easier
     for i_episode in range(1):
         observation = env.reset()
-        for t in range(10000000):
-        # for t, action in enumerate(actions_to_take):
-            # env.render(mode='graphic')  # set mode='graphic for pyglet render
-            #env.render()  # set mode='graphic for pyglet render
+        for t in range(1000000):
+            env.render()  # set mode='graphic for pyglet render
             action = env.action_space.sample()
             # print('go ' + env.action_descriptors[action])
             observation, reward, done, info = env.step(action)

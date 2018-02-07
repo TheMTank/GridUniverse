@@ -146,7 +146,7 @@ class GridWorldEnv(gym.Env):
                 if next_state in self.levers.keys():
                     print('STEPPED ON LEVER REMOVING SPECIFIC WALL LINKED TO LEVER!!!!!')
                     self.wall_indices.remove(self.levers[next_state])
-                    self.wall_grid[next_state] = 0
+                    self.wall_grid[self.levers[next_state]] = 0
                     del self.levers[next_state]
         else:
             # repeating code for now, but for good reason
