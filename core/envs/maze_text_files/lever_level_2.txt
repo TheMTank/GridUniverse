@@ -1,0 +1,9 @@
+xoooooo
+ooooooo
+oo#####
+oo#oooo
+oo#oooo
+oo#oo##
+oo#oo#T
+-----------
+{13: 44, 34: 47}

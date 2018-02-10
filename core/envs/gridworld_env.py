@@ -1,3 +1,4 @@
+import ast
 import sys
 import random
 import time
@@ -77,28 +78,8 @@ class GridWorldEnv(gym.Env):
         # set levers
         # lever dict contains key (int where lever is) and value (int of wall index/door)
         # todo add ascii figure. To remove lever or change lever sprite once used?
-        # todo no way to make custom text world contain lever right?
-        # todo Find way to add to params to add after custom text world is created? Could add an extra line in maze file to delimit a section describing a dictionary/json representation of lever/door combos
 
-        if not levers:
-            self.levers = {}
-        else:
-            self.levers = levers
-        # Parameter checks to see if correct
-        for lever_state in self.levers.keys():
-            # Check lever state can't equal a wall. Key and value can't equal the same if any of the below is raised
-            # Check value is always wall
-            if self.levers[lever_state] not in self.wall_indices:
-                raise ValueError("Wall linked to lever state {} is not a wall state".format(lever_state))
-            # Check key is always non-wall
-            if lever_state in self.wall_indices:
-                raise ValueError("Lever state {} can not be placed on top of a wall".format(lever_state))
-            if not isinstance(lever_state, int):
-                raise TypeError("Lever state {} is not an integer".format(lever_state))
-            # Check if within bounds
-            if lever_state < 0 or lever_state > (self.world.size - 1):
-                raise ValueError("Lever state {} is out of grid bounds".format(lever_state))
-
+        self._setup_levers(levers)
         # set reward matrix
         self.reward_matrix = np.full(self.world.shape, -1)
         for terminal_state in self.terminal_states:
@@ -149,6 +130,29 @@ class GridWorldEnv(gym.Env):
 
                 self.wall_grid[wall_state] = 1
                 self.wall_indices.append(wall_state)
+
+    def _setup_levers(self, lever_dict):
+        """
+        Setup levers
+        """
+        if not lever_dict:
+            self.levers = {}
+        else:
+            self.levers = lever_dict
+        # Parameter checks to see if correct
+        for lever_state in self.levers.keys():
+            # Check lever state can't equal a wall. Key and value can't equal the same if any of the below is raised
+            # Check value is always wall
+            if self.levers[lever_state] not in self.wall_indices:
+                raise ValueError("Wall linked to lever state {} is not a wall state".format(lever_state))
+            # Check key is always non-wall
+            if lever_state in self.wall_indices:
+                raise ValueError("Lever state {} can not be placed on top of a wall".format(lever_state))
+            if not isinstance(lever_state, int):
+                raise TypeError("Lever state {} is not an integer".format(lever_state))
+            # Check if within bounds
+            if lever_state < 0 or lever_state > (self.world.size - 1):
+                raise ValueError("Lever state {} is out of grid bounds".format(lever_state))
 
     def look_step_ahead(self, state, action, care_about_terminal=True):
         """
@@ -298,7 +302,23 @@ class GridWorldEnv(gym.Env):
 
         curr_index = 0
         width_of_grid = len(text_world_lines[0])  # first row length will be width from now on
+        height_of_grid = len(text_world_lines)
         for y, line in enumerate(text_world_lines):
+            if line[0] == '-':
+                height_of_grid = y
+                metadata_line_str = text_world_lines[y + 1]
+                print('Lever metadata: ', metadata_line_str)
+
+                # todo create tests to break it in 5 different ways
+                try:
+                    lever_metadata = ast.literal_eval(metadata_line_str)
+                    if not isinstance(lever_metadata, dict):
+                        raise(TypeError('Lever metadata line after converting to Python is not a dictionary'))
+                except:
+                    raise(ValueError('Lever metadata line is not in correct dictionary format. \
+                                      Keys and values should be ints.'))
+
+                break
             if len(line) != width_of_grid:
                 raise ValueError("Input text file is not a rectangle")
 
@@ -323,13 +343,16 @@ class GridWorldEnv(gym.Env):
 
         self.reset()
 
-        self.y_max = len(text_world_lines)
+        self.y_max = height_of_grid
         self.x_max = width_of_grid
         self.world = self._generate_world()
 
         self.wall_grid = np.zeros(self.world.shape)
         self.wall_indices = []
         self._generate_walls(walls_indices)
+
+        if lever_metadata:
+            self._setup_levers(lever_metadata)
 
         self.reward_matrix = np.full(self.world.shape, -1)
         for terminal_state in self.terminal_states:
