@@ -169,14 +169,15 @@ class GridWorldEnv(gym.Env):
                 next_state = self.action_state_to_next_state[action](state)
                 next_state = next_state if not self._is_wall(next_state) else state
 
-                if next_state in self.levers.keys():
-                    print('STEPPED ON LEVER REMOVING SPECIFIC WALL LINKED TO LEVER!!!!!')
-                    if self.viewer:
-                        wall_sprite_index = self.viewer.wall_indices_to_wall_sprite_index[self.levers[next_state]]
-                        self.viewer.wall_sprites[wall_sprite_index].visible = False
-                    self.wall_indices.remove(self.levers[next_state])
-                    self.wall_grid[self.levers[next_state]] = 0
-                    del self.levers[next_state]
+                if self.levers:
+                    if next_state in self.levers.keys():
+                        print('STEPPED ON LEVER REMOVING SPECIFIC WALL LINKED TO LEVER!!!!!')
+                        if self.viewer:
+                            wall_sprite_index = self.viewer.wall_indices_to_wall_sprite_index[self.levers[next_state]]
+                            self.viewer.wall_sprites[wall_sprite_index].visible = False
+                        self.wall_indices.remove(self.levers[next_state])
+                        self.wall_grid[self.levers[next_state]] = 0
+                        del self.levers[next_state]
         else:
             # repeating code for now, but for good reason
             next_state = self.action_state_to_next_state[action](state)
@@ -293,6 +294,14 @@ class GridWorldEnv(gym.Env):
          "#" is a blocked "wall"
          "T" is a terminal state
          "x" is a possible starting location. Chosen uniform randomly if multiple "x"s.
+
+        If you would like to include lever metadata add a line of dashes
+        and then a line with a python dictionary with lever keys and values being doors (check constructor for more info)
+        For example:
+        ----
+        {42: 22}
+
+        This final line will be parsed with ast package and so is quite error prone to wrong syntax.
         """
 
         self.terminal_states = []
@@ -309,7 +318,6 @@ class GridWorldEnv(gym.Env):
                 metadata_line_str = text_world_lines[y + 1]
                 print('Lever metadata: ', metadata_line_str)
 
-                # todo create tests to break it in 5 different ways
                 try:
                     lever_metadata = ast.literal_eval(metadata_line_str)
                     if not isinstance(lever_metadata, dict):
@@ -317,7 +325,6 @@ class GridWorldEnv(gym.Env):
                 except:
                     raise(ValueError('Lever metadata line is not in correct dictionary format. \
                                       Keys and values should be ints.'))
-
                 break
             if len(line) != width_of_grid:
                 raise ValueError("Input text file is not a rectangle")
@@ -351,7 +358,7 @@ class GridWorldEnv(gym.Env):
         self.wall_indices = []
         self._generate_walls(walls_indices)
 
-        if lever_metadata:
+        if 'lever_metadata' in locals():
             self._setup_levers(lever_metadata)
 
         self.reward_matrix = np.full(self.world.shape, -1)

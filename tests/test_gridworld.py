@@ -1,3 +1,4 @@
+import time
 import unittest
 
 from core.envs.gridworld_env import GridWorldEnv
@@ -88,7 +89,7 @@ class TestGridWorld(unittest.TestCase):
 
     def test_custom_gridworld_from_text_file(self):
         """
-        Test whether we can complete the GridWorld created from the text file within
+        Test whether we can complete the GridWorld created from the text file within maze_text_files folder
         """
 
         env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/test_env.txt')
@@ -99,6 +100,33 @@ class TestGridWorld(unittest.TestCase):
             observation, reward, done, info = env.step(action)
             if done:
                 print("Episode finished after {} timesteps".format(step_no + 1))
+
+        self.assertTrue((step_no + 1) == len(actions_to_take) and done)
+
+    def test_custom_gridworld_from_text_file_with_lever(self):
+        """
+        Test whether we can complete the GridWorld created from the text file
+        within maze_text_files folder. This level contains levers so it also tests that the
+        functionality of levers works correctly. If anything changes anywhere, this test will fail.
+        """
+
+        env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/lever_level_2.txt')
+        env.render()
+
+        # Very particular path to take for agent to go to each lever and finally get to terminal state
+        actions_to_take = [env.action_descriptor_to_int['DOWN']] + [env.action_descriptor_to_int['RIGHT']] * 6 + \
+                          [env.action_descriptor_to_int['LEFT']] * 5 + [env.action_descriptor_to_int['DOWN']] * 5 + \
+                          [env.action_descriptor_to_int['RIGHT']] * 3 + [env.action_descriptor_to_int['UP']] * 2 + \
+                          [env.action_descriptor_to_int['RIGHT']] * 2 + [env.action_descriptor_to_int['LEFT']] * 2 + \
+                          [env.action_descriptor_to_int['DOWN']] * 2 + [env.action_descriptor_to_int['RIGHT']] * 2
+
+        for step_no, action in enumerate(actions_to_take):
+            # env.render()  # set mode='graphic' for pyglet render
+            observation, reward, done, info = env.step(action)
+
+            if done:
+                print("Episode finished after {} timesteps".format(step_no + 1))
+                break
 
         self.assertTrue((step_no + 1) == len(actions_to_take) and done)
 

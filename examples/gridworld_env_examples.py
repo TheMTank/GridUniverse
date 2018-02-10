@@ -117,7 +117,6 @@ def run_lever_gridworld():
 def run_lever_gridworld_from_text_file():
     # env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/lever_level_1.txt')
     env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/lever_level_2.txt')
-
     env.render()
 
     for i_episode in range(1):
@@ -137,9 +136,8 @@ def run_lever_gridworld_from_text_file():
 
 if __name__ == '__main__':
     # Run random agent on environment variations
-    # run_default_gridworld()
-    # run_gridworld_from_text_file()
-    # run_random_maze()
-    # run_lever_gridworld()
-
+    run_default_gridworld()
+    run_gridworld_from_text_file()
+    run_random_maze()
+    run_lever_gridworld()
     run_lever_gridworld_from_text_file()

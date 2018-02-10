@@ -132,10 +132,11 @@ class Viewer(object):
                     pyglet.sprite.Sprite(self.terminal_goal_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
             elif self.env._is_wall(state):
                 # only if lever is connected to this wall place ground underneath
-                if state in list(self.env.levers.values()):
-                    self.ground_sprites.append(
-                        pyglet.sprite.Sprite(self.ground_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch,
-                                             group=background))
+                if self.env.levers:
+                    if state in list(self.env.levers.values()):
+                        self.ground_sprites.append(
+                            pyglet.sprite.Sprite(self.ground_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch,
+                                                 group=background))
 
                 # Must collect each index. Not the best solution.
                 self.wall_indices_to_wall_sprite_index[state] = len(self.wall_indices_to_wall_sprite_index.keys())
@@ -146,8 +147,9 @@ class Viewer(object):
                 self.ground_sprites.append(
                     pyglet.sprite.Sprite(self.ground_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
 
-            if state in self.env.levers.keys():
-                self.lever_sprites.append(pyglet.sprite.Sprite(self.lever_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=foreground))
+            if self.env.levers:
+                if state in self.env.levers.keys():
+                    self.lever_sprites.append(pyglet.sprite.Sprite(self.lever_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=foreground))
 
         glViewport(0, 0, width, height)
 
