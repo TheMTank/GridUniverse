@@ -77,7 +77,7 @@ class GridWorldEnv(gym.Env):
         self._generate_walls(walls)
         # set levers
         # lever dict contains key (int where lever is) and value (int of wall index/door)
-        # todo add ascii figure. To remove lever or change lever sprite once used?
+        # todo To remove lever or change lever sprite once used?
 
         self._setup_levers(levers)
         # set reward matrix
@@ -234,6 +234,10 @@ class GridWorldEnv(gym.Env):
 
         for w_state in self.wall_indices:
             new_world[w_state] = '#'
+
+        if self.levers:
+            for lever_state in self.levers.keys():
+                new_world[lever_state] = 'i'
 
         if mode == 'human' or mode == 'ansi':
             outfile = StringIO() if mode == 'ansi' else sys.stdout
