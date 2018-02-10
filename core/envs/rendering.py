@@ -65,7 +65,7 @@ class Viewer(object):
             self.face_img = self.shocked_face
         self.ground_img = pyglet.resource.image('wbs_texture_05_resized.jpg')
         self.terminal_goal_img = pyglet.resource.image('wbs_texture_05_resized_green.jpg')
-        self.terminal_lava_img = pyglet.resource.image('wbs_texture_05_resized_red.jpg')
+        self.terminal_lava_img = pyglet.resource.image('lava-resized.jpg')
         self.wall_img = pyglet.resource.image('wbs_texture_05_resized_wall.jpg')
 
         self.padding = 1
