@@ -49,17 +49,29 @@ def n_step_return(policy, env, current_state, n_steps, gamma=0.9):
     return reward_experienced
 
 
-def td_n_step_evaluation(policy, env, current_state, n_steps, value_function=None, gamma=0.9):
+def td_single_n_step_evaluation(policy, env, current_state, n_steps, value_function=None, gamma=0.9, alpha=0.01):
     """
-    TD n-step algorithm
+    TD n-step algorithm for policy evaluation in a single n-step
     """
     value_function = np.zeros(env.world.size) if value_function is None else value_function
     action = np.random.choice(policy[current_state].size, p=policy[current_state])
 
-    value_function[current_state] = n_step_return(policy, env, current_state, n_steps, gamma) \
-                                    + gamma * env.look_step_ahead(current_state, action)
+    value_function[current_state] += alpha * (n_step_return(policy, env, current_state, n_steps, gamma)
+                                              + gamma * env.look_step_ahead(current_state, action)
+                                              - value_function[current_state])
     return value_function
 
+
+def td_episodic_n_step_evaluation(policy, env, current_state, n_steps, value_function=None, gamma=0.9, alpha=0.01,
+                                  n_episodes=100):
+    """
+    TD n-step algorithm for policy evaluation in n_episodes number of episodes
+    """
+    value_function = np.zeros(env.world.size) if value_function is None else value_function
+    for episode in range(n_episodes):
+        value_function = td_single_n_step_evaluation(policy, env, current_state, n_steps, value_function=value_function,
+                                                     gamma=0.9, alpha=0.01)
+    return value_function
 
 
 # # Hyperparameters
