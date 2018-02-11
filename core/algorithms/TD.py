@@ -30,7 +30,7 @@ def run_episode(policy, env, max_steps_per_episode=1000):
     return states_hist, rewards_hist, done
 
 
-def n_step_return(policy, env, curr_state, n_steps, gamma=0.9):
+def n_step_return(policy, env, curr_state, n_steps):
     """
     Moves the agent n_steps and returns the sum of the rewards experienced on those steps.
 
@@ -56,7 +56,7 @@ def td_single_n_step_evaluation(policy, env, curr_state, n_steps, value_function
     value_function = np.zeros(env.world.size) if value_function is None else value_function
     action = np.random.choice(policy[curr_state].size, p=policy[curr_state])
 
-    return_value, last_state = n_step_return(policy, env, curr_state, n_steps, gamma)
+    return_value, last_state = n_step_return(policy, env, curr_state, n_steps)
     next_state, *_ = env.look_step_ahead(last_state, action)
     td_target = return_value + gamma * value_function[next_state]
     td_error = td_target - value_function[curr_state]
@@ -77,13 +77,13 @@ def td_episodic_n_step_evaluation(policy, env, current_state, n_steps, value_fun
     return value_function
 
 
-def td_lambda_evaluation(policy, env, current_state, n_steps, value_function=None, gamma=0.9, alpha=0.01,
-                         n_episodes=100, lambda_value=0.09, forward_view=False, online=False):
+def td_lambda_evaluation(policy, env, n_steps, value_function=None, gamma=0.9, alpha=0.01,
+                         n_episodes=100, lambda_val=0.09, backward_view=False, online=False):
     """
     TD lambda
     """
     value_function = np.zeros(env.world.size) if value_function is None else value_function
-    Gt = 0
+    eligibility_traces = np.zeros(env.world.size) if backward_view else np.ones(env.world.size)
 
     if online:
         # Evaluate lambda return step by step
@@ -91,9 +91,19 @@ def td_lambda_evaluation(policy, env, current_state, n_steps, value_function=Non
     else:
         # Compute full episode before updating
         states_hist, rewards_hist, done = run_episode(policy, env)
-        # TODO: implement formula for lambda return
-        for curr_state, step in enumerate(states_hist):
-            Gt += (1 - lambda_value) * lambda_value ** (n - 1) * n_step_return(policy, env, curr_state, n_steps, gamma=0.9)
+        step_returns = np.cumsum(rewards_hist)
+        lambda_return = np.fromiter(((1 - lambda_val) * lambda_val ** (step_n + 1) * curr_return
+                                     for step_n, curr_return in enumerate(step_returns)), dtype='float64')
+
+        for step_n, curr_state in enumerate(states_hist[:-1]):
+            td_target = lambda_return[step_n] + gamma * value_function[states_hist[step_n + 1]]
+            td_error = td_target - value_function[curr_state]
+            if backward_view:
+                eligibility_traces *= alpha * gamma
+                eligibility_traces[curr_state] += 1
+
+            value_function[curr_state] += alpha * td_error * eligibility_traces[curr_state]
+
     return value_function
 
 
