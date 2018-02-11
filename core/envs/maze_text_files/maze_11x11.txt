@@ -5,7 +5,7 @@
 #o#o###o#o#
 #o#ooooo#o#
 #o#o###o#o#
-#o#o#Too#o#
+#o#o#Goo#o#
 #o#o#####o#
 #ooooooooo#
 ###########

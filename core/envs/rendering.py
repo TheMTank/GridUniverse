@@ -65,14 +65,15 @@ class Viewer(object):
             self.face_img = self.shocked_face
         self.ground_img = pyglet.resource.image('wbs_texture_05_resized.jpg')
         self.terminal_goal_img = pyglet.resource.image('wbs_texture_05_resized_green.jpg')
-        # self.wall_img = pyglet.resource.image('wbs_texture_05_resized_red.jpg')
+        self.terminal_lava_img = pyglet.resource.image('lava-resized.jpg')
         self.wall_img = pyglet.resource.image('wbs_texture_05_resized_wall.jpg')
 
         self.padding = 1
         self.tile_dim = self.ground_img.width + self.padding
 
         self.wall_sprites = []
-        self.terminal_sprites = []
+        self.terminal_goal_sprites = []
+        self.terminal_lava_sprites = []
         self.ground_sprites = []
 
         self.batch = pyglet.graphics.Batch()
@@ -112,25 +113,23 @@ class Viewer(object):
         else:
             self.font_size = 50
 
-        print('zoom_level_for_width: {}, zoom_level_for_height: {}, zoom_level: {}'.format(round(zoom_level_for_width, 4), round(zoom_level_for_height, 4), round(self.zoom_level)))
-        print('pixel_width_of_grid: {}, pixel_height_of_grid: {}'.format(pixel_width_of_grid, pixel_height_of_grid))
-        print('x_distance_to_move:', self.x_distance_to_move)
-        print('tile_dim: {}. grid_shape: {}'.format(self.tile_dim, [self.env.x_max, self.env.y_max]))
-        print('width: {}, height: {}, zoomed_width: {}, zoomed_height: {}'.format(width, height, self.zoomed_width, self.zoomed_height))
-
         # have to flip pixel location. top-left is initial state = x, y = 0, 0 = state 0
         self.pix_grid_height = (self.env.y_max) * self.tile_dim + (self.num_extra_tiles // 2) * self.tile_dim
 
         for i, (x, y) in enumerate(self.env.world):
             x_pix_loc, y_pix_loc = self.get_x_y_pix_location(x, y)
-            if self.env.is_terminal(i):  # if terminal
-                self.wall_sprites.append(
+            if self.env.is_terminal_goal(i):  # if terminal
+                self.terminal_goal_sprites.append(
                     pyglet.sprite.Sprite(self.terminal_goal_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
+            elif self.env.is_lava(i):
+                self.terminal_lava_sprites.append(
+                    pyglet.sprite.Sprite(self.terminal_lava_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch,
+                                         group=background))
             elif self.env._is_wall(i):
                 self.wall_sprites.append(
                     pyglet.sprite.Sprite(self.wall_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
             else:
-                self.wall_sprites.append(
+                self.ground_sprites.append(
                     pyglet.sprite.Sprite(self.ground_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
 
         glViewport(0, 0, width, height)
@@ -142,15 +141,6 @@ class Viewer(object):
 
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
-        # cart = make_circle(500)
-        # cart.set_color(255, 0, 0)
-        # self.carttrans = Transform()
-        # cart.add_attr(self.carttrans)
-        # self.add_geom(cart)
-
-        # self.line = Line((0, 0), (500, 500))
-        # self.add_geom(self.line)
 
     def change_face_sprite(self):
         if self.face_img is self.awesome_face:

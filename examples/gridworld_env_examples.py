@@ -69,8 +69,28 @@ def run_random_maze():
                 print("Episode finished after {} timesteps".format(t + 1))
                 break
 
+def run_gridworld_with_lava():
+    """
+    Run a random agent on an environment with lava
+    """
+
+    print('\n' + '*' * 20 + 'Starting to run random agent on default GridWorld' + '*' * 20 + '\n')
+    env = GridWorldEnv(grid_shape=(10, 10), lava_states=[4, 14, 24, 34, 44, 54, 64, 74])
+    for i_episode in range(5):
+        observation = env.reset()
+        for t in range(100):
+            env.render(mode='graphic')  # set mode='graphic for pyglet render
+            action = env.action_space.sample()
+            observation, reward, done, info = env.step(action)
+
+            if done:
+                print("Episode finished after {} timesteps".format(t + 1))
+                print('Final states reward: ', reward)
+                break
+
 if __name__ == '__main__':
     # Run random agent on environment variations
     run_default_gridworld()
     run_gridworld_from_text_file()
     run_random_maze()
+    run_gridworld_with_lava()

@@ -152,7 +152,7 @@ def create_random_maze(width, height):
     all_lines[y][x] = 'x'
     x = T_idx % num_cols
     y = T_idx // num_cols
-    all_lines[y][x] = 'T'
+    all_lines[y][x] = 'G'
 
     for line in all_lines:
         for char in line:

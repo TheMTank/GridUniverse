@@ -13,27 +13,33 @@ from core.envs import maze_generation
 class GridWorldEnv(gym.Env):
     metadata = {'render.modes': ['human', 'ansi', 'graphic']}
 
-    def __init__(self, grid_shape=(4, 4), initial_state=0, terminal_states=None, walls=None, custom_world_fp=None, random_maze=False):
+    def __init__(self, grid_shape=(4, 4), *, initial_state=0, goal_states=None, lava_states=None, walls=None,
+                 custom_world_fp=None, random_maze=False):
         """
-        Main constructor to create a GridWorld environment. The default GridWorld is a square grid of 4x4 where the
-        agent starts at the top left corner and the terminal state is at the bottom right corner.
+        The constructor for creating a GridWorld environment. The default GridWorld is a square grid of 4x4 where the
+        agent starts in the top left corner and the terminal goal state is in the bottom right corner.
 
         :param grid_shape: Tuple of size 2 to specify (width, height) of grid
         :param initial_state: int for single initial state or list of possible states chosen uniform randomly
-        :param terminal_states: list of terminal states. If agent walks into any, done = True,
-                                and no actions are possible
-        :param walls: list of walls. These are blocked states where the agent can't walk
+        "Terminal states". The episode ends if the agent reaches this type of state (done = True).
+        :param goal_states: Terminal states with positive reward
+        :param lava_states: Terminal states with negative reward
+        :param walls: list of walls. These are blocked states where the agent can't enter/walk on
         :param custom_world_fp: optional parameter to create the grid from a text file.
         :param random_maze: optional parameter to randomly generate a maze from the algorithm within maze_generation.py
-                            This will override the terminal_states, initial_state, walls and custom_world_fp params
+                            This will override the params initial_state, goal_states, lava_states,
+                            walls and custom_world_fp params
         """
         # check state space params
-        if terminal_states is not None and not isinstance(terminal_states, list):
-            raise TypeError("terminal_states parameter must be a list of integer indices")
+        if goal_states is not None and not isinstance(goal_states, list):
+            raise TypeError("goal_states parameter must be a list of integer indices")
+        if lava_states is not None and not isinstance(lava_states, list):
+            raise TypeError("lava_states parameter must be a list of integer indices")
         if walls is not None and not isinstance(walls, list):
             raise TypeError("walls parameter must be a list of integer indices")
-        if not isinstance(grid_shape, tuple) or len(grid_shape) != 2 or not isinstance(grid_shape[0], int):
-            raise TypeError("grid_shape parameter must be tuple of two integers")
+        if not (isinstance(grid_shape, list) or isinstance(grid_shape, tuple)) or len(grid_shape) != 2 \
+                or not isinstance(grid_shape[0], int) or not isinstance(grid_shape[1], int):
+            raise TypeError("grid_shape parameter must be tuple/list of two integers")
         self.x_max = grid_shape[0] # num columns
         self.y_max = grid_shape[1] # num rows
         self.world = self._generate_world()
@@ -47,7 +53,7 @@ class GridWorldEnv(gym.Env):
                                            lambda s: s - 1 if self.world[s][0] > 0 else s]                         # left
 
         self.action_descriptors = ['UP', 'RIGHT', 'DOWN', 'LEFT']
-        self.action_descriptor_to_int = {desc:idx for idx, desc in enumerate(self.action_descriptors)}
+        self.action_descriptor_to_int = {desc: idx for idx, desc in enumerate(self.action_descriptors)}
         # set observed params: [current state, world state]
         self.observation_space = spaces.Discrete(self.world.size)
         # set initial state for the agent. If initial_state is a list, choose randomly
@@ -55,22 +61,32 @@ class GridWorldEnv(gym.Env):
             initial_state = [initial_state] # convert to list
         self.starting_states = initial_state
         self.previous_state = self.current_state = self.initial_state = random.choice(self.starting_states)
-        # set terminal state(s) and default terminal state if None given
-        if terminal_states is None or len(terminal_states) == 0:
-            self.terminal_states = [self.world.size - 1]
+        # set terminal goal states state(s) and default terminal state if None given
+        if goal_states is None or len(goal_states) == 0:
+            self.goal_states = [self.world.size - 1]
         else:
-            self.terminal_states = terminal_states
-        for t_s in self.terminal_states:
-            if t_s < 0 or t_s > (self.world.size - 1):
-                raise ValueError("Terminal state {} is out of grid bounds".format(t_s))
+            self.goal_states = goal_states
+        # set lava terminal states
+        if lava_states is None:
+            self.lava_states = []
+        else:
+            self.lava_states = lava_states
         # set walls
         self.wall_indices = []
         self.wall_grid = np.zeros(self.world.shape)
         self._generate_walls(walls)
         # set reward matrix
         self.reward_matrix = np.full(self.world.shape, -1)
-        for terminal_state in self.terminal_states:
-            self.reward_matrix[terminal_state] = 0
+        for terminal_state in self.goal_states:
+            try:
+                self.reward_matrix[terminal_state] = 10
+            except IndexError:
+                raise IndexError("Terminal goal state {} is out of grid bounds or is wrong type. Should be an integer.".format(terminal_state))
+        for terminal_state in self.lava_states:
+            try:
+                self.reward_matrix[terminal_state] = -10
+            except IndexError:
+                raise IndexError("Lava terminal state {} is out of grid bounds or is wrong type. Should be an integer.".format(terminal_state))
         # self.reward_range = [-inf, inf] # default values already
         self.num_previous_states_to_store = 500
         self.last_n_states = []
@@ -141,17 +157,20 @@ class GridWorldEnv(gym.Env):
         """
         Checks if a given state is a wall or any other element that shall not be trespassed.
         """
-        if self.wall_grid[state] == 1:
-            return True
-        return False
+        return True if self.wall_grid[state] == 1 else False
 
     def is_terminal(self, state):
         """
         Check if the input state is terminal.
+        Which can either be a lava (negative reward) or goal state (positive reward)
         """
-        if state in self.terminal_states:
-            return True
-        return False
+        return True if self.is_lava(state) or self.is_terminal_goal(state) else False
+
+    def is_lava(self, state):
+        return True if state in self.lava_states else False
+
+    def is_terminal_goal(self, state):
+        return True if state in self.goal_states else False
 
     def _step(self, action):
         """
@@ -179,8 +198,11 @@ class GridWorldEnv(gym.Env):
         new_world = np.fromiter(('o' for _ in np.nditer(np.arange(self.x_max))
                                  for _ in np.nditer(np.arange(self.y_max))), dtype='S1')
         new_world[self.current_state] = 'x'
-        for t_state in self.terminal_states:
-            new_world[t_state] = 'T'
+        for t_state in self.goal_states:
+            new_world[t_state] = 'G'
+
+        for t_state in self.lava_states:
+            new_world[t_state] = 'L'
 
         for w_state in self.wall_indices:
             new_world[w_state] = '#'
@@ -204,8 +226,6 @@ class GridWorldEnv(gym.Env):
             if self.viewer is None:
                 from core.envs import rendering
                 self.viewer = rendering.Viewer(self, self.screen_width, self.screen_height)
-
-            # time.sleep(0.3) # if you want it to go slower. Best way?
 
             return self.viewer.render(return_rgb_array=mode == 'rgb_array')
         else:
@@ -238,18 +258,20 @@ class GridWorldEnv(gym.Env):
 
         ooo#
         oxoo
-        oooo
-        oooT
+        oooL
+        oooG
 
         Where:
          "o" is an empty walkable area.
          "#" is a blocked "wall"
-         "T" is a terminal state
+         "G" is a terminal goal state
+         "L" is a lava terminal state
          "x" is a possible starting location. Chosen uniform randomly if multiple "x"s.
         """
 
-        self.terminal_states = []
+        self.goal_states = []
         self.starting_states = []
+        self.lava_states = []
         walls_indices = []
 
         curr_index = 0
@@ -259,8 +281,10 @@ class GridWorldEnv(gym.Env):
                 raise ValueError("Input text file is not a rectangle")
 
             for char in line:
-                if char == 'T':
-                    self.terminal_states.append(curr_index)
+                if char == 'G':
+                    self.goal_states.append(curr_index)
+                elif char == 'L':
+                    self.lava_states.append(curr_index)
                 elif char == 'o':
                     pass
                 elif char == '#':
@@ -274,8 +298,8 @@ class GridWorldEnv(gym.Env):
 
         if len(self.starting_states) == 0:
             raise ValueError("No starting states set in text file. Place \"x\" within grid. ")
-        if len(self.terminal_states) == 0:
-            raise ValueError("No terminal states set in text file. Place \"T\" within grid. ")
+        if len(self.goal_states) == 0:
+            raise ValueError("No terminal goal states set in text file. Place \"T\" within grid. ")
 
         self.reset()
 
@@ -288,8 +312,10 @@ class GridWorldEnv(gym.Env):
         self._generate_walls(walls_indices)
 
         self.reward_matrix = np.full(self.world.shape, -1)
-        for terminal_state in self.terminal_states:
-            self.reward_matrix[terminal_state] = 0
+        for terminal_state in self.goal_states:
+            self.reward_matrix[terminal_state] = 10
+        for terminal_state in self.lava_states:
+            self.reward_matrix[terminal_state] = -10
 
     def _create_random_maze(self, width, height):
         all_textworld_lines = maze_generation.create_random_maze(width, height)
