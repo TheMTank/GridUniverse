@@ -65,9 +65,9 @@ class Viewer(object):
             self.face_img = self.shocked_face
         self.ground_img = pyglet.resource.image('wbs_texture_05_resized.jpg')
         self.terminal_goal_img = pyglet.resource.image('wbs_texture_05_resized_green.jpg')
-        # self.wall_img = pyglet.resource.image('wbs_texture_05_resized_red.jpg')
         self.wall_img = pyglet.resource.image('wbs_texture_05_resized_wall.jpg')
-        self.lever_img = pyglet.resource.image('lemon-resized.png')
+        self.lever_off_img = pyglet.resource.image('lever-off-resized.png')
+        self.lever_on_img = pyglet.resource.image('lever-on-resized.png')
 
         self.padding = 1
         self.tile_dim = self.ground_img.width + self.padding
@@ -78,6 +78,7 @@ class Viewer(object):
         self.lever_sprites = []
 
         self.wall_indices_to_wall_sprite_index = {}
+        self.lever_indices_to_lever_sprite_index = {}
 
         self.batch = pyglet.graphics.Batch()
         background = pyglet.graphics.OrderedGroup(0)
@@ -149,7 +150,8 @@ class Viewer(object):
 
             if self.env.levers:
                 if state in self.env.levers.keys():
-                    self.lever_sprites.append(pyglet.sprite.Sprite(self.lever_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=foreground))
+                    self.lever_sprites.append(pyglet.sprite.Sprite(self.lever_off_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=foreground))
+                    self.lever_indices_to_lever_sprite_index[state] = len(self.lever_indices_to_lever_sprite_index.keys())
 
         glViewport(0, 0, width, height)
 

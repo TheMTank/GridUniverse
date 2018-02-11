@@ -175,6 +175,10 @@ class GridWorldEnv(gym.Env):
                         if self.viewer:
                             wall_sprite_index = self.viewer.wall_indices_to_wall_sprite_index[self.levers[next_state]]
                             self.viewer.wall_sprites[wall_sprite_index].visible = False
+
+                            # Change lever sprite
+                            lever_sprite_index = self.viewer.lever_indices_to_lever_sprite_index[next_state]
+                            self.viewer.lever_sprites[lever_sprite_index].image = self.viewer.lever_on_img
                         self.wall_indices.remove(self.levers[next_state])
                         self.wall_grid[self.levers[next_state]] = 0
                         del self.levers[next_state]
