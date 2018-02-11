@@ -81,20 +81,23 @@ def td_episodic_n_step_evaluation(policy, env, n_steps, curr_state=None, value_f
     return value_function
 
 
-def td_lambda_episodic_evaluation(policy, env, value_function=None, gamma=0.9, alpha=0.01, max_steps_per_episode=1000,
-                                  lambda_val=0.9, backward_view=False, online=False, n_episodes=100):
+def td_lambda_episodic_evaluation(policy, env, curr_state=None, value_function=None, gamma=0.9, alpha=0.01,
+                                  max_steps_per_episode=1000, lambda_val=0.9, backward_view=False, online=False,
+                                  n_episodes=100):
     """
     TD lambda
     """
     value_function = np.zeros(env.world.size) if value_function is None else value_function
     eligibility_traces = np.zeros(env.world.size) if backward_view else np.ones(env.world.size)
+    curr_state = env.current_state if curr_state is None else curr_state
 
     for episode in range(n_episodes):
         if online:
             # Evaluate lambda return step by step
             cum_return = 0
             for step_n in range(max_steps_per_episode):
-                curr_state, reward, done = env.look_step_ahead(env.current_state, action)
+                action = np.random.choice(policy[curr_state].size, p=policy[curr_state])
+                curr_state, reward, done = env.look_step_ahead(curr_state, action)
                 next_state, *_ = env.look_step_ahead(env.current_state, action)
                 if done:
                     break
@@ -128,7 +131,7 @@ def td_lambda_episodic_evaluation(policy, env, value_function=None, gamma=0.9, a
 
 
 if __name__ == '__main__':
-    # TD Learning
+    # TD Evaluation
     world_shape = (4, 4)
     env = GridWorldEnv(world_shape=world_shape)
     value_func = np.zeros(env.world.size)
