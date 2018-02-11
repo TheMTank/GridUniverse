@@ -1,26 +1,79 @@
+import warnings
 import sys
 
+
 import numpy as np
+
 
 from core.envs.gridworld_env import GridWorldEnv
 from core.algorithms import utils
 
 
-# Hyperparameters
-alpha = 0.01
-discount_factor = 0.99 # todo change to 1 to test equivalence
-online = True
-lambda_factor = 0.9 # todo change to 1 to test equivalence
-lambda_return_mode = True
-n = 5 # set to -1 for Monte Carlo # todo shouldn't work with online == True and lambda_return_mode == True?
-
-def calculate_n_step_return(n_steps, from_step_num, all_states, all_rewards):
+def run_episode(policy, env, max_steps_per_episode=1000):
     """
-    :param n_steps:
-    :param from_idx:
-    :param all_states:
-    :param all_rewards:
-    :return: n_step_return
+    Generates an agent and runs actions until the agent either gets to a terminal state or executes a number of
+    max_steps_per_episode steps.
+
+    Assumes a stochastic policy and takes an action sample taken from a distribution with the probabilities given
+    by the policy.
+    """
+    states_hist = []
+    rewards_hist = []
+    observation = env.reset()
+    for step in range(max_steps_per_episode):
+        action = np.random.choice(policy[observation].size, p=policy[observation])
+        observation, reward, done, info = env.step(action)
+        states_hist.append(observation)
+        rewards_hist.append(reward)
+        if done:
+            break
+    return states_hist, rewards_hist, done
+
+
+def n_step_return(policy, env, current_state, n_steps, gamma=0.9):
+    """
+    Moves the agent n_steps and returns the sum of the rewards experienced on those steps.
+
+    Assumes a stochastic policy and takes an action sample taken from a distribution with the probabilities given
+    by the policy.
+    """
+    reward_experienced = 0  # Gt according to the equations
+    for step in range(n_steps):
+        action = np.random.choice(policy[current_state].size, p=policy[current_state])
+        current_state, step_reward, done, _ = env.step(action)
+        if done:
+            warning_message = 'Terminal state {} reached after {} steps'.format(current_state, step + 1)
+            warnings.warn(warning_message, UserWarning)
+            break
+        reward_experienced += step_reward
+    return reward_experienced
+
+
+def td_n_step_evaluation(policy, env, current_state, n_steps, value_function=None, gamma=0.9):
+    """
+    TD n-step algorithm
+    """
+    value_function = np.zeros(env.world.size) if value_function is None else value_function
+    action = np.random.choice(policy[current_state].size, p=policy[current_state])
+
+    value_function[current_state] = n_step_return(policy, env, current_state, n_steps, gamma) \
+                                    + gamma * env.look_step_ahead(current_state, action)
+    return value_function
+
+
+
+# # Hyperparameters
+# alpha = 0.01
+# discount_factor = 0.99 # todo change to 1 to test equivalence
+# online = True
+# lambda_factor = 0.9 # todo change to 1 to test equivalence
+# lambda_return_mode = True
+# n = 5 # set to -1 for Monte Carlo # todo shouldn't work with online == True and lambda_return_mode == True?
+
+def calculate_n_step_return(n_steps, from_step_num, all_states, all_rewards, alpha=0.01, discount_factor=0.99,
+                            online=True, lambda_factor=0.9, lambda_return_mode=True):
+    """
+    Calculate the return of
     """
     # todo pass in value func.
     # todo pass in values better. stop using globals
@@ -30,7 +83,7 @@ def calculate_n_step_return(n_steps, from_step_num, all_states, all_rewards):
     # if (discount_factor ** i) < threshold]) todo or not
 
     if n_steps == 0:
-        raise ValueError('No such thing as 0-step return')
+        raise NotImplementedError('0-step return not implemented')
 
     if n_steps == -1 and not lambda_return_mode: # todo check and cleaner
         # MC uses all rewards from from_step_num
