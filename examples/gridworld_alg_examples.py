@@ -23,7 +23,7 @@ def run_policy_and_value_iteration_gridworld():
 
     # 1. Evaluate the value function of a random policy a number of times
     world_shape = (4, 4)
-    # env = GridWorldEnv(grid_shape=world_shape, terminal_goal_states=[3, 12]) # Sutton and Barlo/David Silver example
+    # env = GridWorldEnv(grid_shape=world_shape, goal_states=[3, 12]) # Sutton and Barlo/David Silver example
     # specific case with lava and path true it
     # env = GridWorldEnv(grid_shape=world_shape, lava_states=[i for i in range(15) if i not in [0, 4, 8, 12, 13, 14, 15]])
     world_shape = (11, 11)

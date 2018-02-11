@@ -13,26 +13,26 @@ from core.envs import maze_generation
 class GridWorldEnv(gym.Env):
     metadata = {'render.modes': ['human', 'ansi', 'graphic']}
 
-    def __init__(self, grid_shape=(4, 4), *, initial_state=0, terminal_goal_states=None, lava_states=None, walls=None,
+    def __init__(self, grid_shape=(4, 4), *, initial_state=0, goal_states=None, lava_states=None, walls=None,
                  custom_world_fp=None, random_maze=False):
         """
         The constructor for creating a GridWorld environment. The default GridWorld is a square grid of 4x4 where the
-        agent starts at the top left corner and the terminal state is at the bottom right corner.
+        agent starts in the top left corner and the terminal goal state is in the bottom right corner.
 
         :param grid_shape: Tuple of size 2 to specify (width, height) of grid
         :param initial_state: int for single initial state or list of possible states chosen uniform randomly
-        :param terminal_goal_states: list of terminal goal states. If agent walks into, done = True,
-                                and no actions are possible. Positive reward.
-        :param lava_states: like terminal_goal_states (episode ends if agent reaches one of them),
-                            but agent receives negative reward
-        :param walls: list of walls. These are blocked states where the agent can't walk
+        "Terminal states". The episode ends if the agent reaches this type of state (done = True).
+        :param goal_states: Terminal states with positive reward
+        :param lava_states: Terminal states with negative reward
+        :param walls: list of walls. These are blocked states where the agent can't enter/walk on
         :param custom_world_fp: optional parameter to create the grid from a text file.
         :param random_maze: optional parameter to randomly generate a maze from the algorithm within maze_generation.py
-                            This will override the terminal_goal_states, initial_state, walls and custom_world_fp params
+                            This will override the params initial_state, goal_states, lava_states,
+                            walls and custom_world_fp params
         """
         # check state space params
-        if terminal_goal_states is not None and not isinstance(terminal_goal_states, list):
-            raise TypeError("terminal_goal_states parameter must be a list of integer indices")
+        if goal_states is not None and not isinstance(goal_states, list):
+            raise TypeError("goal_states parameter must be a list of integer indices")
         if lava_states is not None and not isinstance(lava_states, list):
             raise TypeError("lava_states parameter must be a list of integer indices")
         if walls is not None and not isinstance(walls, list):
@@ -62,10 +62,10 @@ class GridWorldEnv(gym.Env):
         self.starting_states = initial_state
         self.previous_state = self.current_state = self.initial_state = random.choice(self.starting_states)
         # set terminal goal states state(s) and default terminal state if None given
-        if terminal_goal_states is None or len(terminal_goal_states) == 0:
-            self.terminal_goal_states = [self.world.size - 1]
+        if goal_states is None or len(goal_states) == 0:
+            self.goal_states = [self.world.size - 1]
         else:
-            self.terminal_goal_states = terminal_goal_states
+            self.goal_states = goal_states
         # set lava terminal states
         if lava_states is None:
             self.lava_states = []
@@ -77,7 +77,7 @@ class GridWorldEnv(gym.Env):
         self._generate_walls(walls)
         # set reward matrix
         self.reward_matrix = np.full(self.world.shape, -1)
-        for terminal_state in self.terminal_goal_states:
+        for terminal_state in self.goal_states:
             try:
                 self.reward_matrix[terminal_state] = 10
             except IndexError:
@@ -170,7 +170,7 @@ class GridWorldEnv(gym.Env):
         return True if state in self.lava_states else False
 
     def is_terminal_goal(self, state):
-        return True if state in self.terminal_goal_states else False
+        return True if state in self.goal_states else False
 
     def _step(self, action):
         """
@@ -198,7 +198,7 @@ class GridWorldEnv(gym.Env):
         new_world = np.fromiter(('o' for _ in np.nditer(np.arange(self.x_max))
                                  for _ in np.nditer(np.arange(self.y_max))), dtype='S1')
         new_world[self.current_state] = 'x'
-        for t_state in self.terminal_goal_states:
+        for t_state in self.goal_states:
             new_world[t_state] = 'G'
 
         for t_state in self.lava_states:
@@ -269,7 +269,7 @@ class GridWorldEnv(gym.Env):
          "x" is a possible starting location. Chosen uniform randomly if multiple "x"s.
         """
 
-        self.terminal_goal_states = []
+        self.goal_states = []
         self.starting_states = []
         self.lava_states = []
         walls_indices = []
@@ -282,7 +282,7 @@ class GridWorldEnv(gym.Env):
 
             for char in line:
                 if char == 'G':
-                    self.terminal_goal_states.append(curr_index)
+                    self.goal_states.append(curr_index)
                 elif char == 'L':
                     self.lava_states.append(curr_index)
                 elif char == 'o':
@@ -298,7 +298,7 @@ class GridWorldEnv(gym.Env):
 
         if len(self.starting_states) == 0:
             raise ValueError("No starting states set in text file. Place \"x\" within grid. ")
-        if len(self.terminal_goal_states) == 0:
+        if len(self.goal_states) == 0:
             raise ValueError("No terminal goal states set in text file. Place \"T\" within grid. ")
 
         self.reset()
@@ -312,7 +312,7 @@ class GridWorldEnv(gym.Env):
         self._generate_walls(walls_indices)
 
         self.reward_matrix = np.full(self.world.shape, -1)
-        for terminal_state in self.terminal_goal_states:
+        for terminal_state in self.goal_states:
             self.reward_matrix[terminal_state] = 10
         for terminal_state in self.lava_states:
             self.reward_matrix[terminal_state] = -10

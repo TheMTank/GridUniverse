@@ -113,12 +113,6 @@ class Viewer(object):
         else:
             self.font_size = 50
 
-        print('zoom_level_for_width: {}, zoom_level_for_height: {}, zoom_level: {}'.format(round(zoom_level_for_width, 4), round(zoom_level_for_height, 4), round(self.zoom_level)))
-        print('pixel_width_of_grid: {}, pixel_height_of_grid: {}'.format(pixel_width_of_grid, pixel_height_of_grid))
-        print('x_distance_to_move:', self.x_distance_to_move)
-        print('tile_dim: {}. grid_shape: {}'.format(self.tile_dim, [self.env.x_max, self.env.y_max]))
-        print('width: {}, height: {}, zoomed_width: {}, zoomed_height: {}'.format(width, height, self.zoomed_width, self.zoomed_height))
-
         # have to flip pixel location. top-left is initial state = x, y = 0, 0 = state 0
         self.pix_grid_height = (self.env.y_max) * self.tile_dim + (self.num_extra_tiles // 2) * self.tile_dim
 
@@ -147,15 +141,6 @@ class Viewer(object):
 
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
-        # cart = make_circle(500)
-        # cart.set_color(255, 0, 0)
-        # self.carttrans = Transform()
-        # cart.add_attr(self.carttrans)
-        # self.add_geom(cart)
-
-        # self.line = Line((0, 0), (500, 500))
-        # self.add_geom(self.line)
 
     def change_face_sprite(self):
         if self.face_img is self.awesome_face:

@@ -10,21 +10,21 @@ class TestGridWorld(unittest.TestCase):
         """
 
         with self.assertRaises(IndexError):
-            GridWorldEnv(terminal_goal_states=[16])
+            GridWorldEnv(goal_states=[16])
 
     def test_wrong_terminal_type_error(self):
         with self.assertRaises(IndexError):
-            GridWorldEnv(terminal_goal_states=['a'])
+            GridWorldEnv(goal_states=['a'])
 
     def test_incorrect_parameter_types(self):
         """
-        Test that TypeError is raised if terminal_goal_states, lava_states, walls are not a list.
+        Test that TypeError is raised if goal_states, lava_states, walls are not a list.
         Test that TypeError is raised if grid_shape is over 2 dimensions, not a tuple/list or contains non-int
         """
 
         # todo don't show errors/red writing (env.close() is always called) for testing aesthetics
         with self.assertRaises(TypeError):
-            GridWorldEnv(terminal_goal_states=5.0)
+            GridWorldEnv(goal_states=5.0)
 
         with self.assertRaises(TypeError):
             GridWorldEnv(lava_states='a')
@@ -118,7 +118,7 @@ class TestGridWorld(unittest.TestCase):
         """
         The agent follows a sequence of steps to check each boundary acts as expected (the current
         observation should be the same as the previous if you move into a boundary).
-        The agent tries the top-left, top-right and bottom-right corners while avoid the Terminal state.
+        The agent tries the top-left, top-right and bottom-right corners while avoiding the Terminal state.
         The step numbers where the agent ends up in the same state as previously
         are stored and then compared to the expected values and if exactly the same the test passes.
         """
