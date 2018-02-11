@@ -93,11 +93,12 @@ def run_lever_gridworld():
 def run_lever_gridworld_from_text_file():
     # env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/lever_level_1.txt')
     env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/lever_level_2.txt')
-    env.render()
+    # env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/lever_level_3.txt')
+    # env.render()
 
     for i_episode in range(1):
         observation = env.reset()
-        for t in range(1000000):
+        for t in range(1000000000):
             #env.render()  # set mode='graphic' for pyglet render
             env.render(mode='graphic')  # set mode='graphic' for pyglet render
             action = env.action_space.sample()
@@ -105,7 +106,7 @@ def run_lever_gridworld_from_text_file():
 
             if done:
                 env.render(mode='graphic')
-                time.sleep(3)
+                time.sleep(4)
                 print("Episode finished after {} timesteps".format(t + 1))
                 break
 
