@@ -82,36 +82,21 @@ def td_episodic_n_step_evaluation(policy, env, n_steps, curr_state=None, value_f
 
 
 def td_lambda_episodic_evaluation(policy, env, curr_state=None, value_function=None, gamma=0.9, alpha=0.01,
-                                  max_steps_per_episode=1000, lambda_val=0.9, backward_view=False, online=False,
+                                  max_steps_per_episode=1000, lambda_val=0.9, backward_view=False, execution='offline',
                                   n_episodes=100):
     """
     TD lambda
+
+    execution: 'offline', 'online', 'inexact_online'
     """
     value_function = np.zeros(env.world.size) if value_function is None else value_function
+    updated_value_function = value_function
     eligibility_traces = np.zeros(env.world.size) if backward_view else np.ones(env.world.size)
     curr_state = env.current_state if curr_state is None else curr_state
 
     for episode in range(n_episodes):
-        if online:
-            # Evaluate lambda return step by step
-            cum_return = 0
-            for step_n in range(max_steps_per_episode):
-                action = np.random.choice(policy[curr_state].size, p=policy[curr_state])
-                curr_state, reward, done = env.look_step_ahead(curr_state, action)
-                next_state, *_ = env.look_step_ahead(env.current_state, action)
-                if done:
-                    break
-
-                cum_return += reward
-                lambda_return = (1 - lambda_val) * lambda_val ** (step_n + 1) * cum_return
-                td_target = lambda_return + gamma * value_function[next_state]
-                td_error = td_target - value_function[curr_state]
-                if backward_view: # TODO: check if "exact online" method adds a correction factor to eligibility traces
-                    eligibility_traces *= gamma * lambda_val
-                    eligibility_traces[curr_state] += 1
-
-                value_function[curr_state] += alpha * td_error * eligibility_traces[curr_state]
-        else:
+        value_function = updated_value_function
+        if execution == 'offline':
             # Compute full episode before updating
             states_hist, rewards_hist, done = run_episode(policy, env, max_steps_per_episode=max_steps_per_episode)
             step_returns = np.cumsum(rewards_hist)
@@ -125,7 +110,29 @@ def td_lambda_episodic_evaluation(policy, env, curr_state=None, value_function=N
                     eligibility_traces *= gamma * lambda_val
                     eligibility_traces[curr_state] += 1
 
-                value_function[curr_state] += alpha * td_error * eligibility_traces[curr_state]
+                updated_value_function[curr_state] += alpha * td_error * eligibility_traces[curr_state]
+
+        else:
+            # Evaluate lambda return step by step
+            cum_return = 0
+            for step_n in range(max_steps_per_episode):
+                action = np.random.choice(policy[curr_state].size, p=policy[curr_state])
+                curr_state, reward, done = env.look_step_ahead(curr_state, action)
+                next_state, *_ = env.look_step_ahead(env.current_state, action)
+                if done:
+                    break
+
+                cum_return += reward
+                lambda_return = (1 - lambda_val) * lambda_val ** (step_n + 1) * cum_return
+                td_target = lambda_return + gamma * value_function[next_state]
+                td_error = td_target - value_function[curr_state]
+                if backward_view:
+                    eligibility_traces *= gamma * lambda_val
+                    eligibility_traces[curr_state] += 1
+
+                updated_value_function[curr_state] += alpha * td_error * eligibility_traces[curr_state]
+                if execution == 'inexact_online':
+                    value_function[curr_state] = updated_value_function[curr_state]
 
     return value_function
 
@@ -150,7 +157,7 @@ if __name__ == '__main__':
     # TD lambda backward view offline
     value_func_td_lambda_bwd_off = td_lambda_episodic_evaluation(policy=policy0, env=env, value_function=value_func,
                                                                  backward_view=True, n_episodes=2)
-    print("Value function for TD lambda forward view offline in 2 episodes:\n", value_func_td_lambda_bwd_off)
+    print("Value function for TD lambda backward view offline in 2 episodes:\n", value_func_td_lambda_bwd_off)
     # TD lambda forward view online
     value_func_td_lambda_fwd_on = td_lambda_episodic_evaluation(policy=policy0, env=env, value_function=value_func,
                                                                 online=True, n_episodes=2)
