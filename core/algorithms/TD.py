@@ -5,27 +5,7 @@ import numpy as np
 
 
 from core.envs.gridworld_env import GridWorldEnv
-
-
-def run_episode(policy, env, max_steps_per_episode=1000):
-    """
-    Generates an agent and runs actions until the agent either gets to a terminal state or executes a number of
-    max_steps_per_episode steps.
-
-    Assumes a stochastic policy and takes an action sample taken from a distribution with the probabilities given
-    by the policy.
-    """
-    states_hist = []
-    rewards_hist = []
-    observation = env.reset()
-    for step in range(max_steps_per_episode):
-        action = np.random.choice(policy[observation].size, p=policy[observation])
-        observation, reward, done, info = env.step(action)
-        states_hist.append(observation)
-        rewards_hist.append(reward)
-        if done:
-            break
-    return states_hist, rewards_hist, done
+from core.algorithms.utils import run_episode
 
 
 def n_step_return(policy, env, n_steps, curr_state=None):
@@ -101,7 +81,6 @@ def td_lambda_episodic_evaluation(policy, env, curr_state=None, value_function=N
     for episode in range(n_episodes):
         value_function = updated_value_function
         if execution == 'offline':
-            # TODO: recheck forward view offline execution
             # Compute full episode before updating
             states_hist, rewards_hist, done = run_episode(policy, env, max_steps_per_episode=max_steps_per_episode)
             step_returns = np.cumsum(rewards_hist)
@@ -118,6 +97,7 @@ def td_lambda_episodic_evaluation(policy, env, curr_state=None, value_function=N
                 updated_value_function[curr_state] += alpha * td_error * eligibility_traces[curr_state]
 
         else:
+            # TODO: Review forward view offline
             # Evaluate lambda return step by step
             cum_return = 0
             for step_n in range(max_steps_per_episode):
@@ -137,6 +117,7 @@ def td_lambda_episodic_evaluation(policy, env, curr_state=None, value_function=N
 
                 updated_value_function[curr_state] += alpha * td_error * eligibility_traces[curr_state]
                 if execution is not 'exact_online':
+                    # Review backward view online (not exact)
                     value_function[curr_state] = updated_value_function[curr_state]
 
     return value_function
@@ -152,8 +133,8 @@ if __name__ == '__main__':
     print('Initial value function:', value_func)
     np.set_printoptions(linewidth=75 * 2, precision=4)
 
-    # TD 5-step return for 2 episodes
-    value_func_td5step = td_episodic_n_step_evaluation(policy=policy0, env=env, n_steps=5, n_episodes=2)
+    # TD 3-step return for 2 episodes
+    value_func_td5step = td_episodic_n_step_evaluation(policy=policy0, env=env, n_steps=3, n_episodes=2)
     print("Value function for TD 5 step return run on 2 episodes:\n", value_func_td5step)
     # TD lambda forward view offline
     value_func_td_lambda_fwd_off = td_lambda_episodic_evaluation(policy=policy0, env=env, value_function=value_func,

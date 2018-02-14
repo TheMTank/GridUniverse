@@ -4,6 +4,27 @@ import numpy as np
 from six import StringIO
 
 
+def run_episode(policy, env, max_steps_per_episode=1000):
+    """
+    Generates an agent and runs actions until the agent either gets to a terminal state or executes a number of
+    max_steps_per_episode steps.
+
+    Assumes a stochastic policy and takes an action sample taken from a distribution with the probabilities given
+    by the policy.
+    """
+    states_hist = []
+    rewards_hist = []
+    observation = env.reset()
+    for step in range(max_steps_per_episode):
+        action = np.random.choice(policy[observation].size, p=policy[observation])
+        observation, reward, done, info = env.step(action)
+        states_hist.append(observation)
+        rewards_hist.append(reward)
+        if done:
+            break
+    return states_hist, rewards_hist, done
+
+
 def reshape_as_gridworld(input_matrix, world_shape):
     """
     Helper function to reshape a gridworld state matrix into a visual representation of the gridworld with origin on the
