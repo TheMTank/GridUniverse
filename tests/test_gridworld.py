@@ -35,6 +35,27 @@ class TestGridWorld(unittest.TestCase):
         with self.assertRaises(TypeError):
             GridWorldEnv(walls=[4, 8], levers={'a': 8})
 
+    def test_lever_opens_door_and_both_reset_on_reset(self):
+        """
+        Create default environment, test that wall exists, move to lever, check wall doesn't exist
+        reset environment, check that lever is unactivated, and repeat do previous steps
+        """
+        env = GridWorldEnv(walls=[3], levers={1: 3})
+
+        self.assertTrue(env.wall_grid[3] == 1 and 3 in env.wall_indices)
+        env.step(env.action_descriptor_to_int['RIGHT'])
+        self.assertTrue(env.wall_grid[3] == 0 and 3 not in env.wall_indices)
+        self.assertTrue(1 not in env.unactivated_levers)
+
+        env.reset()
+        self.assertTrue(1 in env.unactivated_levers)
+
+        self.assertTrue(env.wall_grid[3] == 1 and 3 in env.wall_indices)
+        env.step(env.action_descriptor_to_int['RIGHT'])
+        self.assertTrue(env.wall_grid[3] == 0 and 3 not in env.wall_indices)
+
+        self.assertTrue(1 not in env.unactivated_levers)
+
     def test_gridworld_wall_not_trespassed(self):
         """
         Test whether agent is still in the same place after moving into a wall
