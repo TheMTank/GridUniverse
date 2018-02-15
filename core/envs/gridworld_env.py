@@ -72,13 +72,14 @@ class GridWorldEnv(gym.Env):
             if t_s < 0 or t_s > (self.world.size - 1):
                 raise ValueError("Terminal state {} is out of grid bounds".format(t_s))
         # set walls
+        self.initial_walls = []
         self.wall_indices = []
         self.wall_grid = np.zeros(self.world.shape)
-        self._generate_walls(walls)
+        self._setup_walls(walls)
         # set levers
         # lever dict contains key (int where lever is) and value (int of wall index/door)
-        # todo To remove lever or change lever sprite once used?
 
+        self.levers = {}
         self._setup_levers(levers)
         # set reward matrix
         self.reward_matrix = np.full(self.world.shape, -1)
@@ -113,7 +114,7 @@ class GridWorldEnv(gym.Env):
                              for x in np.nditer(np.arange(self.x_max))), dtype='int64, int64')
         return world
 
-    def _generate_walls(self, walls):
+    def _setup_walls(self, walls):
         """
         Given a list of wall indices, fills in self.wall_indices list
         and places "1"s appropriately within self.walls numpy array
@@ -121,8 +122,11 @@ class GridWorldEnv(gym.Env):
         self.walls: need index positioning for efficient check in _is_wall() but
         self.wall_indices: we also need list of indices to easily access each wall sequentially (e.g in render())
         """
-        if walls is not None:
-            for wall_state in walls:
+        if not walls:
+            self.initial_walls = []
+        else:
+            self.initial_walls = walls
+            for wall_state in self.initial_walls:
                 if not isinstance(wall_state, int):
                     raise TypeError("Wall state {} is not an integer".format(wall_state))
                 if wall_state < 0 or wall_state > (self.world.size - 1):
@@ -139,11 +143,13 @@ class GridWorldEnv(gym.Env):
             self.levers = {}
         else:
             self.levers = lever_dict
+
+        self.unactivated_levers = {k: v for k, v in self.levers.items()}
         # Parameter checks to see if correct
-        for lever_state in self.levers.keys():
+        for lever_state in self.unactivated_levers.keys():
             # Check lever state can't equal a wall. Key and value can't equal the same if any of the below is raised
             # Check value is always wall
-            if self.levers[lever_state] not in self.wall_indices:
+            if self.unactivated_levers[lever_state] not in self.wall_indices:
                 raise ValueError("Wall linked to lever state {} is not a wall state".format(lever_state))
             # Check key is always non-wall
             if lever_state in self.wall_indices:
@@ -169,19 +175,20 @@ class GridWorldEnv(gym.Env):
                 next_state = self.action_state_to_next_state[action](state)
                 next_state = next_state if not self._is_wall(next_state) else state
 
-                if self.levers:
-                    if next_state in self.levers.keys():
-                        print('STEPPED ON LEVER REMOVING SPECIFIC WALL LINKED TO LEVER!!!!!')
+                if self.unactivated_levers:
+                    if next_state in self.unactivated_levers.keys():
+                        print('Stepped on lever at state {} to remove door at state {}'.format(next_state, self.unactivated_levers[next_state]))
                         if self.viewer:
-                            wall_sprite_index = self.viewer.wall_indices_to_wall_sprite_index[self.levers[next_state]]
+                            wall_sprite_index = self.viewer.wall_indices_to_wall_sprite_index[self.unactivated_levers[next_state]] # todo check if breaks indexing
                             self.viewer.wall_sprites[wall_sprite_index].visible = False
 
                             # Change lever sprite
                             lever_sprite_index = self.viewer.lever_indices_to_lever_sprite_index[next_state]
                             self.viewer.lever_sprites[lever_sprite_index].image = self.viewer.lever_on_img
-                        self.wall_indices.remove(self.levers[next_state])
-                        self.wall_grid[self.levers[next_state]] = 0
-                        del self.levers[next_state]
+
+                        self.wall_indices.remove(self.unactivated_levers[next_state])
+                        self.wall_grid[self.unactivated_levers[next_state]] = 0
+                        del self.unactivated_levers[next_state]
         else:
             # repeating code for now, but for good reason
             next_state = self.action_state_to_next_state[action](state)
@@ -211,7 +218,7 @@ class GridWorldEnv(gym.Env):
         """
         self.previous_state = self.current_state
         self.current_state, reward, self.done = self.look_step_ahead(self.current_state, action)
-        # if self.done: # todo
+        # if self.done: # todo: render on done
         #     env.render(mode='graphic')
         # self.last_n_states.append(self.current_state)
         self.last_n_states.append(self.world[self.current_state])
@@ -223,10 +230,21 @@ class GridWorldEnv(gym.Env):
         self.done = False
         self.previous_state = self.current_state = self.initial_state = random.choice(self.starting_states)
         self.last_n_states = []
+        # reset walls and levers sprites
         if self.viewer:
             self.viewer.change_face_sprite()
             for sprite in self.viewer.wall_sprites:
                 sprite.visible = True
+            for sprite in self.viewer.lever_sprites:
+                sprite.image = self.viewer.lever_off_img
+        # reset walls and levers states
+        self.unactivated_levers = {k: v for k, v in self.levers.items()}
+        self.wall_indices = []
+        self.wall_grid = np.zeros(self.world.shape)
+        if self.initial_walls is not None:
+            for wall_state in self.initial_walls:
+                self.wall_grid[wall_state] = 1
+                self.wall_indices.append(wall_state)
         return self.current_state
 
     def _render(self, mode='human', close=False):
@@ -239,9 +257,14 @@ class GridWorldEnv(gym.Env):
         for w_state in self.wall_indices:
             new_world[w_state] = '#'
 
+        if self.unactivated_levers:
+            for lever_state in self.unactivated_levers.keys():
+                new_world[lever_state] = '\\'
+
         if self.levers:
-            for lever_state in self.levers.keys():
-                new_world[lever_state] = 'i'
+            # render activated levers
+            for lever_state in [k for k in self.levers.keys() if k not in self.unactivated_levers.keys()]:
+                new_world[lever_state] = '|'
 
         if mode == 'human' or mode == 'ansi':
             outfile = StringIO() if mode == 'ansi' else sys.stdout
@@ -314,7 +337,6 @@ class GridWorldEnv(gym.Env):
 
         self.terminal_states = []
         self.starting_states = []
-        self.levers = []
         walls_indices = []
 
         curr_index = 0
@@ -362,9 +384,10 @@ class GridWorldEnv(gym.Env):
         self.x_max = width_of_grid
         self.world = self._generate_world()
 
+        self.initial_walls = []
         self.wall_grid = np.zeros(self.world.shape)
         self.wall_indices = []
-        self._generate_walls(walls_indices)
+        self._setup_walls(walls_indices)
 
         if 'lever_metadata' in locals():
             self._setup_levers(lever_metadata)
