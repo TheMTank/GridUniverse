@@ -248,25 +248,25 @@ class GridWorldEnv(gym.Env):
         return self.current_state
 
     def _render(self, mode='human', close=False):
-        new_world = np.fromiter(('o' for _ in np.nditer(np.arange(self.x_max))
-                                 for _ in np.nditer(np.arange(self.y_max))), dtype='S1')
-        new_world[self.current_state] = 'x'
-        for t_state in self.terminal_states:
-            new_world[t_state] = 'T'
-
-        for w_state in self.wall_indices:
-            new_world[w_state] = '#'
-
-        if self.unactivated_levers:
-            for lever_state in self.unactivated_levers.keys():
-                new_world[lever_state] = '\\'
-
-        if self.levers:
-            # render activated levers
-            for lever_state in [k for k in self.levers.keys() if k not in self.unactivated_levers.keys()]:
-                new_world[lever_state] = '|'
-
         if mode == 'human' or mode == 'ansi':
+            new_world = np.fromiter(('o' for _ in np.nditer(np.arange(self.x_max))
+                                     for _ in np.nditer(np.arange(self.y_max))), dtype='S1')
+            new_world[self.current_state] = 'x'
+            for t_state in self.terminal_states:
+                new_world[t_state] = 'T'
+
+            for w_state in self.wall_indices:
+                new_world[w_state] = '#'
+
+            if self.unactivated_levers:
+                for lever_state in self.unactivated_levers.keys():
+                    new_world[lever_state] = '\\'
+
+            if self.levers:
+                # render activated levers
+                for lever_state in [k for k in self.levers.keys() if k not in self.unactivated_levers.keys()]:
+                    new_world[lever_state] = '|'
+
             outfile = StringIO() if mode == 'ansi' else sys.stdout
             for row in np.reshape(new_world, (self.y_max, self.x_max)):
                 for state in row:

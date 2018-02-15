@@ -77,7 +77,7 @@ def run_lever_gridworld():
     # test if random agent ever opens door to terminal and then goes to terminal
     print('\n' + '*' * 20 + 'Starting to run random agent on GridWorld with levers' + '*' * 20 + '\n')
     env = GridWorldEnv((7, 7), walls=[47, 47 - 7, 48 - 7], levers={42: 47})
-    for i_episode in range(2):
+    for i_episode in range(1):
         observation = env.reset()
         for t in range(1000000):
             env.render(mode='graphic')  # set mode='graphic' for pyglet render
@@ -95,7 +95,7 @@ def run_lever_gridworld_from_text_file():
     env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/lever_level_2.txt')
     # env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/lever_level_3.txt')
 
-    for i_episode in range(2):
+    for i_episode in range(1):
         observation = env.reset()
         for t in range(1000000000):
             #env.render()  # set mode='graphic' for pyglet render
