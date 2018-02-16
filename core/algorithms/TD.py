@@ -86,9 +86,9 @@ def td_lambda_episodic_evaluation(policy, env, curr_state=None, value_function=N
         if execution == 'offline':
             # Compute full episode before updating
             states_hist, rewards_hist, done = run_episode(policy, env, max_steps_per_episode=max_steps_per_episode)
-            # step_returns = np.cumsum(rewards_hist)
-            lambda_return = np.fromiter(((1 - lambda_val) * (lambda_val ** step_n) * cum_return
-                                         for step_n, cum_return in enumerate(rewards_hist)), dtype='float64')
+            lambda_return = np.cumsum(np.fromiter(((1 - lambda_val) * (lambda_val ** step_n) * step_reward
+                                                   for step_n, step_reward in enumerate(rewards_hist)),
+                                                  dtype='float64'))
 
             for step_n, curr_state in enumerate(states_hist[:-1]):
                 td_target = lambda_return[step_n] + gamma * value_function[states_hist[step_n + 1]]
@@ -98,18 +98,17 @@ def td_lambda_episodic_evaluation(policy, env, curr_state=None, value_function=N
                     eligibility_traces[curr_state] += 1
 
                 updated_value_function[curr_state] += alpha * td_error * eligibility_traces[curr_state]
-
+                
         else:
             # Evaluate lambda return step by step
             lambda_return = 0
             for step_n in range(max_steps_per_episode):
                 action = np.random.choice(policy[curr_state].size, p=policy[curr_state])
-                curr_state, reward, done = env.look_step_ahead(curr_state, action)
+                curr_state, step_reward, done = env.look_step_ahead(curr_state, action)
+                action = np.random.choice(policy[curr_state].size, p=policy[curr_state])
                 next_state, *_ = env.look_step_ahead(curr_state, action)
-                if done:
-                    break
 
-                lambda_return += (1 - lambda_val) * (lambda_val ** step_n) * reward
+                lambda_return += (1 - lambda_val) * (lambda_val ** step_n) * step_reward
                 td_target = lambda_return + gamma * value_function[next_state]
                 td_error = td_target - value_function[curr_state]
                 if backward_view:
@@ -119,6 +118,8 @@ def td_lambda_episodic_evaluation(policy, env, curr_state=None, value_function=N
                 updated_value_function[curr_state] += alpha * td_error * eligibility_traces[curr_state]
                 if execution is not 'exact_online':
                     value_function[curr_state] = updated_value_function[curr_state]
+                if done:
+                    break
         env.reset()
     return value_function
 
