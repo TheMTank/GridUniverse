@@ -1,8 +1,111 @@
+import time
 import sys
+import math
 
 import numpy as np
 from six import StringIO
 
+
+import torch
+import torch.nn as nn
+from torch.autograd import Variable
+import matplotlib.pyplot as plt
+
+from core.algorithms import utils
+
+# Linear Regression Model
+class LinearRegression(nn.Module):
+    def __init__(self, input_size, output_size):
+        super(LinearRegression, self).__init__()
+        self.linear = nn.Linear(input_size, output_size)
+
+    def forward(self, x):
+        out = self.linear(x)
+        return out
+
+
+def create_one_hot_state_vector(env, state):
+    vec = np.zeros(env.world.size)
+    vec[state] = 1
+    return vec
+
+def test_linear_approx(env):
+    value_function = np.zeros(env.world.size)
+    w = (np.random.rand(env.world.size) - 0.5) * 0.01
+
+    threshold = 0.0001
+    discount_factor = 1.0
+    lr = 0.001
+
+    print(w)
+    # print(w.shape)
+    # first_state = env.reset()
+    # ohe_vec = create_one_hot_state_vector(env, first_state)
+    # output = w.dot(ohe_vec) # understand why no transpose
+
+    # print(output)
+    # print(output.shape)
+
+    policy = np.ones([env.world.size, len(env.action_state_to_next_state)]) / len(env.action_state_to_next_state)
+
+    policy = utils.greedy_policy_from_value_function(policy, env, value_function, discount_factor=1.0)
+    # print(policy)
+
+    # todo get {S1, G1}, {S2, G2}, ..., {St, Gt} from each single episode
+
+    all_episode_losses = []
+
+    # for episode in range(50):
+    for episode in range(50):
+        episode_state_hist, episode_reward_hist, done = run_episode(policy, env)
+
+        # print(episode_reward_hist)
+        # print(np.cumsum(episode_reward_hist))
+        # print(episode_state_hist)
+
+        loss_for_episode = 0.0
+
+        for idx, state in enumerate(episode_state_hist):
+            ohe_state_vec = create_one_hot_state_vector(env, state)
+            # predicted_value = w.dot(ohe_state_vec)
+            predicted_value = ohe_state_vec.dot(w)
+
+            return_from_state = sum([(discount_factor ** i) * r for i, r in enumerate(episode_reward_hist[idx:])
+                                                       if (discount_factor ** i) > threshold])
+
+            loss = math.pow(abs(return_from_state - predicted_value), 2)
+            # delta_w = lr * abs(return_from_state - predicted_value) * ohe_state_vec # todo is it absolute?
+            delta_w = lr * (return_from_state - predicted_value) * ohe_state_vec
+            delta_w = np.clip(delta_w, -1, 1)
+
+            # w = w - delta_w
+            w = w + delta_w
+            new_predicted_value = w.dot(ohe_state_vec)
+            new_loss = (return_from_state - new_predicted_value) ** 2.0
+
+            # print('\nidx:', idx)
+            # print('state:', state)
+            # print('ohe:', ohe_state_vec)
+            # print('predicted_value:', predicted_value)
+            # print('return_from_state:', return_from_state)
+            # print('delta_w:', delta_w)
+            # print('w:', w)
+            # print('New predicted value:', new_predicted_value)
+            # print('loss: {}, new_loss: {}'.format(loss, new_loss))
+
+            loss_for_episode += loss
+
+        all_episode_losses.append(loss_for_episode)
+        # policy = utils.greedy_policy_from_value_function(policy, env, w, discount_factor=1.0)
+
+    policy = utils.greedy_policy_from_value_function(policy, env, w, discount_factor=1.0)
+    print(all_episode_losses)
+    plt.plot(all_episode_losses)
+    plt.show()
+    return policy
+
+
+###########################
 
 def run_episode(policy, env, max_steps_per_episode=1000):
     """
@@ -15,6 +118,7 @@ def run_episode(policy, env, max_steps_per_episode=1000):
     states_hist = []
     rewards_hist = []
     observation = env.reset()
+    states_hist.append(observation)
     for step in range(max_steps_per_episode):
         action = np.random.choice(policy[observation].size, p=policy[observation])
         observation, reward, done, info = env.step(action)
@@ -23,7 +127,6 @@ def run_episode(policy, env, max_steps_per_episode=1000):
         if done:
             break
     return states_hist, rewards_hist, done
-
 
 def monte_carlo_evaluation(policy, env, every_visit=False, incremental_mean=True, stationary_env=True,
                            discount_factor=0.01, threshold=0.0001, alpha=0.001, n_episodes=100):
@@ -66,7 +169,7 @@ def monte_carlo_evaluation(policy, env, every_visit=False, incremental_mean=True
             visits_from_last_episode[state] += 1
             # Update return for last episode for a specific state
             return_from_state = sum([(discount_factor ** i) * r for i, r in enumerate(episode_reward_hist[idx:])
-                                                  if (discount_factor ** i) < threshold])
+                                                  if (discount_factor ** i) > threshold])
             returns_from_last_episode[state] += return_from_state
 
         # Update total_visit_counter, total_return, and value function for each state
@@ -96,3 +199,29 @@ def monte_carlo_evaluation(policy, env, every_visit=False, incremental_mean=True
             value_function[state] = total_return[state] / total_visit_counter[state]
 
     return value_function
+
+if __name__ == '__main__':
+    from core.envs.gridworld_env import GridWorldEnv
+    env = GridWorldEnv()
+    # env = GridWorldEnv((10, 10))
+    env = GridWorldEnv((10, 10), random_maze=True)
+
+    policy = test_linear_approx(env)
+
+    curr_state = env.reset()
+    env.render_policy_arrows(policy)
+
+    print(policy)
+
+    for t in range(500):
+        env.render(mode='graphic')
+
+        action = np.argmax(policy[curr_state])
+        # print('go ' + env.action_descriptors[action])
+        curr_state, reward, done, info = env.step(action)
+
+        if done:
+            print('DONE in {} steps'.format(t + 1))
+            env.render(mode='graphic')
+            time.sleep(8)
+            break
