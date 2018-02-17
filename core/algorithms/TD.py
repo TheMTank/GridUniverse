@@ -42,7 +42,7 @@ def td_single_n_step_evaluation(policy, env, n_steps, curr_state=None, value_fun
     td_target = return_value + gamma * value_function[next_state]
     td_error = td_target - value_function[curr_state]
 
-    value_function[last_state] += alpha * td_error
+    value_function[curr_state] += alpha * td_error
     return last_state, value_function, done
 
 
@@ -77,7 +77,7 @@ def td_lambda_episodic_evaluation(policy, env, curr_state=None, value_function=N
         raise ValueError('The execution mode must be one of the elements form the '
                          'following list {}'.format(valid_execution_modes))
     value_function = np.zeros(env.world.size) if value_function is None else value_function
-    updated_value_function = value_function
+    updated_value_function = value_function.copy()
     eligibility_traces = np.zeros(env.world.size) if backward_view else np.ones(env.world.size)
     curr_state = env.current_state if curr_state is None else curr_state
 
@@ -98,7 +98,7 @@ def td_lambda_episodic_evaluation(policy, env, curr_state=None, value_function=N
                     eligibility_traces[curr_state] += 1
 
                 updated_value_function[curr_state] += alpha * td_error * eligibility_traces[curr_state]
-                
+
         else:
             # Evaluate lambda return step by step
             lambda_return = 0
