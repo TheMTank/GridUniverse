@@ -2,7 +2,7 @@ import time
 
 import numpy as np
 
-from core.envs.gridworld_env import GridUniverseEnv
+from core.envs.griduniverse_env import GridUniverseEnv
 from core.algorithms.monte_carlo import run_episode, monte_carlo_evaluation
 from core.algorithms import utils
 import core.algorithms.dynamic_programming as dp
