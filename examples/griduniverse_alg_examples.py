@@ -78,7 +78,7 @@ def run_policy_and_value_iteration():
         curr_state, reward, done, info = env.step(action)
 
         if done:
-            print('DONE in {} steps'.format(t + 1))
+            print('Terminal state found in {} steps'.format(t + 1))
             env.render(mode='graphic') # must render here to see agent in final state
             time.sleep(6)
             env.close()
@@ -99,11 +99,9 @@ def run_monte_carlo_evaluation():
 
     print('Running an episode with a random agent (with initial policy)')
     st_history, rw_history, done = run_episode(policy0, env)
-    print('States history: ' + str(st_history))
-    print('Rewards history: ' + str(rw_history))
 
     print('Starting Monte-Carlo evaluation of random policy')
-    value0 = monte_carlo_evaluation(policy0, env, every_visit=True)
+    value0 = monte_carlo_evaluation(policy0, env, every_visit=True, num_episodes=30)
     print(value0)
 
     # Create greedy policy from value function and run it on environment
@@ -125,7 +123,7 @@ def run_monte_carlo_evaluation():
         curr_state, reward, done, info = env.step(action)
 
         if done:
-            print('DONE in {} steps'.format(t + 1))
+            print('Terminal state found in {} steps'.format(t + 1))
             env.render(mode='graphic')
             time.sleep(5)
             break
