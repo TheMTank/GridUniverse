@@ -34,9 +34,9 @@ Additionally, we plan to include the following features:
 - [ ] Sokoban extension. An unsolved state of the art AI problem based on a classic video game.
 
 Using David Silver's Reinforcement Learning course and Sutton and Barto (2018) as a reference,
-we have a number of algorithms we have implemented from scratch and plan to implement. 
-These can then be compared and benchmarked against each other.  
-The algorithms run on this environment are:
+there are a number of algorithms we have implemented from scratch and plan to implement soon. 
+These can then be compared and benchmarked against each other on this environment. 
+These algorithms are:
 - [x] Policy Iteration
 - [x] Value Iteration
 - [x] Monte-Carlo (MC) Learning with variations
@@ -48,15 +48,18 @@ The algorithms run on this environment are:
 - [ ] Integrating learning and planning (Dyna, MC/TD Tree search, Forward and Simulation-based search)
 - [ ] Exploration vs Exploitation (Optimistic policy, optimistic policy with uncertainty, Thompson sampling, UCB)
 
-## Examples of use
+## Running GridWorld
 
-To run examples of policy/value iteration or Monte Carlo evaluation on our GridWorld environment run:  
+To run examples of algorithms like policy/value iteration or Monte Carlo evaluation on our GridWorld environment:  
 
 `python examples/gridworld_alg_examples.py`
 
-To run random agents on random or preset grids run:
+To run random agents on different variations of the environment (with different features):
 
 `python examples/gridworld_env_examples.py`
+
+The `run_default_gridworld()` function in the above file shows the simplest way to use the environment.  
+For more info check the [GridWorld Documentation](https://github.com/beduffy/RL_problems/tree/master/docs/GridWorld.md)
 
 To run tests:  
 
@@ -75,17 +78,6 @@ Now you should be able to run:
 You should see a small window that automatically plays "Space Invaders" if everything is working correctly.
 
 For a general documentation on how the environment works refer to the [official documentation](https://gym.openai.com/docs).
-
-## Running GridWorld
-
-To see how the environment is used explore the code within:
-
-`examples/gridworld_alg_examples.py`
-
-`examples/gridworld_env_examples.py`
-
-The `run_default_gridworld()` function shows the simplest way to use the environment.  
-For more info check the [GridWorld Documentation](https://github.com/beduffy/RL_problems/tree/master/docs/GridWorld.md)
 
 ## API Reference
 
