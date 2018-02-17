@@ -1,1 +1,1 @@
-from core.envs.gridworld_env import GridUniverseEnv
+from core.envs.griduniverse_env import GridUniverseEnv

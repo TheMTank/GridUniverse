@@ -10,6 +10,7 @@ from gym.utils import seeding
 
 from core.envs import maze_generation
 
+
 class GridUniverseEnv(gym.Env):
     metadata = {'render.modes': ['human', 'ansi', 'graphic']}
 

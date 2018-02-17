@@ -2,3 +2,7 @@
 \.idea/
 
 *.pyc
+
+*.xml
+
+*.iml
