@@ -81,7 +81,7 @@ def run_policy_and_value_iteration():
             print('DONE in {} steps'.format(t + 1))
             env.render(mode='graphic') # must render here to see agent in final state
             time.sleep(6)
-            env.close()
+            env.render(close=True)
             break
 
 

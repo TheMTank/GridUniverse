@@ -193,6 +193,12 @@ class GridUniverseEnv(gym.Env):
         return self.current_state
 
     def _render(self, mode='human', close=False):
+        if close:
+            if self.viewer is not None:
+                self.viewer.close()
+                self.viewer = None
+            return
+
         if mode == 'human' or mode == 'ansi':
             new_world = np.fromiter(('o' for _ in np.nditer(np.arange(self.x_max))
                                      for _ in np.nditer(np.arange(self.y_max))), dtype='S1')
@@ -215,12 +221,6 @@ class GridUniverseEnv(gym.Env):
             return outfile
 
         elif mode == 'graphic':
-            if close:
-                if self.viewer is not None:
-                    self.viewer.close()
-                    self.viewer = None
-                return
-
             if self.viewer is None:
                 from core.envs import rendering
                 self.viewer = rendering.Viewer(self, self.screen_width, self.screen_height)
