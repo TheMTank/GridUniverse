@@ -66,7 +66,7 @@ This how OpenAI gym's environment interface is generally represented.
 
 `env.render()`
 
-Will render the environment in ascii format.  
+Will render the environment in ASCII format.  
 
 `env.render(mode='graphic')`
 

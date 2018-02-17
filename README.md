@@ -9,22 +9,26 @@ Currently working exclusively on OpenAI gym and a GridWorld environment made by 
 ## GridWorld
 
 We have created a highly customisable GridWorld OpenAI gym environment to enable research and large scale testing, evaluation and comparison of new and old RL algorithms. 
-It will also allow large scale experimentation in exciting new areas like language grounding, Meta-Learning and Exploration.
+Eventually, it will also allow large scale experimentation in exciting new areas like Language Grounding, Meta-Learning and Exploration.
 
 ![GIF](docs/maze_solver_BFS_10_times.gif)
 
-## GridWorld features and plans section
+## GridWorld features and plans
 
+While there have been plenty of GridWorld and maze RL environments created in the past, 
+none have attempted as large a feature list as planned for this one. 
+The goal is to contain this extensive list of features and algorithms __all within one place__. This will enable groundbreaking research while also being a very useful educational source for any level of expertise (beginners to advanced).
+ 
 This environment defines a bidimensional grid representing the world as a discrete state and action space which includes the following entities that can be customized:
-- [x] Walls. States forbidden to enter to or cross to reach other states.
-- [x] Lava. Terminal states with a high negative reward.
+- [x] Wall states. Blocked states.
+- [x] Goal and Lava states, terminal states with a high positive and negative reward respectively.
 - [x] Random maze generator, with multiple different maze generation algorithms.
 - [x] “Classic” pathfinding/graph search algorithms to compare against RL algorithms.
-- [x] Ascii and OpenGL based rendering (using pyglet)
+- [x] ASCII and OpenGL based rendering (using pyglet)
 - [x] An easy interface to create and store levels in text files
 
 Additionally, we plan to include the following features:
-- [ ] 3 different “fruits” that can be collected. Objects that can provide positive and negative rewards in different amounts. 
+- [ ] 3 different “fruits” that can be collected. Objects that can provide positive and negative rewards in varying amounts. 
 - [ ] Levers and keys. Elements that modify the environment by removing particular walls/doors.
 - [ ] Wind
 - [ ] Human control of the agent
@@ -59,7 +63,8 @@ To run random agents on different variations of the environment (with different 
 `python examples/gridworld_env_examples.py`
 
 The `run_default_gridworld()` function in the above file shows the simplest way to use the environment.  
-For more info check the [GridWorld Documentation](https://github.com/beduffy/RL_problems/tree/master/docs/GridWorld.md)
+
+For much more detailed info on how to use the environment, check the [GridWorld Documentation](https://github.com/beduffy/RL_problems/tree/master/docs/GridWorld.md)
 
 To run tests:  
 
@@ -77,7 +82,7 @@ Now you should be able to run:
 
 You should see a small window that automatically plays "Space Invaders" if everything is working correctly.
 
-For a general documentation on how the environment works refer to the [official documentation](https://gym.openai.com/docs).
+For a general documentation on how the environment works refer to the [official OpenAI documentation](https://gym.openai.com/docs).
 
 ## API Reference
 
