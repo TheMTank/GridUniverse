@@ -4,6 +4,7 @@ import os
 import math
 import time
 import random
+import warnings
 
 import pyglet
 
@@ -46,6 +47,7 @@ class Viewer(object):
         self.height = height
         self.window = pyglet.window.Window(width=width, height=height, display=display, resizable=True) # todo resizable remove or keep
         self.window.on_close = self.window_closed_by_user
+        self.is_closed = False
         self.FPS = 0
 
         script_dir = os.path.dirname(__file__)
@@ -213,6 +215,7 @@ class Viewer(object):
         self.window.close()
 
     def window_closed_by_user(self):
+        self.is_closed = True
         self.close()
 
     def set_bounds(self, left, right, bottom, top):
@@ -231,8 +234,10 @@ class Viewer(object):
 
     # def render(self, return_rgb_array=False):
     def render(self, return_rgb_array=False):
+        if self.is_closed:
+            return
+
         start_time = time.time()
-        # todo if close don't crash
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
 
@@ -310,7 +315,11 @@ class Viewer(object):
             glVertex2i(x_pix_loc, y_pix_loc + self.tile_dim)
         glEnd()
 
-        glPopMatrix()
+        try:
+            glPopMatrix()
+        except GLException as e:
+            warning_message = 'Tried glPopMatrix() after closing window, failed with Exception: {}'.format(e)
+            warnings.warn(warning_message, UserWarning)
 
         arr = None
         if return_rgb_array:
