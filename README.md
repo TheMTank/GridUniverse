@@ -21,6 +21,7 @@ This environment defines a bidimensional grid representing the world as a discre
 - [x] Random maze generator, with multiple different maze generation algorithms.
 - [x] “Classic” pathfinding/graph search algorithms to compare against RL algorithms.
 - [x] Ascii and OpenGL based rendering (using pyglet)
+- [x] An easy interface to create and store levels in text files
 
 Additionally, we plan to include the following features:
 - [ ] 3 different “fruits” that can be collected. Objects that can provide positive and negative rewards in different amounts. 
@@ -28,19 +29,24 @@ Additionally, we plan to include the following features:
 - [ ] Wind
 - [ ] Human control of the agent
 - [ ] Different sensor configurations for the agent so it can be defined whether the agent field of view is constrained to the current state, surrounding states or the complete grid.
-- [ ] Natural language grounding. Implementation of algorithms to follow natural language instructions e.g. “Collect the lemon and then the apple in that order”
+- [ ] Natural language grounding. Implementation of algorithms to follow natural language instructions e.g. “Collect the lemon and then the apple”
 - [ ] Meta-Learning/Multi-task learning environment interface and algorithms run on a large number of levels of varying difficulty
 - [ ] Sokoban extension. An unsolved state of the art AI problem based on a classic video game.
 
-Algorithms created from scratch on the environment:
+Using David Silver's Reinforcement Learning course and Sutton and Barto (2018) as a reference,
+we have a number of algorithms we have implemented from scratch and plan to implement. 
+These can then be compared and benchmarked against each other.  
+The algorithms run on this environment are:
 - [x] Policy Iteration
 - [x] Value Iteration
 - [x] Monte-Carlo (MC) Learning with variations
 - [ ] Temporal Difference (TD) Learning with variations
 - [ ] Value Approximation
-- [ ] SARSA + Q-Learning
-- [ ] Policy Gradients
-- [ ] Actor Critic
+- [ ] On-policy control (SARSA) 
+- [ ] Off-policy control (Q-Learning, Importance Sampling)
+- [ ] Policy Gradients (MC Policy Gradients and Actor-critic)
+- [ ] Integrating learning and planning (Dyna, MC/TD Tree search, Forward and Simulation-based search)
+- [ ] Exploration vs Exploitation (Optimistic policy, optimistic policy with uncertainty, Thompson sampling, UCB)
 
 ## Examples of use
 
