@@ -23,24 +23,24 @@ This environment defines a bidimensional grid representing the world as a discre
 - [x] Ascii and OpenGL based rendering (using pyglet)
 
 Additionally, we plan to include the following features:
-- [] 3 different “fruits” that can be collected. Objects that can provide positive and negative rewards in different amounts. 
-- [] Levers and keys. Elements that modify the environment by removing particular walls/doors.
-- [] Wind
-- [] Human control of the agent
-- [] Different sensor configurations for the agent so it can be defined whether the agent field of view is constrained to the current state, surrounding states or the complete grid.
-- [] Natural language grounding. Implementation of algorithms to follow natural language instructions e.g. “Collect the lemon and then the apple in that order”
-- [] Meta-Learning/Multi-task learning environment interface and algorithms run on a large number of levels of varying difficulty
-- [] Sokoban extension. An unsolved state of the art AI problem based on a classic video game.
+- [ ] 3 different “fruits” that can be collected. Objects that can provide positive and negative rewards in different amounts. 
+- [ ] Levers and keys. Elements that modify the environment by removing particular walls/doors.
+- [ ] Wind
+- [ ] Human control of the agent
+- [ ] Different sensor configurations for the agent so it can be defined whether the agent field of view is constrained to the current state, surrounding states or the complete grid.
+- [ ] Natural language grounding. Implementation of algorithms to follow natural language instructions e.g. “Collect the lemon and then the apple in that order”
+- [ ] Meta-Learning/Multi-task learning environment interface and algorithms run on a large number of levels of varying difficulty
+- [ ] Sokoban extension. An unsolved state of the art AI problem based on a classic video game.
 
 Algorithms created from scratch on the environment:
 - [x] Policy Iteration
 - [x] Value Iteration
 - [x] Monte-Carlo (MC) Learning with variations
-- [] Temporal Difference (TD) Learning with variations
-- [] Value Approximation
-- [] SARSA + Q-Learning
-- [] Policy Gradients
-- [] Actor Critic
+- [ ] Temporal Difference (TD) Learning with variations
+- [ ] Value Approximation
+- [ ] SARSA + Q-Learning
+- [ ] Policy Gradients
+- [ ] Actor Critic
 
 ## Examples of use
 
