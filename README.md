@@ -4,18 +4,18 @@ This repository was created with the goal of developing and reproducing many dif
 and then being able to run large scale experiments using these algorithms on different open-source 
 environments as well as our own custom environments.  
 
-Currently working exclusively on OpenAI gym and a GridWorld environment made by us.
+Currently working exclusively on OpenAI gym and a grid world environment made by us, which we called "GridUniverse".
 
-## GridWorld
+## GridUniverse
 
-We have created a highly customisable GridWorld OpenAI gym environment to enable research and large scale testing, evaluation and comparison of new and old RL algorithms. 
+We have created a highly customisable world framed in a discrete state space OpenAI gym environment to enable research and large scale testing, evaluation and comparison of new and old RL algorithms. 
 Eventually, it will also allow large scale experimentation in exciting new areas like Language Grounding, Meta-Learning and Exploration.
 
 ![GIF](docs/maze_solver_BFS_10_times.gif)
 
-## GridWorld features and plans
+## GridUniverse features and plans
 
-While there have been plenty of GridWorld and maze RL environments created in the past, 
+While there have been plenty of grid world and maze RL environments created in the past, 
 none have attempted as large a feature list as planned for this one. 
 The goal is to contain this extensive list of features and algorithms __all within one place__. This will enable groundbreaking research while also being a very useful educational source for any level of expertise (beginners to advanced).
  
@@ -52,23 +52,23 @@ These algorithms are:
 - [ ] Integrating learning and planning (Dyna, MC/TD Tree search, Forward and Simulation-based search)
 - [ ] Exploration vs Exploitation (Optimistic policy, optimistic policy with uncertainty, Thompson sampling, UCB)
 
-## Running GridWorld
+## Running GridUniverse
 
-To run examples of algorithms like policy/value iteration or Monte Carlo evaluation on our GridWorld environment:  
+To run examples of algorithms like policy/value iteration or Monte Carlo evaluation on our GridUniverse environment:  
 
-`python examples/gridworld_alg_examples.py`
+`python examples/griduniverse_alg_examples.py`
 
 To run random agents on different variations of the environment (with different features):
 
-`python examples/gridworld_env_examples.py`
+`python examples/griduniverse_env_examples.py`
 
-The `run_default_gridworld()` function in the above file shows the simplest way to use the environment.  
+The `run_default_griduniverse()` function in the above file shows the simplest way to use the environment.  
 
-For much more detailed info on how to use the environment, check the [GridWorld Documentation](https://github.com/beduffy/RL_problems/tree/master/docs/GridWorld.md)
+For much more detailed info on how to use the environment, check the [GridUniverse Documentation](https://github.com/beduffy/RL_problems/tree/master/docs/GridUniverse.md)
 
-To run tests:  
+To run our tests:  
 
-`python tests/test_gridworld.py`
+`python tests/test_griduniverse.py`
 
 ## Installation
 

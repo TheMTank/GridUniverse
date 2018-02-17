@@ -10,13 +10,13 @@ from gym.utils import seeding
 
 from core.envs import maze_generation
 
-class GridWorldEnv(gym.Env):
+class GridUniverseEnv(gym.Env):
     metadata = {'render.modes': ['human', 'ansi', 'graphic']}
 
     def __init__(self, grid_shape=(4, 4), *, initial_state=0, goal_states=None, lava_states=None, walls=None,
                  custom_world_fp=None, random_maze=False):
         """
-        The constructor for creating a GridWorld environment. The default GridWorld is a square grid of 4x4 where the
+        The constructor for creating a GridUniverse environment. The default GridUniverse is a square grid of 4x4 where the
         agent starts in the top left corner and the terminal goal state is in the bottom right corner.
 
         :param grid_shape: Tuple of size 2 to specify (width, height) of grid
@@ -107,7 +107,7 @@ class GridWorldEnv(gym.Env):
 
     def _generate_world(self):
         """
-        Creates and returns the gridworld map as a numpy array.
+        Creates and returns the griduniverse map as a numpy array.
 
         The states are defined by their index and contain a tuple of uint16 values that represent the
         coordinates (x,y) of a state in the grid.
@@ -229,7 +229,7 @@ class GridWorldEnv(gym.Env):
 
             return self.viewer.render(return_rgb_array=mode == 'rgb_array')
         else:
-            super(GridWorldEnv, self).render(mode=mode)
+            super(GridUniverseEnv, self).render(mode=mode)
 
     def render_policy_arrows(self, policy):
         if self.viewer is None:

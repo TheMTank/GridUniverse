@@ -1,31 +1,31 @@
-## GridWorld
+## GridUniverse
 
-GridWorld is an environment with discrete states and actions which is suited to simple tabular RL algorithms.  
+GridUniverse is an environment with discrete state and action spaces which is suited to simple tabular RL algorithms.  
 Most of the inspiration for this environment comes from the lectures within David Silver's 
 [RL course](http://www0.cs.ucl.ac.uk/staff/d.silver/web/Teaching.html) and the great [Sutton and Barto book](http://ufal.mff.cuni.cz/~straka/courses/npfl114/2016/sutton-bookdraft2016sep.pdf). 
 
-It is a great environment to test beginner RL algorithms like Dynamic Programming (Policy and Value Iteration), 
+It is a great environment to test old school RL algorithms like Dynamic Programming (Policy and Value Iteration), 
 other algorithms like Monte-Carlo (MC) Learning and Temporal-Difference (TD) learning, as well as non-RL algorithms like graph search and maze solving.
 
 ## Constructor and initialisation
 
-The GridWorld environment is a bidimensional grid of states containing certain entities (initial state, terminal state, walls, etc). 
+The GridUniverse environment is a bidimensional grid of states containing certain entities (initial state, terminal state, walls, etc). 
 Each state is represented by an integer to enable tabular RL algorithms (e.g. grid_shape of (4, 4) will be represented by states 0-15).
 
 You can create the default environment like this:
 
-`env = GridWorldEnv()`
+`env = GridUniverseEnv()`
 
-This default GridWorld has a grid_shape of (4, 4) i.e. width 4, height 4. 
+This default GridUniverse has a grid_shape of (4, 4) i.e. width 4, height 4. 
 The agent starts at the top left position and the terminal position's default is set as the last state (bottom right/state index 15). 
 
 Each of these components can be customised e.g. you can specify any rectangle shape you want:
 
-`env = GridWorldEnv(grid_shape=(55, 7))`
+`env = GridUniverseEnv(grid_shape=(55, 7))`
 
 You can specify the agent's initial location with an int or a list (for multiple starting locations chosen randomly)
 
-`env = GridWorldEnv(initial_state=1) # or initial_state=[3, 5]`
+`env = GridUniverseEnv(initial_state=1) # or initial_state=[3, 5]`
 
 If an agent ends up in one of the terminal states (i.e. "goal_states" and "lava_states"), 
 the episode is over and the agent is unable to move any more. 
@@ -33,11 +33,11 @@ The agent receives a large positive reward for a goal state and a large negative
 List format is expected e.g. goal_states=[5, 10]. This means that two terminal goal states 
 will be placed within the grid, at state indices 5 and 10.
 
-`env = GridWorldEnv(goal_states=[5, 10], lava_states=[10])`
+`env = GridUniverseEnv(goal_states=[5, 10], lava_states=[10])`
 
 Other options include where to place walls (un-walkable blocked areas):
 
-`env = GridWorldEnv(walls=[7, 8, 10])`
+`env = GridUniverseEnv(walls=[7, 8, 10])`
 
 ## The main interface: env.step()
 
@@ -77,7 +77,7 @@ Will render the environment with [pyglet](https://bitbucket.org/pyglet/pyglet/wi
 `env.render_policy_arrows(policy)`
 
 This will render the policy arrows for a specific policy on the next call to `env.render(mode='graphic')` as shown above in the picture.
-The policy must be in the numpy format shape of (env.world.size, env.action_space.n). Examples can be seen in the `examples/gridworld_alg_examples.py` file.
+The policy must be in the numpy format shape of (env.world.size, env.action_space.n). Examples can be seen in the `examples/griduniverse_alg_examples.py` file.
 
 Currently, even if env.render() is never called by the user, it will still be called by the OpenAI gym.Env superclass when the environment is closed. 
 This can sometimes cause the program to crash. 
@@ -101,12 +101,12 @@ This makes it easy for tabular matrix algorithms (e.g. Dynamic Programming) to r
 ## Code and Examples
 
 Run the code within  
-`examples/gridworld_env_examples.py`  
+`examples/griduniverse_env_examples.py`  
 to see how to use the environment more clearly.  
 
 To see how RL algorithms are run on the environment: 
-`examples/gridworld_alg_examples.py`
+`examples/griduniverse_alg_examples.py`
 
-Explore the implementation of the self-contained environment class (GridWorldEnv) within `core/envs/gridworld_env.py`.
+Explore the implementation of the self-contained environment class (GridUniverseEnv) within `core/envs/griduniverse_env.py`.
 
 The specific algorithm implementations are within: `core/algorithms/`

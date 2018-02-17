@@ -4,9 +4,9 @@ import numpy as np
 from six import StringIO
 
 
-def reshape_as_gridworld(input_matrix, world_shape):
+def reshape_as_griduniverse(input_matrix, world_shape):
     """
-    Helper function to reshape a gridworld state matrix into a visual representation of the gridworld with origin on the
+    Helper function to reshape a griduniverse state matrix into a visual representation of the griduniverse with origin on the
     low left corner and x,y corresponding to cartesian coordinates.
     """
     return np.reshape(input_matrix, (world_shape[0], world_shape[1]))
@@ -43,13 +43,13 @@ def get_policy_map(policy, world_shape, mode='human'):
     policy_probabilities = np.fromiter((policy[state] for state in np.nditer(np.arange(policy.shape[0]))),
                                        dtype='float64, float64, float64, float64')
     outfile = StringIO() if mode == 'ansi' else sys.stdout
-    for row in reshape_as_gridworld(policy_arrows_map, world_shape):
+    for row in reshape_as_griduniverse(policy_arrows_map, world_shape):
         for state in row:
             outfile.write((state + u'  '))
         outfile.write('\n')
     outfile.write('\n')
 
-    return policy_arrows_map, reshape_as_gridworld(policy_probabilities, world_shape)
+    return policy_arrows_map, reshape_as_griduniverse(policy_probabilities, world_shape)
 
 
 def greedy_policy_from_value_function(policy, env, value_function, discount_factor=1.0):

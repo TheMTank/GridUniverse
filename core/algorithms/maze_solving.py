@@ -5,17 +5,17 @@ import time
 from queue import Queue
 # import queue
 
-from core.envs.gridworld_env import GridWorldEnv
+from core.envs.griduniverse_env import GridUniverseEnv
 
 # todo: could rename file to path_finding.py
 
 if __name__ == '__main__':
-    print('\n' + '*' * 20 + 'Creating a random GridWorld and running random agent on it' + '*' * 20 + '\n')
+    print('\n' + '*' * 20 + 'Creating a random GridUniverse and running random agent on it' + '*' * 20 + '\n')
 
 
     first_time = True
     for i in range(10):
-        env = GridWorldEnv(grid_shape=(15, 15), random_maze=True) # todo turn off terminal somehow to calculate recursively?
+        env = GridUniverseEnv(grid_shape=(15, 15), random_maze=True) # todo turn off terminal somehow to calculate recursively?
         curr_state = initial_state = env.reset()
 
         actions = range(4)

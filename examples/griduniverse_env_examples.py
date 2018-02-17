@@ -1,15 +1,16 @@
 import time
 
-from core.envs.gridworld_env import GridWorldEnv
+from core.envs.griduniverse_env import GridUniverseEnv
 
-def run_default_gridworld():
+
+def run_default_griduniverse():
     """
-    Run a random agent on the default gridworld.
+    Run a random agent on the default griduniverse.
     This piece of code shows the main interface to the environment. This runs in ascii format
     """
 
-    print('\n' + '*' * 20 + 'Starting to run random agent on default GridWorld' + '*' * 20 + '\n')
-    env = GridWorldEnv()
+    print('\n' + '*' * 20 + 'Starting to run random agent on default GridUniverse' + '*' * 20 + '\n')
+    env = GridUniverseEnv()
     for i_episode in range(1):
         observation = env.reset()
         for t in range(100):
@@ -22,16 +23,17 @@ def run_default_gridworld():
                 print("Episode finished after {} timesteps".format(t + 1))
                 break
 
-def run_gridworld_from_text_file():
+
+def run_griduniverse_from_text_file():
     """
     Run a random agent on an environment tat was save via ascii text file.
     Check core/envs/maze_text_files for examples or the _create_custom_world_from_text() function within the environment.
     """
 
-    print('\n' + '*' * 20 + 'Creating a pre-made GridWorld from text file and running random agent on it' + '*' * 20 + '\n')
-    env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/test_env.txt')
-    # env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/maze_21x21.txt')
-    # env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/maze_101x101.txt')
+    print('\n' + '*' * 20 + 'Creating a pre-made GridUniverse from text file and running random agent on it' + '*' * 20 + '\n')
+    env = GridUniverseEnv(custom_world_fp='../core/envs/maze_text_files/test_env.txt')
+    # env = GridUniverseEnv(custom_world_fp='../core/envs/maze_text_files/maze_21x21.txt')
+    # env = GridUniverseEnv(custom_world_fp='../core/envs/maze_text_files/maze_101x101.txt')
     for i_episode in range(1):
         observation = env.reset()
         for t in range(1000):
@@ -44,17 +46,18 @@ def run_gridworld_from_text_file():
                 print("Episode finished after {} timesteps".format(t + 1))
                 break
 
+
 def run_random_maze():
     """
     Run a random agent on a randomly generated maze. If random_maze parameter is set to True,
     a maze generation algorithm will place walls to form the maze in the requested shape.
     """
 
-    print('\n' + '*' * 20 + 'Creating a random GridWorld and running random agent on it' + '*' * 20 + '\n')
-    env = GridWorldEnv(grid_shape=(11, 11), random_maze=True)
-    # env = GridWorldEnv(grid_shape=(101, 101), random_maze=True)
-    # env = GridWorldEnv(grid_shape=(49, 51), random_maze=True)
-    # env = GridWorldEnv(grid_shape=(51, 49), random_maze=True)
+    print('\n' + '*' * 20 + 'Creating a random GridUniverse and running random agent on it' + '*' * 20 + '\n')
+    env = GridUniverseEnv(grid_shape=(11, 11), random_maze=True)
+    # env = GridUniverseEnv(grid_shape=(101, 101), random_maze=True)
+    # env = GridUniverseEnv(grid_shape=(49, 51), random_maze=True)
+    # env = GridUniverseEnv(grid_shape=(51, 49), random_maze=True)
     # todo print to user how long is left, so they can get comfortable with how constrained random search works. Step number out of step number?
     # todo exiting shouldn't crash everything
     for i_episode in range(1):
@@ -69,13 +72,14 @@ def run_random_maze():
                 print("Episode finished after {} timesteps".format(t + 1))
                 break
 
-def run_gridworld_with_lava():
+
+def run_griduniverse_with_lava():
     """
     Run a random agent on an environment with lava
     """
 
-    print('\n' + '*' * 20 + 'Starting to run random agent on default GridWorld' + '*' * 20 + '\n')
-    env = GridWorldEnv(grid_shape=(10, 10), lava_states=[4, 14, 24, 34, 44, 54, 64, 74])
+    print('\n' + '*' * 20 + 'Starting to run random agent on default GridUniverse' + '*' * 20 + '\n')
+    env = GridUniverseEnv(grid_shape=(10, 10), lava_states=[4, 14, 24, 34, 44, 54, 64, 74])
     for i_episode in range(5):
         observation = env.reset()
         for t in range(100):
@@ -88,9 +92,10 @@ def run_gridworld_with_lava():
                 print('Final states reward: ', reward)
                 break
 
+
 if __name__ == '__main__':
     # Run random agent on environment variations
-    run_default_gridworld()
-    run_gridworld_from_text_file()
+    run_default_griduniverse()
+    run_griduniverse_from_text_file()
     run_random_maze()
-    run_gridworld_with_lava()
+    run_griduniverse_with_lava()
