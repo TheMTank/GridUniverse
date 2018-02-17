@@ -8,7 +8,7 @@ from core.algorithms import utils
 import core.algorithms.dynamic_programming as dp
 
 
-def run_policy_and_value_iteration_griduniverse():
+def run_policy_and_value_iteration():
     """
     Majority of code is within utils.py and dynamic_programming.py for this function
     This function does 4 things:
@@ -34,11 +34,6 @@ def run_policy_and_value_iteration_griduniverse():
     for k in range(500):
         val_fun = utils.single_step_policy_evaluation(policy0, env, value_function=val_fun)
     print(utils.reshape_as_griduniverse(val_fun, world_shape))
-
-    # todo why do the walls of policy map have ascii arrows? don't draw them?
-    # todo print everthing below better
-    # todo shouldn't have two outputs for policy_map! better name or better handling # todo have to make clear about tuple...
-    # policy_arrow_array, policy_probabilities = utils.get_policy_map(optimal_policy, world_shape) # todo have to make clear about tuple...
 
     # 2. Create a greedy policy created from from this value function
     policy1 = utils.greedy_policy_from_value_function(policy0, env, val_fun)
@@ -138,5 +133,5 @@ def run_monte_carlo_evaluation():
 
 if __name__ == '__main__':
     # Run specific algorithms on GridUniverse
-    run_policy_and_value_iteration_griduniverse()
+    run_policy_and_value_iteration()
     run_monte_carlo_evaluation()

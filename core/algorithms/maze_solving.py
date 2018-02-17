@@ -15,7 +15,7 @@ if __name__ == '__main__':
 
     first_time = True
     for i in range(10):
-        env = GridUniverseEnv(grid_shape=(15, 15), random_maze=True) # todo turn off terminal somehow to calculate recursively?
+        env = GridUniverseEnv(grid_shape=(15, 15), random_maze=True)
         curr_state = initial_state = env.reset()
 
         actions = range(4)

@@ -26,8 +26,8 @@ def run_default_griduniverse():
 
 def run_griduniverse_from_text_file():
     """
-    Run a random agent on an environment tat was save via ascii text file.
-    Check core/envs/maze_text_files for examples or the _create_custom_world_from_text() function within the environment.
+    Run a random agent on an environment that was save via ascii text file.
+    Check core/envs/maze_text_files for examples or the _create_custom_world_from_text() function within the environment
     """
 
     print('\n' + '*' * 20 + 'Creating a pre-made GridUniverse from text file and running random agent on it' + '*' * 20 + '\n')
@@ -58,8 +58,6 @@ def run_random_maze():
     # env = GridUniverseEnv(grid_shape=(101, 101), random_maze=True)
     # env = GridUniverseEnv(grid_shape=(49, 51), random_maze=True)
     # env = GridUniverseEnv(grid_shape=(51, 49), random_maze=True)
-    # todo print to user how long is left, so they can get comfortable with how constrained random search works. Step number out of step number?
-    # todo exiting shouldn't crash everything
     for i_episode in range(1):
         observation = env.reset()
         for t in range(1000):

@@ -179,9 +179,6 @@ class GridUniverseEnv(gym.Env):
         """
         self.previous_state = self.current_state
         self.current_state, reward, self.done = self.look_step_ahead(self.current_state, action)
-        # if done: # todo
-        #     env.render(mode='graphic')
-        # self.last_n_states.append(self.current_state)
         self.last_n_states.append(self.world[self.current_state])
         if len(self.last_n_states) > self.num_previous_states_to_store:
             self.last_n_states.pop(0)

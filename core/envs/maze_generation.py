@@ -44,7 +44,6 @@ def recursive_backtracker(width=20, height=20):
     # Build actual maze
     # Z = np.zeros(shape, dtype=bool)
 
-    # todo don't make environment, create a new app, All it needs is Z
     # env = GridUniverseEnv(grid_shape=shape)
     # env.render(mode='graphic') # needs so many changes to get this to work
     # time.sleep(3)
@@ -175,6 +174,5 @@ def create_random_maze(width, height):
 
 if __name__ == '__main__':
     # create_random_maze(11, 11)
-    # todo render maze while creating it?
     # create_random_maze(10, 10)
     recursive_backtracker(10, 10)

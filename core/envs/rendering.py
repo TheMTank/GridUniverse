@@ -155,9 +155,8 @@ class Viewer(object):
         return int(x_pix_loc), int(y_pix_loc)
 
     def render_policy_arrows(self, policy):
-        # todo show policy probabilities as well/value function
         # remove all previous arrows and recalculate
-        self.geoms = [] # todo only remove arrows
+        self.geoms = [] # todo make sure to only remove arrows
 
         for state_index, (x, y) in enumerate(self.env.world):
             x_pix_loc, y_pix_loc = self.get_x_y_pix_location(x, y)
