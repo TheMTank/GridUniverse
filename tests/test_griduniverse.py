@@ -86,7 +86,7 @@ class TestGridUniverse(unittest.TestCase):
         """
         env = GridUniverseEnv(grid_shape=(25, 30))
 
-        actions_to_take = [1] * 24 + [2] * 29 # 24 steps right + 24 steps down
+        actions_to_take = [1] * 24 + [2] * 29 # 24 steps right + 29 steps down
         num_actions = len(actions_to_take)
         print('Num actions to take to get to terminal state: {}'.format(num_actions))
         for t in range(100):

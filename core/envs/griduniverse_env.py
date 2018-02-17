@@ -10,6 +10,7 @@ from gym.utils import seeding
 
 from core.envs import maze_generation
 
+
 class GridUniverseEnv(gym.Env):
     metadata = {'render.modes': ['human', 'ansi', 'graphic']}
 
@@ -178,9 +179,6 @@ class GridUniverseEnv(gym.Env):
         """
         self.previous_state = self.current_state
         self.current_state, reward, self.done = self.look_step_ahead(self.current_state, action)
-        # if done: # todo
-        #     env.render(mode='graphic')
-        # self.last_n_states.append(self.current_state)
         self.last_n_states.append(self.world[self.current_state])
         if len(self.last_n_states) > self.num_previous_states_to_store:
             self.last_n_states.pop(0)
@@ -195,19 +193,19 @@ class GridUniverseEnv(gym.Env):
         return self.current_state
 
     def _render(self, mode='human', close=False):
-        new_world = np.fromiter(('o' for _ in np.nditer(np.arange(self.x_max))
-                                 for _ in np.nditer(np.arange(self.y_max))), dtype='S1')
-        new_world[self.current_state] = 'x'
-        for t_state in self.goal_states:
-            new_world[t_state] = 'G'
-
-        for t_state in self.lava_states:
-            new_world[t_state] = 'L'
-
-        for w_state in self.wall_indices:
-            new_world[w_state] = '#'
-
         if mode == 'human' or mode == 'ansi':
+            new_world = np.fromiter(('o' for _ in np.nditer(np.arange(self.x_max))
+                                     for _ in np.nditer(np.arange(self.y_max))), dtype='S1')
+            new_world[self.current_state] = 'x'
+            for t_state in self.goal_states:
+                new_world[t_state] = 'G'
+
+            for t_state in self.lava_states:
+                new_world[t_state] = 'L'
+
+            for w_state in self.wall_indices:
+                new_world[w_state] = '#'
+
             outfile = StringIO() if mode == 'ansi' else sys.stdout
             for row in np.reshape(new_world, (self.y_max, self.x_max)):
                 for state in row:
@@ -217,7 +215,7 @@ class GridUniverseEnv(gym.Env):
             return outfile
 
         elif mode == 'graphic':
-            if close: # code needed for pressing x on window to close
+            if close:
                 if self.viewer is not None:
                     self.viewer.close()
                     self.viewer = None
