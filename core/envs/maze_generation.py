@@ -7,6 +7,7 @@ import numpy as np
 from numpy.random import random_integers as rand
 import matplotlib.pyplot as pyplot
 
+
 def odd_maze(width=81, height=51, complexity=.75, density=.75):
     # Only odd shapes
     shape = ((height // 2) * 2 + 1, (width // 2) * 2 + 1)
@@ -36,6 +37,7 @@ def odd_maze(width=81, height=51, complexity=.75, density=.75):
                     x, y = x_, y_
     return Z
 
+
 def recursive_backtracker(width=20, height=20):
     shape = (height, width)
     print('Maze grid shape:', shape)
@@ -43,7 +45,7 @@ def recursive_backtracker(width=20, height=20):
     # Z = np.zeros(shape, dtype=bool)
 
     # todo don't make environment, create a new app, All it needs is Z
-    # env = GridWorldEnv(grid_shape=shape)
+    # env = GridUniverseEnv(grid_shape=shape)
     # env.render(mode='graphic') # needs so many changes to get this to work
     # time.sleep(3)
 
@@ -113,6 +115,7 @@ def recursive_backtracker(width=20, height=20):
         # print((visited == True).sum(), visited.size)
     return Z
 
+
 def create_random_maze(width, height):
     pyplot.figure(figsize=(10, 5))
     # maze1 = odd_maze(width, height)
@@ -168,6 +171,7 @@ def create_random_maze(width, height):
     # pyplot.imshow(maze, cmap=pyplot.cm.Greys, interpolation='nearest')
     # pyplot.xticks([]), pyplot.yticks([])
     # pyplot.show()
+
 
 if __name__ == '__main__':
     # create_random_maze(11, 11)
