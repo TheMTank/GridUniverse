@@ -35,7 +35,7 @@ def test_linear_approx(env):
 
     threshold = 0.0001
     discount_factor = 1.0
-    lr = 0.001
+    lr = 0.0001
 
     print(w)
     # print(w.shape)
@@ -51,12 +51,19 @@ def test_linear_approx(env):
     policy = utils.greedy_policy_from_value_function(policy, env, value_function, discount_factor=1.0)
     # print(policy)
 
-    # todo get {S1, G1}, {S2, G2}, ..., {St, Gt} from each single episode
-
     all_episode_losses = []
 
+
+    model = LinearRegression(env.world.size, 1)
+    criterion = nn.MSELoss()
+    # optimizer = torch.optim.SGD(model.parameters(), lr=0.0001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+
+    model = model.double()
+
+    # get {S1, G1}, {S2, G2}, ..., {St, Gt} from each single episode
     # for episode in range(50):
-    for episode in range(50):
+    for episode in range(300):
         episode_state_hist, episode_reward_hist, done = run_episode(policy, env)
 
         # print(episode_reward_hist)
@@ -65,10 +72,35 @@ def test_linear_approx(env):
 
         loss_for_episode = 0.0
 
+        # PyTorch
         for idx, state in enumerate(episode_state_hist):
-            ohe_state_vec = create_one_hot_state_vector(env, state)
+            ohe_state_vec = create_one_hot_state_vector(env, state)  # S
+            return_from_state = np.array(sum([(discount_factor ** i) * r for i, r in enumerate(episode_reward_hist[idx:])
+                                     if (discount_factor ** i) > threshold]))
+
+            inputs = Variable(torch.from_numpy(ohe_state_vec).double())
+            # targets = Variable(torch.from_numpy(np.array(return_from_state)).double())
+            targets = Variable(torch.from_numpy(np.array([return_from_state])).double())
+
+            # Forward + Backward + Optimize
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            loss = criterion(outputs, targets)
+            # model.parameters() -= 0.0001
+            loss.backward()
+            optimizer.step()
+
+            # print(loss.data[0])
+            loss_for_episode += loss.data
+
+        # print(episode, loss_for_episode)
+        all_episode_losses.append(loss_for_episode)
+
+        # numpy
+        '''for idx, state in enumerate(episode_state_hist):
+            ohe_state_vec = create_one_hot_state_vector(env, state) # S
             # predicted_value = w.dot(ohe_state_vec)
-            predicted_value = ohe_state_vec.dot(w)
+            predicted_value = ohe_state_vec.dot(w) # predicted G
 
             return_from_state = sum([(discount_factor ** i) * r for i, r in enumerate(episode_reward_hist[idx:])
                                                        if (discount_factor ** i) > threshold])
@@ -95,10 +127,11 @@ def test_linear_approx(env):
 
             loss_for_episode += loss
 
-        all_episode_losses.append(loss_for_episode)
+        all_episode_losses.append(loss_for_episode)'''
         # policy = utils.greedy_policy_from_value_function(policy, env, w, discount_factor=1.0)
 
-    policy = utils.greedy_policy_from_value_function(policy, env, w, discount_factor=1.0)
+    # policy = utils.greedy_policy_from_value_function(policy, env, w, discount_factor=1.0)
+    policy = utils.greedy_policy_from_value_function(policy, env, list(model.parameters())[0].data.numpy().flatten(), discount_factor=1.0)
     print(all_episode_losses)
     plt.plot(all_episode_losses)
     plt.show()
@@ -204,10 +237,10 @@ def monte_carlo_evaluation(policy, env, every_visit=False, incremental_mean=True
     return value_function
 
 if __name__ == '__main__':
-    from core.envs.gridworld_env import GridWorldEnv
-    env = GridWorldEnv()
+    from core.envs.griduniverse_env import GridUniverseEnv
+    env = GridUniverseEnv()
     # env = GridWorldEnv((10, 10))
-    env = GridWorldEnv((10, 10), random_maze=True)
+    env = GridUniverseEnv((10, 10), random_maze=True)
 
     policy = test_linear_approx(env)
 
@@ -226,5 +259,5 @@ if __name__ == '__main__':
         if done:
             print('DONE in {} steps'.format(t + 1))
             env.render(mode='graphic')
-            time.sleep(8)
+            time.sleep(10)
             break
