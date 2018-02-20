@@ -10,13 +10,14 @@ from gym.utils import seeding
 
 from core.envs import maze_generation
 
-class GridWorldEnv(gym.Env):
+
+class GridUniverseEnv(gym.Env):
     metadata = {'render.modes': ['human', 'ansi', 'graphic']}
 
     def __init__(self, grid_shape=(4, 4), *, initial_state=0, goal_states=None, lava_states=None, walls=None,
                  custom_world_fp=None, random_maze=False):
         """
-        The constructor for creating a GridWorld environment. The default GridWorld is a square grid of 4x4 where the
+        The constructor for creating a GridUniverse environment. The default GridUniverse is a square grid of 4x4 where the
         agent starts in the top left corner and the terminal goal state is in the bottom right corner.
 
         :param grid_shape: Tuple of size 2 to specify (width, height) of grid
@@ -107,7 +108,7 @@ class GridWorldEnv(gym.Env):
 
     def _generate_world(self):
         """
-        Creates and returns the gridworld map as a numpy array.
+        Creates and returns the griduniverse map as a numpy array.
 
         The states are defined by their index and contain a tuple of uint16 values that represent the
         coordinates (x,y) of a state in the grid.
@@ -178,9 +179,6 @@ class GridWorldEnv(gym.Env):
         """
         self.previous_state = self.current_state
         self.current_state, reward, self.done = self.look_step_ahead(self.current_state, action)
-        # if done: # todo
-        #     env.render(mode='graphic')
-        # self.last_n_states.append(self.current_state)
         self.last_n_states.append(self.world[self.current_state])
         if len(self.last_n_states) > self.num_previous_states_to_store:
             self.last_n_states.pop(0)
@@ -195,19 +193,19 @@ class GridWorldEnv(gym.Env):
         return self.current_state
 
     def _render(self, mode='human', close=False):
-        new_world = np.fromiter(('o' for _ in np.nditer(np.arange(self.x_max))
-                                 for _ in np.nditer(np.arange(self.y_max))), dtype='S1')
-        new_world[self.current_state] = 'x'
-        for t_state in self.goal_states:
-            new_world[t_state] = 'G'
-
-        for t_state in self.lava_states:
-            new_world[t_state] = 'L'
-
-        for w_state in self.wall_indices:
-            new_world[w_state] = '#'
-
         if mode == 'human' or mode == 'ansi':
+            new_world = np.fromiter(('o' for _ in np.nditer(np.arange(self.x_max))
+                                     for _ in np.nditer(np.arange(self.y_max))), dtype='S1')
+            new_world[self.current_state] = 'x'
+            for t_state in self.goal_states:
+                new_world[t_state] = 'G'
+
+            for t_state in self.lava_states:
+                new_world[t_state] = 'L'
+
+            for w_state in self.wall_indices:
+                new_world[w_state] = '#'
+
             outfile = StringIO() if mode == 'ansi' else sys.stdout
             for row in np.reshape(new_world, (self.y_max, self.x_max)):
                 for state in row:
@@ -217,7 +215,7 @@ class GridWorldEnv(gym.Env):
             return outfile
 
         elif mode == 'graphic':
-            if close: # code needed for pressing x on window to close
+            if close:
                 if self.viewer is not None:
                     self.viewer.close()
                     self.viewer = None
@@ -229,7 +227,7 @@ class GridWorldEnv(gym.Env):
 
             return self.viewer.render(return_rgb_array=mode == 'rgb_array')
         else:
-            super(GridWorldEnv, self).render(mode=mode)
+            super(GridUniverseEnv, self).render(mode=mode)
 
     def render_policy_arrows(self, policy):
         if self.viewer is None:

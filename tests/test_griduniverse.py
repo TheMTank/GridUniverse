@@ -1,20 +1,20 @@
 import unittest
 
-from core.envs.gridworld_env import GridWorldEnv
+from core.envs.griduniverse_env import GridUniverseEnv
 
 
-class TestGridWorld(unittest.TestCase):
+class TestGridUniverse(unittest.TestCase):
     def test_terminal_out_of_bounds_error(self):
         """
         Default Env contains 16 states (0-15) so state 16 should crash environment.
         """
 
         with self.assertRaises(IndexError):
-            GridWorldEnv(goal_states=[16])
+            GridUniverseEnv(goal_states=[16])
 
     def test_wrong_terminal_type_error(self):
         with self.assertRaises(IndexError):
-            GridWorldEnv(goal_states=['a'])
+            GridUniverseEnv(goal_states=['a'])
 
     def test_incorrect_parameter_types(self):
         """
@@ -24,33 +24,33 @@ class TestGridWorld(unittest.TestCase):
 
         # todo don't show errors/red writing (env.close() is always called) for testing aesthetics
         with self.assertRaises(TypeError):
-            GridWorldEnv(goal_states=5.0)
+            GridUniverseEnv(goal_states=5.0)
 
         with self.assertRaises(TypeError):
-            GridWorldEnv(lava_states='a')
+            GridUniverseEnv(lava_states='a')
 
         with self.assertRaises(TypeError):
-            GridWorldEnv(walls='aaaa')
+            GridUniverseEnv(walls='aaaa')
 
         # Test grid_shape with over 2 dimensions
         with self.assertRaises(TypeError):
-            GridWorldEnv(grid_shape=(2, 2, 2))
+            GridUniverseEnv(grid_shape=(2, 2, 2))
 
         # Test grid_shape if not a tuple/list
         with self.assertRaises(TypeError):
-            GridWorldEnv(grid_shape=set([2, 3]))
+            GridUniverseEnv(grid_shape=set([2, 3]))
 
         with self.assertRaises(TypeError):
-            GridWorldEnv(grid_shape=[2, 2.0])
+            GridUniverseEnv(grid_shape=[2, 2.0])
 
         with self.assertRaises(TypeError):
-            GridWorldEnv(grid_shape=2)
+            GridUniverseEnv(grid_shape=2)
 
-    def test_gridworld_wall_not_trespassed(self):
+    def test_griduniverse_wall_not_trespassed(self):
         """
         Test whether agent is still in the same place after moving into a wall
         """
-        env = GridWorldEnv(walls=[1])
+        env = GridUniverseEnv(walls=[1])
         env.render()
         action = 1 # go right
 
@@ -60,13 +60,13 @@ class TestGridWorld(unittest.TestCase):
         env.render()
         self.assertTrue(observation == 0) # check if in same place
 
-    def test_default_gridworld_completion_in_six_steps(self):
+    def test_default_griduniverse_completion_in_six_steps(self):
         """
         Test whether the agent reaches a terminal state within the
-        default square GridWorld within six steps by going right 3 times
+        default square GridUniverse within six steps by going right 3 times
         and then going down 3 times.
         """
-        env = GridWorldEnv()
+        env = GridUniverseEnv()
 
         actions_to_take = [1, 1, 1, 2, 2, 2] # 3 rights and 3 downs
         for t in range(100):
@@ -80,13 +80,13 @@ class TestGridWorld(unittest.TestCase):
                 self.assertTrue((t + 1) == 6)
                 break
 
-    def test_large_gridworld_completion_in_53_steps(self):
+    def test_large_griduniverse_completion_in_53_steps(self):
         """
-        Test whether the agent completes the a large rectangular GridWorld in the expected 53 steps
+        Test whether the agent completes the a large rectangular GridUniverse in the expected 53 steps
         """
-        env = GridWorldEnv(grid_shape=(25, 30))
+        env = GridUniverseEnv(grid_shape=(25, 30))
 
-        actions_to_take = [1] * 24 + [2] * 29 # 24 steps right + 24 steps down
+        actions_to_take = [1] * 24 + [2] * 29 # 24 steps right + 29 steps down
         num_actions = len(actions_to_take)
         print('Num actions to take to get to terminal state: {}'.format(num_actions))
         for t in range(100):
@@ -98,12 +98,12 @@ class TestGridWorld(unittest.TestCase):
                 break
         self.assertTrue((t + 1) == num_actions and done)
 
-    def test_custom_gridworld_from_text_file(self):
+    def test_custom_griduniverse_from_text_file(self):
         """
-        Test whether we can complete the GridWorld created from the text file within
+        Test whether we can complete the GridUniverse created from the text file within
         """
 
-        env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/test_env.txt')
+        env = GridUniverseEnv(custom_world_fp='../core/envs/maze_text_files/test_env.txt')
         actions_to_take = [2, 2, 2, 2, 2, 2, 2, 1]
         for step_no, action in enumerate(actions_to_take):
             env.render()
@@ -122,7 +122,7 @@ class TestGridWorld(unittest.TestCase):
         The step numbers where the agent ends up in the same state as previously
         are stored and then compared to the expected values and if exactly the same the test passes.
         """
-        env = GridWorldEnv()
+        env = GridUniverseEnv()
 
         # self.action_descriptors = ['up', 'right', 'down', 'left']
         actions_to_take = [3, 0, 1, 1, 1, 1, 2, 2, 3, 2, 2, 3, 3, 3]
@@ -151,7 +151,7 @@ class TestGridWorld(unittest.TestCase):
         Run agent into lava, test to see if episode ends with negative reward
         """
 
-        env = GridWorldEnv(lava_states=[1])
+        env = GridUniverseEnv(lava_states=[1])
 
         env.render()
         action = env.action_descriptor_to_int['RIGHT']
@@ -164,7 +164,7 @@ class TestGridWorld(unittest.TestCase):
         Test whether we can end the episode by making the agent travel into lava in environment created from text file
         """
 
-        env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/test_env.txt')
+        env = GridUniverseEnv(custom_world_fp='../core/envs/maze_text_files/test_env.txt')
         actions_to_take = [env.action_descriptor_to_int[action_desc] for action_desc in ['DOWN', 'DOWN', 'DOWN', 'RIGHT', 'RIGHT']]
         for step_no, action in enumerate(actions_to_take):
             env.render()
@@ -174,6 +174,7 @@ class TestGridWorld(unittest.TestCase):
                 print("Episode finished after {} timesteps".format(step_no + 1))
 
         self.assertTrue(reward == -10 and done)
+
 
 if __name__ == '__main__':
     unittest.main()
