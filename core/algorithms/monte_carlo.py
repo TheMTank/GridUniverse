@@ -3,9 +3,6 @@ import sys
 import math
 
 import numpy as np
-from six import StringIO
-
-
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
@@ -23,7 +20,6 @@ class LinearRegression(nn.Module):
         out = self.linear(x)
         return out
 
-
 def create_one_hot_state_vector(env, state):
     vec = np.zeros(env.world.size)
     vec[state] = 1
@@ -31,28 +27,16 @@ def create_one_hot_state_vector(env, state):
 
 def test_linear_approx(env):
     value_function = np.zeros(env.world.size)
-    w = (np.random.rand(env.world.size) - 0.5) * 0.01
 
     threshold = 0.0001
     discount_factor = 1.0
-    lr = 0.0001
-
-    print(w)
-    # print(w.shape)
-    # first_state = env.reset()
-    # ohe_vec = create_one_hot_state_vector(env, first_state)
-    # output = w.dot(ohe_vec) # understand why no transpose
-
-    # print(output)
-    # print(output.shape)
+    lr = 0.0005
 
     policy = np.ones([env.world.size, len(env.action_state_to_next_state)]) / len(env.action_state_to_next_state)
-
     policy = utils.greedy_policy_from_value_function(policy, env, value_function, discount_factor=1.0)
     # print(policy)
 
     all_episode_losses = []
-
 
     model = LinearRegression(env.world.size, 1)
     criterion = nn.MSELoss()
@@ -61,60 +45,71 @@ def test_linear_approx(env):
 
     model = model.double()
 
+    num_done = 0
     # get {S1, G1}, {S2, G2}, ..., {St, Gt} from each single episode
-    # for episode in range(50):
-    for episode in range(300):
-        episode_state_hist, episode_reward_hist, done = run_episode(policy, env)
-
-        # print(episode_reward_hist)
-        # print(np.cumsum(episode_reward_hist))
-        # print(episode_state_hist)
-
+    for episode_num in range(100):
+        episode_state_hist, episode_reward_hist, done = run_episode(policy, env, max_steps_per_episode=5000)
         loss_for_episode = 0.0
 
-        # PyTorch
-        for idx, state in enumerate(episode_state_hist):
-            ohe_state_vec = create_one_hot_state_vector(env, state)  # S
-            return_from_state = np.array(sum([(discount_factor ** i) * r for i, r in enumerate(episode_reward_hist[idx:])
-                                     if (discount_factor ** i) > threshold]))
+        # only if episode finishes can we learn enough for network. There is only negative return otherwise
+        if done:
+            num_done += 1
+            # PyTorch # todo run in batch mode to make 100x more efficient
+            for idx, state in enumerate(episode_state_hist):
+                # todo create_one_hot batch mode
+                ohe_state_vec = create_one_hot_state_vector(env, state)  # S
+                return_from_state = np.array(sum([(discount_factor ** i) * r for i, r in enumerate(episode_reward_hist[idx:])
+                                         if (discount_factor ** i) > threshold]))
 
-            inputs = Variable(torch.from_numpy(ohe_state_vec).double())
-            # targets = Variable(torch.from_numpy(np.array(return_from_state)).double())
-            targets = Variable(torch.from_numpy(np.array([return_from_state])).double())
+                inputs = Variable(torch.from_numpy(ohe_state_vec).double())
+                # targets = Variable(torch.from_numpy(np.array(return_from_state)).double())
+                targets = Variable(torch.from_numpy(np.array([return_from_state])).double())
 
-            # Forward + Backward + Optimize
-            optimizer.zero_grad()
-            outputs = model(inputs)
-            loss = criterion(outputs, targets)
-            # model.parameters() -= 0.0001
-            loss.backward()
-            optimizer.step()
+                # Forward + Backward + Optimize
+                optimizer.zero_grad()
+                outputs = model(inputs)
+                loss = criterion(outputs, targets)
+                # model.parameters() -= 0.0001
+                loss.backward()
+                optimizer.step()
 
-            # print(loss.data[0])
-            loss_for_episode += loss.data
+                # print(loss.data[0])
+                loss_for_episode += loss.data
 
         # print(episode, loss_for_episode)
         all_episode_losses.append(loss_for_episode)
+        if episode_num % 10 == 0:
+            print('Episode: {}. Loss for least episode: {}. Average loss: {}. Num done: {}'.format(episode_num, loss_for_episode,
+                                                                                     sum(all_episode_losses) / len(all_episode_losses), num_done))
+    policy = utils.greedy_policy_from_value_function(policy, env,
+                                                     list(model.parameters())[0].data.numpy().flatten(),
+                                                     discount_factor=1.0)
 
+    '''
+    w = (np.random.rand(env.world.size) - 0.5) * 0.01
+    for episode in range(300):
+        episode_state_hist, episode_reward_hist, done = run_episode(policy, env)
+        loss_for_episode = 0.0
+    
         # numpy
-        '''for idx, state in enumerate(episode_state_hist):
+        for idx, state in enumerate(episode_state_hist):
             ohe_state_vec = create_one_hot_state_vector(env, state) # S
             # predicted_value = w.dot(ohe_state_vec)
             predicted_value = ohe_state_vec.dot(w) # predicted G
-
+    
             return_from_state = sum([(discount_factor ** i) * r for i, r in enumerate(episode_reward_hist[idx:])
                                                        if (discount_factor ** i) > threshold])
-
+    
             loss = math.pow(abs(return_from_state - predicted_value), 2)
             # delta_w = lr * abs(return_from_state - predicted_value) * ohe_state_vec # todo is it absolute?
             delta_w = lr * (return_from_state - predicted_value) * ohe_state_vec
             delta_w = np.clip(delta_w, -1, 1)
-
+    
             # w = w - delta_w
             w = w + delta_w
             new_predicted_value = w.dot(ohe_state_vec)
             new_loss = (return_from_state - new_predicted_value) ** 2.0
-
+    
             # print('\nidx:', idx)
             # print('state:', state)
             # print('ohe:', ohe_state_vec)
@@ -124,16 +119,18 @@ def test_linear_approx(env):
             # print('w:', w)
             # print('New predicted value:', new_predicted_value)
             # print('loss: {}, new_loss: {}'.format(loss, new_loss))
-
+    
             loss_for_episode += loss
-
+    
         all_episode_losses.append(loss_for_episode)'''
         # policy = utils.greedy_policy_from_value_function(policy, env, w, discount_factor=1.0)
-
     # policy = utils.greedy_policy_from_value_function(policy, env, w, discount_factor=1.0)
-    policy = utils.greedy_policy_from_value_function(policy, env, list(model.parameters())[0].data.numpy().flatten(), discount_factor=1.0)
-    print(all_episode_losses)
+
+
+    # print(all_episode_losses)
     plt.plot(all_episode_losses)
+    plt.xlabel('Episode Number')
+    plt.ylabel('Loss')
     plt.show()
     return policy
 
@@ -238,9 +235,9 @@ def monte_carlo_evaluation(policy, env, every_visit=False, incremental_mean=True
 
 if __name__ == '__main__':
     from core.envs.griduniverse_env import GridUniverseEnv
-    env = GridUniverseEnv()
-    # env = GridWorldEnv((10, 10))
-    env = GridUniverseEnv((10, 10), random_maze=True)
+    grid_shape = (25, 25)
+    grid_shape = (10, 10)
+    env = GridUniverseEnv(grid_shape, random_maze=True)
 
     policy = test_linear_approx(env)
 
