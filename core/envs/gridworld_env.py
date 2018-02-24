@@ -11,7 +11,7 @@ import numpy as np
 class GridWorldEnv(gym.Env):
     metadata = {'render.modes': ['human', 'ansi', 'graphic']}
 
-    def __init__(self, grid_shape=(4, 4), initial_state=None, **kwargs):
+    def __init__(self, grid_shape=(4, 4), initial_state=0, **kwargs):
         # set state space params
         self.x_max = grid_shape[0]
         self.y_max = grid_shape[1]
@@ -27,16 +27,7 @@ class GridWorldEnv(gym.Env):
         # set observed params: [current state, world state]
         self.observation_space = spaces.Discrete(self.world.size)
         # set initial state for the agent
-        # TODO: check that the random choice does not fall in a terminal state
-        if initial_state is int:
-            self.previous_state = self.current_state = self.initial_state = np.random.randint(self.world.size)
-        elif initial_state is list:
-            self.previous_state = self.current_state = self.initial_state = random.choice(initial_state)
-        else:
-            self.previous_state = self.current_state = self.initial_state = \
-                initial_state if initial_state is None else np.random.randint(self.world.size)
-            warning_message = 'No valid initial_state given, set randomly to state {}'.format(self.initial_state)
-            warnings.warn(warning_message, UserWarning)
+        self.previous_state = self.current_state = self.initial_state = initial_state
         # set terminal state(s) and wall(s)
         self.terminal_states = kwargs['terminal_states'] if 'terminal_states' in kwargs else [self.world.size - 1]
         # kwargs['walls'] = [1, 4, 14] # uncomment for quick test

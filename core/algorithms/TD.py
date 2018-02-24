@@ -15,7 +15,6 @@ def td_n_step_evaluation(policy, env, n_steps, value_function=None, gamma=0.9, a
     value_function = np.zeros(env.world.size) if value_function is None else value_function
 
     for _ in range(n_episodes):
-        env.reset()
         curr_state = env.curr_state
         states_history = [curr_state]
         rewards_history = []
@@ -37,13 +36,13 @@ def td_n_step_evaluation(policy, env, n_steps, value_function=None, gamma=0.9, a
             td_error = td_target - value_function[states_history[state_update_idx]]
             value_function[states_history[state_update_idx]] += alpha * td_error
             state_update_idx += 1
-
+        env.reset()
     return value_function
 
 
-def td_lambda_episodic_evaluation(policy, env, curr_state=None, value_function=None, gamma=0.9, alpha=0.01,
-                                  max_steps_per_episode=1000, lambda_val=0.9, backward_view=False, execution='offline',
-                                  n_episodes=100):
+def td_lambda_evaluation(policy, env, curr_state=None, value_function=None, gamma=0.9, alpha=0.01,
+                         max_steps_per_episode=1000, lambda_val=0.9, backward_view=False, execution='offline',
+                         n_episodes=100):
     """
     TD lambda
 
@@ -63,17 +62,20 @@ def td_lambda_episodic_evaluation(policy, env, curr_state=None, value_function=N
         if execution == 'offline':
             # Compute full episode before updating
             states_hist, rewards_hist, done = run_episode(policy, env, max_steps_per_episode=max_steps_per_episode)
-            lambda_return = np.cumsum(np.fromiter(((1 - lambda_val) * (lambda_val ** step_n) * step_reward
-                                                   for step_n, step_reward in enumerate(rewards_hist)),
-                                                  dtype='float64'))
+            cum_return = np.cumsum(rewards_hist)
 
             for step_n, curr_state in enumerate(states_hist[:-1]):
-                td_target = lambda_return[step_n] + gamma * value_function[states_hist[step_n + 1]]
+                # calculate lambda return
+                lambda_return = cum_return[-1] * lambda_val ** (len(rewards_hist) - 1)
+                for step in range(len(states_hist[:-1]) - step_n - 1):
+                    lambda_return += cum_return[step_n] * (1 - lambda_val) * (lambda_val ** step)
+                # calculate td values
+                td_target = lambda_return + gamma * value_function[curr_state]
                 td_error = td_target - value_function[curr_state]
                 if backward_view:
                     eligibility_traces *= gamma * lambda_val
                     eligibility_traces[curr_state] += 1
-
+                # update value function
                 updated_value_function[curr_state] += alpha * td_error * eligibility_traces[curr_state]
 
         else:
@@ -112,38 +114,38 @@ if __name__ == '__main__':
     np.set_printoptions(linewidth=75 * 2, precision=4)
 
     # TD 3-step return for 2 episodes
-    value_func_td5step = td_episodic_n_step_evaluation(policy=policy0, env=env, n_steps=3, n_episodes=n_episodes)
+    value_func_td5step = td_n_step_evaluation(policy=policy0, env=env, n_steps=3, n_episodes=n_episodes)
     print("Value function for TD 3 step return run on 1 episode:\n", value_func_td5step)
     # TD lambda forward view offline
     env.reset()
-    value_func_td_lambda_fwd_off = td_lambda_episodic_evaluation(policy=policy0, env=env, n_episodes=n_episodes)
+    value_func_td_lambda_fwd_off = td_lambda_evaluation(policy=policy0, env=env, n_episodes=n_episodes)
     print("Value function for TD lambda forward view offline in {} episodes:\n".format(n_episodes),
           value_func_td_lambda_fwd_off)
     # TD lambda backward view offline
     env.reset()
-    value_func_td_lambda_bwd_off = td_lambda_episodic_evaluation(policy=policy0, env=env, backward_view=True,
-                                                                 n_episodes=n_episodes)
+    value_func_td_lambda_bwd_off = td_lambda_evaluation(policy=policy0, env=env, backward_view=True,
+                                                        n_episodes=n_episodes)
     print("Value function for TD lambda backward view offline in {} episodes:\n".format(n_episodes),
           value_func_td_lambda_bwd_off)
     # TD lambda forward view online
     env.reset()
-    value_func_td_lambda_fwd_on = td_lambda_episodic_evaluation(policy=policy0, env=env, execution='online',
-                                                                n_episodes=n_episodes)
+    value_func_td_lambda_fwd_on = td_lambda_evaluation(policy=policy0, env=env, execution='online',
+                                                       n_episodes=n_episodes)
     print("Value function for TD lambda forward view online in {} episodes:\n".format(n_episodes),
           value_func_td_lambda_fwd_on)
     # TD lambda backward view online
     env.reset()
-    value_func_td_lambda_bwd_on = td_lambda_episodic_evaluation(policy=policy0, env=env, backward_view=True,
-                                                                execution='online', n_episodes=n_episodes)
+    value_func_td_lambda_bwd_on = td_lambda_evaluation(policy=policy0, env=env, backward_view=True,
+                                                       execution='online', n_episodes=n_episodes)
     print("Value function for TD lambda backward view online in {} episodes:\n".format(n_episodes),
           value_func_td_lambda_bwd_on)
     # TD lambda backward view exact online
     env.reset()
-    value_func_td_lambda_bwd_on = td_lambda_episodic_evaluation(policy=policy0, env=env, backward_view=True,
-                                                                execution='exact_online', n_episodes=n_episodes)
+    value_func_td_lambda_bwd_on = td_lambda_evaluation(policy=policy0, env=env, backward_view=True,
+                                                       execution='exact_online', n_episodes=n_episodes)
     print("Value function for TD lambda backward view  exact online in {} episodes:\n".format(n_episodes),
           value_func_td_lambda_bwd_on)
     # TD lambda invalid execution mode
     # env.reset()
-    # value_func_td_lambda_bwd_on = td_lambda_episodic_evaluation(policy=policy0, env=env, backward_view=True,
-    #                                                             execution='ham', n_episodes=100)
+    # value_func_td_lambda_bwd_on = td_lambda_evaluation(policy=policy0, env=env, backward_view=True,
+    #                                                    execution='ham', n_episodes=100)
