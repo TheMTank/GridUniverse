@@ -28,16 +28,20 @@ def td_n_step_evaluation(policy, env, num_steps, value_function=None, gamma=0.9,
                 states_history.append(curr_state)
                 rewards_history.append(step_reward)
 
-            run_steps = num_steps if (state_update_idx + num_steps <= len(rewards_history)) else None
+            steps_for_update = num_steps if (state_update_idx + num_steps <= len(rewards_history)) \
+                                         else (len(rewards_history) - state_update_idx)
             # update the state only if we will walk num_steps before reaching the goal
-            if run_steps:
-                return_value = sum(rewards_history[state_update_idx + step] * gamma ** step
-                                   for step in range(run_steps))
-                # update value function for state_update_idx
+            return_value = sum(rewards_history[state_update_idx + step] * gamma ** step
+                               for step in range(steps_for_update))
+            # update value function for state_update_idx
+            if steps_for_update == num_steps:
                 td_target = return_value + \
                             (gamma ** num_steps) * value_function[states_history[state_update_idx + num_steps]]
-                td_error = td_target - value_function[states_history[state_update_idx]]
-                value_function[states_history[state_update_idx]] += alpha * td_error
+            else:
+                td_target = return_value
+            td_error = td_target - value_function[states_history[state_update_idx]]
+            value_function[states_history[state_update_idx]] += alpha * td_error
+
             state_update_idx += 1
         env.reset()
     return value_function
@@ -45,7 +49,10 @@ def td_n_step_evaluation(policy, env, num_steps, value_function=None, gamma=0.9,
 
 def td_lambda_update(value_function, states_hist, rewards_hist, lambda_val, gamma, alpha, backward_view):
     """
-    Helper function for TD lambda
+    Auxiliary function for TD lambda (online and offline).
+
+    Given a history of seen states and rewards the given value function is updated and returned. For offline updates
+    the history of a complete episode is used, while in online setting only the explored path is used as history.
     """
     updated_value_function = value_function.copy()
     eligibility_traces = np.zeros(env.world.size) if backward_view else np.ones(env.world.size)
@@ -71,9 +78,18 @@ def td_lambda_evaluation(policy, env, curr_state=None, value_function=None, gamm
                          max_steps_per_episode=1000, lambda_val=0.9, backward_view=False, execution='offline',
                          num_episodes=100):
     """
-    TD lambda
+    TD lambda algorithm for policy evaluation
 
-    execution: 'offline', 'online', 'exact_online'
+    Depending on the input parameters it can be executed in the forward or backwards version in three different modes:
+    - Offline. A complete episode is run and the value function is updated according to the episode observed.
+    - Online. The value function is updated on every observed state so far using that experience as if it was a full
+                episode in the offline setting. Since the value function is updated after every step, the information of
+                the expected rewards will be different from the offline setting.
+    - Exact online. In order to create an execution mode online that converges with the offline setting, this method
+                        calculates the updates for the value function as if it was in an offline setting every time.
+                        Even though it is executed every step, the updated information will only be used if the current
+                        state is the terminal state for the episode (or if the predefined max_steps_per_episode limit is
+                        reached).
     """
     valid_execution_modes = ['offline', 'online', 'exact_online']
     if execution not in valid_execution_modes:
