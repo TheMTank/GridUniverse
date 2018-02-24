@@ -1,66 +1,43 @@
 import warnings
 
-
 import numpy as np
-
 
 from core.envs.gridworld_env import GridWorldEnv
 from core.algorithms.utils import run_episode
 
 
-def n_step_return(policy, env, n_steps, curr_state=None):
-    """
-    Moves the agent n_steps and returns the sum of the rewards experienced on those steps.
-
-    Assumes a stochastic policy and takes an action sample taken from a distribution with the probabilities given
-    by the policy.
-    """
-    reward_experienced = 0  # Gt according to the equations
-    curr_state = env.current_state if curr_state is None else curr_state
-    done = False
-    for step in range(n_steps):
-        action = np.random.choice(policy[curr_state].size, p=policy[curr_state])
-        curr_state, step_reward, done = env.look_step_ahead(curr_state, action)
-        reward_experienced += step_reward
-        if done:
-            warning_message = 'Terminal state {} reached after {} steps'.format(curr_state, step + 1)
-            warnings.warn(warning_message, UserWarning)
-            break
-    return reward_experienced, curr_state, done
-
-
-def td_single_n_step_evaluation(policy, env, n_steps, curr_state=None, value_function=None, gamma=0.9, alpha=0.01):
-    """
-    TD n-step algorithm for policy evaluation in a single n-step
-    """
-    value_function = np.zeros(env.world.size) if value_function is None else value_function
-    curr_state = env.current_state if curr_state is None else curr_state
-    action = np.random.choice(policy[curr_state].size, p=policy[curr_state])
-
-    return_value, last_state, done = n_step_return(policy, env, n_steps, curr_state)
-    next_state, *_ = env.look_step_ahead(last_state, action)
-    td_target = return_value + gamma * value_function[next_state]
-    td_error = td_target - value_function[curr_state]
-
-    value_function[curr_state] += alpha * td_error
-    return last_state, value_function, done
-
-
-def td_episodic_n_step_evaluation(policy, env, n_steps, curr_state=None, value_function=None, gamma=0.9, alpha=0.01,
-                                  n_episodes=100):
+def td_n_step_evaluation(policy, env, n_steps, value_function=None, gamma=0.9, alpha=0.01, n_episodes=100):
     """
     TD n-step algorithm for policy evaluation in n_episodes number of episodes
+
+    The initial state for every episode is set to the value provided in the creation of the environment.
     """
     value_function = np.zeros(env.world.size) if value_function is None else value_function
-    curr_state = env.current_state if curr_state is None else curr_state
-    done = False
-    for episode in range(n_episodes):
-        while not done:
-            last_state, value_function, done = td_single_n_step_evaluation(policy, env, n_steps, curr_state,
-                                                                           value_function=value_function, gamma=gamma,
-                                                                           alpha=alpha)
-            curr_state = last_state
+
+    for _ in range(n_episodes):
         env.reset()
+        curr_state = env.curr_state
+        states_history = [curr_state]
+        rewards_history = []
+        state_update_idx = 0
+        done = False
+        while not done:
+            # move n-steps. Store states and rewards
+            while len(states_history) < state_update_idx + n_steps:
+                action = np.random.choice(policy[curr_state].size, p=policy[curr_state])
+                curr_state, step_reward, done = env.look_step_ahead(curr_state, action)
+                states_history.append(curr_state)
+                rewards_history.append(step_reward)
+
+            # update value function for state_update_idx
+            return_value = 0
+            for step in range(n_steps):
+                return_value += rewards_history[state_update_idx + step] * gamma ** step
+            td_target = return_value + (gamma ** n_steps) * value_function[states_history[state_update_idx + n_steps]]
+            td_error = td_target - value_function[states_history[state_update_idx]]
+            value_function[states_history[state_update_idx]] += alpha * td_error
+            state_update_idx += 1
+
     return value_function
 
 
