@@ -15,26 +15,29 @@ def td_n_step_evaluation(policy, env, num_steps, value_function=None, gamma=0.9,
     value_function = np.zeros(env.world.size) if value_function is None else value_function
 
     for _ in range(num_episodes):
-        curr_state = env.curr_state
+        curr_state = env.current_state
         states_history = [curr_state]
         rewards_history = []
         state_update_idx = 0
         done = False
         while not done:
             # move n-steps. Store states and rewards
-            while len(states_history) < state_update_idx + num_steps:
+            while ((len(states_history) - 1) < (state_update_idx + num_steps)) and not done:
                 action = np.random.choice(policy[curr_state].size, p=policy[curr_state])
                 curr_state, step_reward, done = env.look_step_ahead(curr_state, action)
                 states_history.append(curr_state)
                 rewards_history.append(step_reward)
 
-            # update value function for state_update_idx
-            return_value = 0
-            for step in range(num_steps):
-                return_value += rewards_history[state_update_idx + step] * gamma ** step
-            td_target = return_value + (gamma ** num_steps) * value_function[states_history[state_update_idx + num_steps]]
-            td_error = td_target - value_function[states_history[state_update_idx]]
-            value_function[states_history[state_update_idx]] += alpha * td_error
+            run_steps = num_steps if (state_update_idx + num_steps <= len(rewards_history)) else None
+            # update the state only if we will walk num_steps before reaching the goal
+            if run_steps:
+                return_value = sum(rewards_history[state_update_idx + step] * gamma ** step
+                                   for step in range(run_steps))
+                # update value function for state_update_idx
+                td_target = return_value + \
+                            (gamma ** num_steps) * value_function[states_history[state_update_idx + num_steps]]
+                td_error = td_target - value_function[states_history[state_update_idx]]
+                value_function[states_history[state_update_idx]] += alpha * td_error
             state_update_idx += 1
         env.reset()
     return value_function
@@ -113,13 +116,13 @@ if __name__ == '__main__':
     env = GridWorldEnv(world_shape=world_shape)
     value_func = np.zeros(env.world.size)
     policy0 = np.ones([env.world.size, len(env.action_state_to_next_state)]) / len(env.action_state_to_next_state)
-    episodes = 1000
+    episodes = 100
     print('Initial value function:', value_func)
     np.set_printoptions(linewidth=75 * 2, precision=4)
 
     # TD 3-step return for 2 episodes
-    value_func_td5step = td_n_step_evaluation(policy=policy0, env=env, num_steps=3, num_episodes=episodes)
-    print("Value function for TD 3 step return run on 1 episode:\n", value_func_td5step)
+    value_func_td3step = td_n_step_evaluation(policy=policy0, env=env, num_steps=3, num_episodes=episodes)
+    print("Value function for TD 3 step return run on 1 episode:\n", value_func_td3step)
     # TD lambda forward view offline
     env.reset()
     value_func_td_lambda_fwd_off = td_lambda_evaluation(policy=policy0, env=env, num_episodes=episodes)
