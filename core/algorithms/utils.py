@@ -12,9 +12,10 @@ def run_episode(policy, env, max_steps_per_episode=1000):
     Assumes a stochastic policy and takes an action sample taken from a distribution with the probabilities given
     by the policy.
     """
-    states_hist = []
     rewards_hist = []
     observation = env.reset()
+    states_hist = [env.current_state]
+    done = False
     for step in range(max_steps_per_episode):
         action = np.random.choice(policy[observation].size, p=policy[observation])
         observation, reward, done, info = env.step(action)

@@ -55,7 +55,7 @@ def td_lambda_update(value_function, states_hist, rewards_hist, lambda_val, gamm
     the history of a complete episode is used, while in online setting only the explored path is used as history.
     """
     updated_value_function = value_function.copy()
-    eligibility_traces = np.zeros(env.world.size) if backward_view else np.ones(env.world.size)
+    eligibility_traces = np.zeros(env.world.size) if backward_view else None
     cum_return = np.cumsum(rewards_hist)
 
     for step_num, curr_state in enumerate(states_hist[:-1]):
@@ -66,11 +66,14 @@ def td_lambda_update(value_function, states_hist, rewards_hist, lambda_val, gamm
         # calculate td values
         td_target = lambda_return + gamma * value_function[curr_state]
         td_error = td_target - value_function[curr_state]
+        # update value function
+        updated_value_function[curr_state] += alpha * td_error
         if backward_view:
             eligibility_traces *= gamma * lambda_val
             eligibility_traces[curr_state] += 1
-        # update value function
-        updated_value_function[curr_state] += alpha * td_error * eligibility_traces[curr_state]
+            updated_value_function[curr_state] *= eligibility_traces[curr_state]
+
+
     return updated_value_function
 
 
