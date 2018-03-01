@@ -8,6 +8,7 @@ import gym
 from gym import spaces
 from gym.utils import seeding
 
+from core.envs import config
 from core.envs import maze_generation
 
 class GridWorldEnv(gym.Env):
@@ -103,12 +104,12 @@ class GridWorldEnv(gym.Env):
         self.wall_grid = np.zeros(self.world.shape)
         self._generate_walls(walls)
         # set reward matrix
-        self.LEMON_REWARD = -2
-        self.APPLE_REWARD = 2
-        self.MELON_REWARD = 5
-        self.LAVA_REWARD = -10
-        self.TERMINAL_GOAL_REWARD = 10
-        self.MOVEMENT_REWARD = -1
+        self.LEMON_REWARD = config.default_rewards['LEMON_REWARD']
+        self.APPLE_REWARD = config.default_rewards['APPLE_REWARD']
+        self.MELON_REWARD = config.default_rewards['MELON_REWARD']
+        self.LAVA_REWARD = config.default_rewards['LAVA_REWARD']
+        self.TERMINAL_GOAL_REWARD = config.default_rewards['TERMINAL_GOAL_REWARD']
+        self.MOVEMENT_REWARD = config.default_rewards['MOVEMENT_REWARD']
         self.reward_matrix = np.full(self.world.shape, self.MOVEMENT_REWARD)
         self._generate_reward_matrix()
         # self.reward_range = [-inf, inf] # default values already
@@ -117,8 +118,8 @@ class GridWorldEnv(gym.Env):
         # set additional parameters for the environment
         self.done = False
         self.info = {}
-        self.screen_width = 1200
-        self.screen_height = 800
+        self.screen_width = config.default_screen_dimension['SCREEN_WIDTH']
+        self.screen_height = config.default_screen_dimension['SCREEN_HEIGHT']
 
         self.viewer = None
         self._seed()

@@ -146,7 +146,7 @@ class TestGridWorld(unittest.TestCase):
 
         num_lemons = num_apples = num_melons = 3
         expected_total_reward = num_apples * env.APPLE_REWARD + num_lemons * env.LEMON_REWARD + \
-                                num_melons * env.MELON_REWARD + len(actions_to_take) * self.MOVEMENT_REWARD  # -1 for immediate reward
+                                num_melons * env.MELON_REWARD + len(actions_to_take) * env.MOVEMENT_REWARD  # -1 for immediate reward
         cumulative_reward = 0
 
         for step_no, action in enumerate(actions_to_take):
