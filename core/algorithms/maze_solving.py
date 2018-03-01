@@ -16,7 +16,7 @@ if __name__ == '__main__':
     first_time = True
     for i in range(10):
         env = GridWorldEnv(grid_shape=(15, 15), random_maze=True) # todo turn off terminal somehow to calculate recursively?
-        curr_state = initial_state = env.reset()
+        curr_state = starting_state = env.reset()
 
         actions = range(4)
 
@@ -52,7 +52,7 @@ if __name__ == '__main__':
                 # if len(nodes_and_edges[curr_state]) == 0:
                 #     del nodes_and_edges[curr_state]
 
-        # find_all_neighbouring_states(initial_state)
+        # find_all_neighbouring_states(starting_state)
         create_graph()
 
 
@@ -194,7 +194,7 @@ if __name__ == '__main__':
 
         # print(list(nodes_and_edges.keys()))
         #root_vertex = random.choice(list(nodes_and_edges.keys())) #todo should be 'x'
-        root_vertex = env.initial_state # todo not same as x
+        root_vertex = env.starting_state # todo not same as x
         # depth_first_search_recursive(nodes_and_edges, root_vertex)
         # node_path_to_terminal = depth_first_search_iterative(nodes_and_edges, root_vertex)
         print('Initial states edges:', nodes_and_edges[root_vertex])

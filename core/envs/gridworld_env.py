@@ -14,14 +14,14 @@ from core.envs import maze_generation
 class GridWorldEnv(gym.Env):
     metadata = {'render.modes': ['human', 'ansi', 'graphic']}
 
-    def __init__(self, grid_shape=(4, 4), initial_state=0, terminal_goal_states=None, lava_states=None, walls=None,
+    def __init__(self, grid_shape=(4, 4), starting_state=0, terminal_goal_states=None, lava_states=None, walls=None,
                  lemons=None, melons=None, apples=None, custom_world_fp=None, random_maze=False):
         """
         Main constructor to create a GridWorld environment. The default GridWorld is a square grid of 4x4 where the
         agent starts at the top left corner and the terminal state is at the bottom right corner.
 
         :param grid_shape: Tuple of size 2 to specify (width, height) of grid
-        :param initial_state: int for single initial state or list of possible states chosen uniform randomly
+        :param starting_state: int for single initial state or list of possible states chosen uniform randomly
         :param terminal_goal_states: list of terminal goal states. If agent walks into, done = True,
                                 and no actions are possible. Positive reward.
         :param lava_states: like terminal_goal_states (episode ends if agent reaches one of them),
@@ -32,7 +32,7 @@ class GridWorldEnv(gym.Env):
         :param apples: If agent lands on a state containing an apple: small reward
         :param custom_world_fp: optional parameter to create the grid from a text file.
         :param random_maze: optional parameter to randomly generate a maze from the algorithm within maze_generation.py
-                            This will override the terminal_goal_states, initial_state, walls and custom_world_fp params
+                            This will override the terminal_goal_states, starting_state, walls and custom_world_fp params
         """
         # check state space params
         if terminal_goal_states is not None and not isinstance(terminal_goal_states, list):
@@ -66,11 +66,11 @@ class GridWorldEnv(gym.Env):
         self.action_descriptor_to_int = {desc: idx for idx, desc in enumerate(self.action_descriptors)}
         # set observed params: [current state, world state]
         self.observation_space = spaces.Discrete(self.world.size)
-        # set initial state for the agent. If initial_state is a list, choose randomly
-        if isinstance(initial_state, int):
-            initial_state = [initial_state] # convert to list
-        self.starting_states = initial_state
-        self.previous_state = self.current_state = self.initial_state = random.choice(self.starting_states)
+        # set initial state for the agent. If starting_state is a list, choose randomly
+        if isinstance(starting_state, int):
+            starting_state = [starting_state] # convert to list
+        self.starting_states = starting_state
+        self.previous_state = self.current_state = self.starting_state = random.choice(self.starting_states)
         # set terminal goal states state(s) and default terminal state if None given
         if terminal_goal_states is None or len(terminal_goal_states) == 0:
             self.terminal_goal_states = [self.world.size - 1]
@@ -130,6 +130,46 @@ class GridWorldEnv(gym.Env):
         if random_maze:
             self._create_random_maze(self.x_max, self.y_max)
 
+        self._check_specific_collisions()
+
+    def _check_specific_collisions(self):
+        """
+        Check that objects/entities/terminal states don't collide in specific ways.
+        Especially with themselves
+        """
+
+        if len(self.current_apples) != len(set(self.current_apples)):
+            raise ValueError('Duplicate apples not allowed')
+        if len(self.current_lemons) != len(set(self.current_lemons)):
+            raise ValueError('Duplicate lemons not allowed')
+        if len(self.current_melons) != len(set(self.current_melons)):
+            raise ValueError('Duplicate melons not allowed')
+        if len(self.wall_indices) != len(set(self.wall_indices)):
+            raise ValueError('Duplicate walls not allowed')
+        if len(self.starting_states) != len(set(self.starting_states)):
+            raise ValueError('Duplicate starting states not allowed')
+        if len(self.terminal_goal_states) != len(set(self.terminal_goal_states)):
+            raise ValueError('Duplicate goal states not allowed')
+        if len(self.lava_states) != len(set(self.lava_states)):
+            raise ValueError('Duplicate lava states not allowed')
+
+        # Test that starting states, wall indices, terminal states don't collide
+        if len(set(self.starting_states) & set(self.wall_indices)) > 0:
+            raise ValueError('Collision between starting states and wall indices. Not allowed.')
+
+        if len(set(self.terminal_goal_states) & set(self.wall_indices)) > 0:
+            raise ValueError('Collision between goal state and wall indices. Not allowed.')
+
+        all_fruit = set(self.current_apples + self.current_lemons + self.current_melons)
+
+        if len(all_fruit) != len(self.current_apples + self.current_lemons + self.current_melons) > 0:
+            raise ValueError('Some fruit has been placed on top of another. This is not allowed. \
+                                      Check melon, lemon, and apple parameters.')
+
+        if len(all_fruit & set(self.wall_indices)) > 0:
+            raise ValueError('Some fruit has been placed on top of a wall. This is not allowed. \
+                                                  Check melon, lemon, and apple parameters.')
+
     def _generate_world(self):
         """
         Creates and returns the gridworld map as a numpy array.
@@ -165,7 +205,6 @@ class GridWorldEnv(gym.Env):
         Every walkable state (except terminal states) you lose -1 (self.MOVEMENT_REWARD)
         so if there is fruit you gain the fruit's reward added to -1 self.MOVEMENT_REWARD.
         """
-
         # non-terminal specific rewards
         for state in self.current_apples:
             self.reward_matrix[state] += self.APPLE_REWARD
@@ -283,7 +322,7 @@ class GridWorldEnv(gym.Env):
 
     def _reset(self):
         self.done = False
-        self.previous_state = self.current_state = self.initial_state = random.choice(self.starting_states)
+        self.previous_state = self.current_state = self.starting_state = random.choice(self.starting_states)
         self.last_n_states = []
         self.current_lemons = self.lemons[:]
         self.current_apples = self.apples[:]
