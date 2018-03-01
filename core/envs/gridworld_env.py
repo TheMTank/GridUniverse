@@ -12,7 +12,7 @@ from gym.utils import seeding
 from core.envs import maze_generation
 
 class GridWorldEnv(gym.Env):
-    metadata = {'render.modes': ['human', 'ansi', 'graphic']}
+    metadata = {'render.modes': ['human', 'ansi', 'graphic', 'rgb_array']}
 
     def __init__(self, grid_shape=(4, 4), initial_state=0, terminal_states=None, walls=None, levers=None, custom_world_fp=None, random_maze=False):
         """
@@ -74,6 +74,7 @@ class GridWorldEnv(gym.Env):
         # set walls
         self.initial_walls = []
         self.wall_indices = []
+        self.non_wall_blocked_states = []
         self.wall_grid = np.zeros(self.world.shape)
         self._setup_walls(walls)
         # set levers
@@ -126,6 +127,9 @@ class GridWorldEnv(gym.Env):
             self.initial_walls = []
         else:
             self.initial_walls = walls
+            self.wall_grid = np.zeros(self.world.shape)
+            self.wall_indices = []
+            self.non_wall_blocked_states = []
             for wall_state in self.initial_walls:
                 if not isinstance(wall_state, int):
                     raise TypeError("Wall state {} is not an integer".format(wall_state))
@@ -134,6 +138,8 @@ class GridWorldEnv(gym.Env):
 
                 self.wall_grid[wall_state] = 1
                 self.wall_indices.append(wall_state)
+
+        self.non_wall_blocked_states = [x for x in range(self.world.size) if x not in self.wall_indices]
 
     def _setup_levers(self, lever_dict):
         """
@@ -179,7 +185,7 @@ class GridWorldEnv(gym.Env):
                     if next_state in self.unactivated_levers.keys():
                         print('Stepped on lever at state {} to remove door at state {}'.format(next_state, self.unactivated_levers[next_state]))
                         if self.viewer:
-                            wall_sprite_index = self.viewer.wall_indices_to_wall_sprite_index[self.unactivated_levers[next_state]] # todo check if breaks indexing
+                            wall_sprite_index = self.viewer.wall_indices_to_wall_sprite_index[self.unactivated_levers[next_state]]
                             self.viewer.wall_sprites[wall_sprite_index].visible = False
 
                             # Change lever sprite
@@ -227,7 +233,13 @@ class GridWorldEnv(gym.Env):
         return self.current_state, reward, self.done, self.info
 
     def _reset(self):
+        """
+        Resets agent state (can be random if more than two set)
+        Resets environment state (levers, replaces removed walls, changes sprite images)
+        """
+
         self.done = False
+        # Randomly choose starting location from list of starting states
         self.previous_state = self.current_state = self.initial_state = random.choice(self.starting_states)
         self.last_n_states = []
         # reset walls and levers sprites
@@ -239,15 +251,14 @@ class GridWorldEnv(gym.Env):
                 sprite.image = self.viewer.lever_off_img
         # reset walls and levers states
         self.unactivated_levers = {k: v for k, v in self.levers.items()}
-        self.wall_indices = []
-        self.wall_grid = np.zeros(self.world.shape)
-        if self.initial_walls is not None:
-            for wall_state in self.initial_walls:
-                self.wall_grid[wall_state] = 1
-                self.wall_indices.append(wall_state)
+        self._setup_walls(self.initial_walls)
         return self.current_state
 
     def _render(self, mode='human', close=False):
+        """
+        Renders agent in either ASCII ('human', 'ansi') or pyglet OpenGL ('graphic', 'rgb_array') mode
+        """
+
         if mode == 'human' or mode == 'ansi':
             new_world = np.fromiter(('o' for _ in np.nditer(np.arange(self.x_max))
                                      for _ in np.nditer(np.arange(self.y_max))), dtype='S1')
@@ -275,7 +286,7 @@ class GridWorldEnv(gym.Env):
             outfile.write('\n')
             return outfile
 
-        elif mode == 'graphic':
+        elif mode == 'graphic' or mode == 'rgb_array':
             if close: # code needed for pressing x on window to close
                 if self.viewer is not None:
                     self.viewer.close()
@@ -291,6 +302,9 @@ class GridWorldEnv(gym.Env):
             super(GridWorldEnv, self).render(mode=mode)
 
     def render_policy_arrows(self, policy):
+        """
+        Only works if pyglet is installed. Removes previous policy arrows in pyglet rendering if already done.
+        """
         if self.viewer is None:
             from core.envs import rendering
             self.viewer = rendering.Viewer(self, self.screen_width, self.screen_height)
@@ -305,6 +319,10 @@ class GridWorldEnv(gym.Env):
         return [seed]
 
     def _create_custom_world_from_file(self, fp):
+        """
+        Opens file fp and does a little cleaning before sending it to function _create_custom_world_from_text()
+        """
+
         with open(fp, 'r') as f:
             all_lines = [line.rstrip() for line in f.readlines()]
             all_lines = ["".join(line.split()) for line in all_lines if line] # remove empty lines and any whitespace
@@ -353,8 +371,8 @@ class GridWorldEnv(gym.Env):
                     if not isinstance(lever_metadata, dict):
                         raise(TypeError('Lever metadata line after converting to Python is not a dictionary'))
                 except:
-                    raise(ValueError('Lever metadata line is not in correct dictionary format. \
-                                      Keys and values should be ints.'))
+                    raise(TypeError('Lever metadata line is not in correct dictionary format. \
+                                      \nKeys and values should be ints representing {lever_state_index: wall_state_index} e.g. {5: 3, 7: 6}. \nThis is how the whole text file should look: \nxooo\noooo\noooo\noooT\n----------\n{5: 3, 7: 6}'))
                 break
             if len(line) != width_of_grid:
                 raise ValueError("Input text file is not a rectangle")
@@ -373,21 +391,25 @@ class GridWorldEnv(gym.Env):
 
                 curr_index += 1
 
-        if len(self.starting_states) == 0:
-            raise ValueError("No starting states set in text file. Place \"x\" within grid. ")
         if len(self.terminal_states) == 0:
             raise ValueError("No terminal states set in text file. Place \"T\" within grid. ")
-
-        self.reset()
 
         self.y_max = height_of_grid
         self.x_max = width_of_grid
         self.world = self._generate_world()
 
         self.initial_walls = []
-        self.wall_grid = np.zeros(self.world.shape)
-        self.wall_indices = []
         self._setup_walls(walls_indices)
+
+        # No starting states set in file
+        if len(self.starting_states) == 0:
+            # One option (crash if no 'x'):
+            # raise ValueError("No starting states set in text file. Place \"x\" within grid. ")
+            # 2nd option. Random start in any place with no wall every reset
+            self.starting_states = self.non_wall_blocked_states
+
+        # Set agent location and common things
+        self.reset()
 
         if 'lever_metadata' in locals():
             self._setup_levers(lever_metadata)
