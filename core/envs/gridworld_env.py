@@ -14,7 +14,7 @@ from core.envs import maze_generation
 class GridWorldEnv(gym.Env):
     metadata = {'render.modes': ['human', 'ansi', 'graphic', 'rgb_array']}
 
-    def __init__(self, grid_shape=(4, 4), initial_state=0, terminal_states=None, walls=None, levers=None, custom_world_fp=None, random_maze=False):
+    def __init__(self, grid_shape=(4, 4), initial_state=0, terminal_states=None, walls=None, levers=None, textworld_fp=None, random_maze=False):
         """
         Main constructor to create a GridWorld environment. The default GridWorld is a square grid of 4x4 where the
         agent starts at the top left corner and the terminal state is at the bottom right corner.
@@ -26,9 +26,9 @@ class GridWorldEnv(gym.Env):
         :param walls: list of walls. These are blocked states where the agent can't walk
         :param levers: dictionary of with integer keys being the location of lever and
                         the values being the wall index (door) to be removed if lever is reached by agent
-        :param custom_world_fp: optional parameter to create the grid from a text file.
+        :param textworld_fp: optional parameter to create the grid from a text file.
         :param random_maze: optional parameter to randomly generate a maze from the algorithm within maze_generation.py
-                            This will override the terminal_states, initial_state, walls and custom_world_fp params
+                            This will override the terminal_states, initial_state, walls and textworld_fp params
         """
         # check state space params
         if terminal_states is not None and not isinstance(terminal_states, list):
@@ -99,8 +99,8 @@ class GridWorldEnv(gym.Env):
         self._seed()
         self.np_random, seed = seeding.np_random(55)
 
-        if custom_world_fp:
-            self._create_custom_world_from_file(custom_world_fp)
+        if textworld_fp:
+            self._create_textworld_from_file(textworld_fp)
         if random_maze:
             self._create_random_maze(self.x_max, self.y_max)
 
@@ -318,18 +318,18 @@ class GridWorldEnv(gym.Env):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def _create_custom_world_from_file(self, fp):
+    def _create_textworld_from_file(self, fp):
         """
-        Opens file fp and does a little cleaning before sending it to function _create_custom_world_from_text()
+        Opens file fp and does a little cleaning before sending it to function _create_textworld_from_text()
         """
 
         with open(fp, 'r') as f:
             all_lines = [line.rstrip() for line in f.readlines()]
             all_lines = ["".join(line.split()) for line in all_lines if line] # remove empty lines and any whitespace
 
-            self._create_custom_world_from_text(all_lines)
+            self._create_textworld_from_text(all_lines)
 
-    def _create_custom_world_from_text(self, text_world_lines):
+    def _create_textworld_from_text(self, textworld_lines):
         """
         Creates the world from a rectangular text file in the format of:
 
@@ -358,12 +358,12 @@ class GridWorldEnv(gym.Env):
         walls_indices = []
 
         curr_index = 0
-        width_of_grid = len(text_world_lines[0])  # first row length will be width from now on
-        height_of_grid = len(text_world_lines)
-        for y, line in enumerate(text_world_lines):
+        width_of_grid = len(textworld_lines[0])  # first row length will be width from now on
+        height_of_grid = len(textworld_lines)
+        for y, line in enumerate(textworld_lines):
             if line[0] == '-':
                 height_of_grid = y
-                metadata_line_str = text_world_lines[y + 1]
+                metadata_line_str = textworld_lines[y + 1]
                 print('Lever metadata: ', metadata_line_str)
 
                 try:
@@ -421,4 +421,4 @@ class GridWorldEnv(gym.Env):
     def _create_random_maze(self, width, height):
         all_textworld_lines = maze_generation.create_random_maze(width, height)
 
-        self._create_custom_world_from_text(all_textworld_lines)
+        self._create_textworld_from_text(all_textworld_lines)

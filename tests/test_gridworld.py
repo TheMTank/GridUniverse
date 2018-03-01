@@ -112,10 +112,10 @@ class TestGridWorld(unittest.TestCase):
 
     def test_textworld_created_from_text_file(self):
         """
-        Test whether agent can complete the GridWorld created from the text file within map_text_files folder
+        Test whether agent can complete the GridWorld created from the text file within textworld_map_files folder
         """
 
-        env = GridWorldEnv(custom_world_fp='../core/envs/map_text_files/test_env.txt')
+        env = GridWorldEnv(textworld_fp='../core/envs/textworld_map_files/test_env.txt')
         actions_to_take = [2, 2, 2, 2, 2, 2, 2, 1]
         for step_no, action in enumerate(actions_to_take):
             env.render()
@@ -129,11 +129,11 @@ class TestGridWorld(unittest.TestCase):
     def test_lever_textworld_created_from_text_file_with_wrong_and_right_lever_metadata(self):
         """
         Test whether we can complete the GridWorld created from the text file
-        within map_text_files folder. This level contains levers so it also tests that the
+        within textworld_map_files folder. This level contains levers so it also tests that the
         functionality of levers works correctly. If anything changes anywhere, this test will fail.
         """
 
-        env = GridWorldEnv(custom_world_fp='../core/envs/map_text_files/lever_level_2.txt')
+        env = GridWorldEnv(textworld_fp='../core/envs/textworld_map_files/lever_level_2.txt')
         env.render()
 
         # Very particular path to take for agent to go to each lever and finally get to terminal state
@@ -159,7 +159,7 @@ class TestGridWorld(unittest.TestCase):
         Final case tests empty dictionary which should not crash.
         """
 
-        file_path = '../core/envs/map_text_files/test_text_file_with_broken_metadata.txt'
+        file_path = '../core/envs/textworld_map_files/test_text_file_with_broken_metadata.txt'
 
         # Test wrong format of metadata (list) breaks loading
         with self.assertRaises(TypeError):
@@ -170,7 +170,7 @@ class TestGridWorld(unittest.TestCase):
                 file.write('oooT\n')
                 file.write('----\n')
                 file.write('[5]')
-            env = GridWorldEnv(custom_world_fp=file_path)
+            env = GridWorldEnv(textworld_fp=file_path)
 
         # Test totally broken syntax
         with self.assertRaises(TypeError):
@@ -182,7 +182,7 @@ class TestGridWorld(unittest.TestCase):
                 file.write('----\n')
                 file.write('----\n')
                 file.write('{5: {')
-            env = GridWorldEnv(custom_world_fp=file_path)
+            env = GridWorldEnv(textworld_fp=file_path)
 
         # How it should work but empty dictionary. So no crash expected.
         try:
@@ -193,7 +193,7 @@ class TestGridWorld(unittest.TestCase):
                 file.write('oooT\n')
                 file.write('----\n')
                 file.write('{}')
-            env = GridWorldEnv(custom_world_fp=file_path)
+            env = GridWorldEnv(textworld_fp=file_path)
         except:
             self.fail("Should not crash here. Correct map file.")
 
