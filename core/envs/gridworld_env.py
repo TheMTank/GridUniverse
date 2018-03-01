@@ -34,22 +34,8 @@ class GridWorldEnv(gym.Env):
         :param random_maze: optional parameter to randomly generate a maze from the algorithm within maze_generation.py
                             This will override the terminal_goal_states, starting_state, walls and custom_world_fp params
         """
-        # check state space params
-        if terminal_goal_states is not None and not isinstance(terminal_goal_states, list):
-            raise TypeError("terminal_goal_states parameter must be a list of integer indices")
-        if lava_states is not None and not isinstance(lava_states, list):
-            raise TypeError("lava_states parameter must be a list of integer indices")
-        if walls is not None and not isinstance(walls, list):
-            raise TypeError("walls parameter must be a list of integer indices")
-        if lemons is not None and not isinstance(lemons, list):
-            raise TypeError("lemons parameter must be a list of integer indices")
-        if melons is not None and not isinstance(melons, list):
-            raise TypeError("melons parameter must be a list of integer indices")
-        if apples is not None and not isinstance(apples, list):
-            raise TypeError("apples parameter must be a list of integer indices")
-        if not isinstance(grid_shape, tuple) or len(grid_shape) != 2 or not isinstance(grid_shape[0], int):
-            raise TypeError("grid_shape parameter must be tuple of two integers")
-        # todo set each list so no duplicates?
+        self._check_param_types(grid_shape, starting_state, terminal_goal_states,
+                                lava_states, walls, lemons, melons, apples)
         self.x_max = grid_shape[0] # num columns
         self.y_max = grid_shape[1] # num rows
         self.world = self._generate_world()
@@ -130,7 +116,31 @@ class GridWorldEnv(gym.Env):
         if random_maze:
             self._create_random_maze(self.x_max, self.y_max)
 
+        # After every entity has been placed, check collisions
         self._check_specific_collisions()
+
+    def _check_param_types(self, grid_shape, starting_state, terminal_goal_states,
+                                lava_states, walls, lemons, melons, apples):
+        """
+        Check that each parameter is the correct type
+        """
+
+        if not isinstance(grid_shape, tuple) or len(grid_shape) != 2 or not isinstance(grid_shape[0], int):
+            raise TypeError("grid_shape parameter must be tuple of two integers")
+        if not isinstance(starting_state, list) and not isinstance(starting_state, int):
+            raise TypeError("starting_state parameter must be a list or an int")
+        if terminal_goal_states is not None and not isinstance(terminal_goal_states, list):
+            raise TypeError("terminal_goal_states parameter must be a list of integer indices")
+        if lava_states is not None and not isinstance(lava_states, list):
+            raise TypeError("lava_states parameter must be a list of integer indices")
+        if walls is not None and not isinstance(walls, list):
+            raise TypeError("walls parameter must be a list of integer indices")
+        if lemons is not None and not isinstance(lemons, list):
+            raise TypeError("lemons parameter must be a list of integer indices")
+        if melons is not None and not isinstance(melons, list):
+            raise TypeError("melons parameter must be a list of integer indices")
+        if apples is not None and not isinstance(apples, list):
+            raise TypeError("apples parameter must be a list of integer indices")
 
     def _check_specific_collisions(self):
         """
@@ -164,7 +174,6 @@ class GridWorldEnv(gym.Env):
             raise ValueError('Collision between goal state and wall indices. Not allowed.')
 
         all_fruit = set(self.current_apples + self.current_lemons + self.current_melons)
-
         if len(all_fruit) != len(self.current_apples + self.current_lemons + self.current_melons) > 0:
             raise ValueError('Some fruit has been placed on top of another. This is not allowed. \
                                       Check melon, lemon, and apple parameters.')
