@@ -25,13 +25,13 @@ def run_default_gridworld():
 def run_gridworld_from_text_file():
     """
     Run a random agent on an environment tat was save via ascii text file.
-    Check core/envs/maze_text_files for examples or the _create_custom_world_from_text() function within the environment.
+    Check core/envs/map_text_files for examples or the _create_custom_world_from_text() function within the environment.
     """
 
     print('\n' + '*' * 20 + 'Creating a pre-made GridWorld from text file and running random agent on it' + '*' * 20 + '\n')
-    env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/test_env.txt')
-    # env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/maze_21x21.txt')
-    # env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/maze_101x101.txt')
+    env = GridWorldEnv(custom_world_fp='../core/envs/map_text_files/test_env.txt')
+    # env = GridWorldEnv(custom_world_fp='../core/envs/map_text_files/maze_21x21.txt')
+    # env = GridWorldEnv(custom_world_fp='../core/envs/map_text_files/maze_101x101.txt')
     for i_episode in range(1):
         observation = env.reset()
         for t in range(1000):
@@ -91,9 +91,9 @@ def run_lever_gridworld():
                 break
 
 def run_lever_gridworld_from_text_file():
-    # env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/lever_level_1.txt')
-    env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/lever_level_2.txt')
-    # env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/lever_level_3.txt')
+    # env = GridWorldEnv(custom_world_fp='../core/envs/map_text_files/lever_level_1.txt')
+    env = GridWorldEnv(custom_world_fp='../core/envs/map_text_files/lever_level_2.txt')
+    # env = GridWorldEnv(custom_world_fp='../core/envs/map_text_files/lever_level_3.txt')
 
     for i_episode in range(1):
         observation = env.reset()
