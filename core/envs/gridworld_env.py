@@ -160,6 +160,9 @@ class GridWorldEnv(gym.Env):
         if len(set(self.terminal_goal_states) & set(self.wall_indices)) > 0:
             raise ValueError('Collision between goal state and wall indices. Not allowed.')
 
+        if len(set(self.lava_states) & set(self.wall_indices)) > 0:
+            raise ValueError('Collision between goal state and wall indices. Not allowed.')
+
         all_fruit = set(self.current_apples + self.current_lemons + self.current_melons)
 
         if len(all_fruit) != len(self.current_apples + self.current_lemons + self.current_melons) > 0:
