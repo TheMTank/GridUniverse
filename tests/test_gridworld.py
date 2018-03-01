@@ -1,5 +1,7 @@
 import time
+import sys
 import unittest
+import os
 
 from core.envs.gridworld_env import GridWorldEnv
 
@@ -68,7 +70,7 @@ class TestGridWorld(unittest.TestCase):
         print('go ' + env.action_descriptors[action])
 
         env.render()
-        self.assertTrue(observation == 0) # check if in same place
+        self.assertTrue(observation == 0) # check if in same starting place
 
     def test_default_gridworld_completion_in_six_steps(self):
         """
@@ -108,12 +110,12 @@ class TestGridWorld(unittest.TestCase):
                 break
         self.assertTrue((t + 1) == num_actions and done)
 
-    def test_custom_gridworld_from_text_file(self):
+    def test_textworld_created_from_text_file(self):
         """
-        Test whether we can complete the GridWorld created from the text file within maze_text_files folder
+        Test whether agent can complete the GridWorld created from the text file within map_text_files folder
         """
 
-        env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/test_env.txt')
+        env = GridWorldEnv(custom_world_fp='../core/envs/map_text_files/test_env.txt')
         actions_to_take = [2, 2, 2, 2, 2, 2, 2, 1]
         for step_no, action in enumerate(actions_to_take):
             env.render()
@@ -124,14 +126,14 @@ class TestGridWorld(unittest.TestCase):
 
         self.assertTrue((step_no + 1) == len(actions_to_take) and done)
 
-    def test_custom_gridworld_from_text_file_with_lever(self):
+    def test_lever_textworld_created_from_text_file_with_wrong_and_right_lever_metadata(self):
         """
         Test whether we can complete the GridWorld created from the text file
-        within maze_text_files folder. This level contains levers so it also tests that the
+        within map_text_files folder. This level contains levers so it also tests that the
         functionality of levers works correctly. If anything changes anywhere, this test will fail.
         """
 
-        env = GridWorldEnv(custom_world_fp='../core/envs/maze_text_files/lever_level_2.txt')
+        env = GridWorldEnv(custom_world_fp='../core/envs/map_text_files/lever_level_2.txt')
         env.render()
 
         # Very particular path to take for agent to go to each lever and finally get to terminal state
@@ -151,9 +153,56 @@ class TestGridWorld(unittest.TestCase):
 
         self.assertTrue((step_no + 1) == len(actions_to_take) and done)
 
+    def test_lever_textworld_breaks_from_reading_wrong_lever_metadata_from_text_file(self):
+        """
+        Creates temporary file with correct map/grid text but wrong lever metadata (broken python dictionary in text) e.g. "{5: {"
+        Final case tests empty dictionary which should not crash.
+        """
+
+        file_path = '../core/envs/map_text_files/test_text_file_with_broken_metadata.txt'
+
+        # Test wrong format of metadata (list) breaks loading
+        with self.assertRaises(TypeError):
+            with open(file_path, 'w') as file:
+                file.write('oooo\n')
+                file.write('oooo\n')
+                file.write('oooo\n')
+                file.write('oooT\n')
+                file.write('----\n')
+                file.write('[5]')
+            env = GridWorldEnv(custom_world_fp=file_path)
+
+        # Test totally broken syntax
+        with self.assertRaises(TypeError):
+            with open(file_path, 'w') as file:
+                file.write('oooo\n')
+                file.write('oooo\n')
+                file.write('oooo\n')
+                file.write('oooT\n')
+                file.write('----\n')
+                file.write('----\n')
+                file.write('{5: {')
+            env = GridWorldEnv(custom_world_fp=file_path)
+
+        # How it should work but empty dictionary. So no crash expected.
+        try:
+            with open(file_path, 'w') as file:
+                file.write('oooo\n')
+                file.write('oooo\n')
+                file.write('oooo\n')
+                file.write('oooT\n')
+                file.write('----\n')
+                file.write('{}')
+            env = GridWorldEnv(custom_world_fp=file_path)
+        except:
+            self.fail("Should not crash here. Correct map file.")
+
+        # Remove file. Leaving it there would only confuse and clutter.
+        os.remove(file_path)
+
     def test_each_boundary(self):
         """
-        The agent follows a sequence of steps to check each boundary acts as expected (the current
+        On default env, the agent follows a sequence of steps to check each boundary acts as expected (the current
         observation should be the same as the previous if you move into a boundary).
         The agent tries the top-left, top-right and bottom-right corners while avoid the Terminal state.
         The step numbers where the agent ends up in the same state as previously
