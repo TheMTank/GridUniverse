@@ -90,10 +90,23 @@ def run_griduniverse_with_lava():
                 print('Final states reward: ', reward)
                 break
 
+def run_griduniverse_whole_grid_sensor():
+    """
+    Run a random agent on an environment with whole grid sensor observation
+    """
+
+    env = GridUniverseEnv(grid_shape=(53, 11), sensor_mode='whole_grid')
+
+    observation, reward, done, info = env.step(1)
+
+    print(observation)
+
 
 if __name__ == '__main__':
     # Run random agent on environment variations
-    run_default_griduniverse()
-    run_griduniverse_from_text_file()
-    run_random_maze()
-    run_griduniverse_with_lava()
+    # run_default_griduniverse()
+    # run_griduniverse_from_text_file()
+    # run_random_maze()
+    # run_griduniverse_with_lava()
+
+    run_griduniverse_whole_grid_sensor()

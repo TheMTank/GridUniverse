@@ -15,7 +15,7 @@ class GridUniverseEnv(gym.Env):
     metadata = {'render.modes': ['human', 'ansi', 'graphic']}
 
     def __init__(self, grid_shape=(4, 4), *, initial_state=0, goal_states=None, lava_states=None, walls=None,
-                 custom_world_fp=None, random_maze=False):
+                 sensor_mode='current_state_index', custom_world_fp=None, random_maze=False):
         """
         The constructor for creating a GridUniverse environment. The default GridUniverse is a square grid of 4x4 where the
         agent starts in the top left corner and the terminal goal state is in the bottom right corner.
@@ -26,6 +26,7 @@ class GridUniverseEnv(gym.Env):
         :param goal_states: Terminal states with positive reward
         :param lava_states: Terminal states with negative reward
         :param walls: list of walls. These are blocked states where the agent can't enter/walk on
+        :param sensor_mode: todo
         :param custom_world_fp: optional parameter to create the grid from a text file.
         :param random_maze: optional parameter to randomly generate a maze from the algorithm within maze_generation.py
                             This will override the params initial_state, goal_states, lava_states,
@@ -41,6 +42,8 @@ class GridUniverseEnv(gym.Env):
         if not (isinstance(grid_shape, list) or isinstance(grid_shape, tuple)) or len(grid_shape) != 2 \
                 or not isinstance(grid_shape[0], int) or not isinstance(grid_shape[1], int):
             raise TypeError("grid_shape parameter must be tuple/list of two integers")
+
+        # todo sensor_mode check
         self.x_max = grid_shape[0] # num columns
         self.y_max = grid_shape[1] # num rows
         self.world = self._generate_world()
@@ -88,6 +91,9 @@ class GridUniverseEnv(gym.Env):
                 self.reward_matrix[terminal_state] = -10
             except IndexError:
                 raise IndexError("Lava terminal state {} is out of grid bounds or is wrong type. Should be an integer.".format(terminal_state))
+        # sensor_mode check
+        self.sensor_mode = sensor_mode
+
         # self.reward_range = [-inf, inf] # default values already
         self.num_previous_states_to_store = 500
         self.last_n_states = []
@@ -173,6 +179,39 @@ class GridUniverseEnv(gym.Env):
     def is_terminal_goal(self, state):
         return True if state in self.goal_states else False
 
+    def state_idx_to_x_y(self, state_index):
+        """
+        Returns x and y coordinates given state index
+        """
+
+        return self.world[state_index][0], self.world[state_index][1]
+
+    def x_y_to_state_idx(self, x, y):
+        """
+        Returns state index given x and y coordinates
+        """
+
+        return y * self.x_max + x
+
+    def _create_numpy_grid(self):
+        """
+        0: unblocked walkable state with nothing in it
+        1: agent's current location
+        2: wall/blocked state
+        3:
+        4:
+        5:
+        6:
+        7:
+        """
+
+        grid = np.zeros(self.world.shape).reshape((self.x_max, self.y_max))
+
+        print(self.current_state)
+        grid[self.state_idx_to_x_y(self.current_state)] = 1
+
+        return grid
+
     def _step(self, action):
         """
         Moves the agent one step according to the given action.
@@ -182,6 +221,10 @@ class GridUniverseEnv(gym.Env):
         self.last_n_states.append(self.world[self.current_state])
         if len(self.last_n_states) > self.num_previous_states_to_store:
             self.last_n_states.pop(0)
+        if self.sensor_mode == 'whole_grid':
+            whole_grid = self._create_numpy_grid()
+
+            return whole_grid, reward, self.done, self.info
         return self.current_state, reward, self.done, self.info
 
     def _reset(self):
