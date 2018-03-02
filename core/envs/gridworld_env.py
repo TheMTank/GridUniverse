@@ -170,9 +170,11 @@ class GridWorldEnv(gym.Env):
     def get_human_action(self):
         # todo do it with ascii and raw input?
         # todo check 10-30 a second (e.g. in render loop) and then hold outer loop somehow??? Maybe impossible
+        # todo needs to be pyglet viewer
+        # todo can it be done?
 
         # while True:
-        for i in range(10000):
+        for i in range(100000):
             action = self.viewer.check_keys()
             if isinstance(action, int) and action < 4 and action >= 0:
                 return action
