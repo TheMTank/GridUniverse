@@ -86,10 +86,8 @@ def monte_carlo_evaluation(policy, env, every_visit=False, incremental_mean=True
                         value_function[state] += (1 / total_visit_counter[state]) * (
                                                     returns_from_last_episode[state] - value_function[state])
                 else:
-                    """
-                    In non-stationary problems, it can be useful to track a running mean, i.e. forget old episodes.
-                    V(St) ← V(St) + α(Gt − V(St))
-                    """
+                    # In non-stationary problems, it can be useful to track a running mean, i.e. forget old episodes.
+                    # V(St) ← V(St) + α(Gt − V(St))
                     value_function[state] += alpha * (returns_from_last_episode[state] - value_function[state])
 
     if not incremental_mean:

@@ -78,7 +78,7 @@ def run_policy_and_value_iteration():
         curr_state, reward, done, info = env.step(action)
 
         if done:
-            print('Terminal state found in {} steps'.format(t + 1))
+            print('Terminal state reached in {} steps'.format(t + 1))
             env.render(mode='graphic') # must render here to see agent in final state
             time.sleep(6)
             env.close()
