@@ -43,16 +43,7 @@ def recursive_backtracker(width=20, height=20):
     print('Starting Recursive Backtracker maze generation algorithm with grid shape:', shape)
     start = time.time()
     # Build actual maze
-    # Z = np.zeros(shape, dtype=bool)
-
-    # env = GridUniverseEnv(grid_shape=shape)
-    # env.render(mode='graphic') # needs so many changes to get this to work
-    # time.sleep(3)
-
     Z = np.ones(shape, dtype=bool) # begin everything as walls
-    # Fill borders?
-    # Z[0, :] = Z[-1, :] = 1
-    # Z[:, 0] = Z[:, -1] = 1
 
     visited = np.zeros(shape, dtype=bool)
     stack = []
@@ -60,14 +51,12 @@ def recursive_backtracker(width=20, height=20):
     # 1. Make the initial cell the current cell and mark it as visited
     # everything is x, y but indexing is y, x
     current_cell = initial_cell = rand(0, shape[1] - 1), rand(0, shape[0] - 1) # inclusive
-    # print('initial_cell:', initial_cell)
     visited[current_cell[1], current_cell[0]] = True  # must index by y, x
 
     # 2. While there are unvisited cells
     while not visited.all():
         # 1. If the current cell has any neighbours which have not been visited
         x, y = current_cell
-        # print('current_cell:', current_cell)
         options = []
         if x + 2 < width and y < height and not visited[(y, x + 2)]:
             options.append((x + 2, y))
@@ -78,17 +67,14 @@ def recursive_backtracker(width=20, height=20):
         if y - 2 > -1 and x < width and not visited[(y - 2, x)]:
             options.append((x, y - 2))
 
-        # print('Num options:', len(options))
         if len(options) > 0:
             # 1. Choose randomly one of the unvisited neighbours
             random_neighbour = random.choice(options)
-            # print('random_neighbour:', random_neighbour)
             # 2. Push the current cell to the stack
             stack.append(current_cell)
             # 3. Remove the wall between the current cell and the chosen neighbour cell
             neighbour_x, neighbour_y = random_neighbour
             wall_x, wall_y = (neighbour_x + x) // 2, (neighbour_y + y) // 2
-            # print('carving wall: ', wall_x, wall_y)
 
             # Carve current cell, wall and neighbour.
             Z[wall_y, wall_x] = 0
@@ -104,15 +90,12 @@ def recursive_backtracker(width=20, height=20):
             if len(stack) > 0:
                 # 1. Pop a cell from the stack
                 # 2. Make it the current cell
-                # print('popping')
                 current_cell = stack.pop()
             else:
                 break
 
         # for printing out variations
         # time.sleep(0.4)
-        # print(Z.astype(int))
-        # print((visited == True).sum(), visited.size)
     print('Finished creation of maze with Recursive Backtracker maze generation algorithm. '
           'Time taken: {0:.6f}s'.format(time.time() - start))
     return Z
@@ -123,7 +106,6 @@ def create_random_maze(width, height):
     # maze1 = odd_maze(width, height)
     # maze1 = odd_maze(width, height, density=0.1) # for large open areas
     maze1 = recursive_backtracker(width, height)
-    # print(maze1.shape)
 
     all_lines = []
 
@@ -166,14 +148,8 @@ def create_random_maze(width, height):
 
     return all_lines
 
-    # todo can definitely do above better and cleaner
-
+    # todo do above better and cleaner
     # todo fix float error below or not.
-    # pyplot.imshow(maze, cmap=pyplot.cm.binary, interpolation='nearest')
-    # pyplot.imshow(maze, cmap=pyplot.cm.Greys, interpolation='nearest')
-    # pyplot.xticks([]), pyplot.yticks([])
-    # pyplot.show()
-
 
 if __name__ == '__main__':
     # create_random_maze(11, 11)
