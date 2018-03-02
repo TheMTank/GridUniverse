@@ -76,7 +76,7 @@ def run_griduniverse_with_lava():
     Run a random agent on an environment with lava
     """
 
-    print('\n' + '*' * 20 + 'Starting to run random agent on default GridUniverse' + '*' * 20 + '\n')
+    print('\n' + '*' * 20 + 'Starting to run random agent on GridUniverse' + '*' * 20 + '\n')
     env = GridUniverseEnv(grid_shape=(10, 10), lava_states=[4, 14, 24, 34, 44, 54, 64, 74])
     for i_episode in range(5):
         observation = env.reset()
@@ -95,18 +95,28 @@ def run_griduniverse_whole_grid_sensor():
     Run a random agent on an environment with whole grid sensor observation
     """
 
-    env = GridUniverseEnv(grid_shape=(10, 10), sensor_mode='whole_grid1', random_maze=True)
+    print('\n' + '*' * 20 + 'Starting to run random agent on GridUniverse with whole_grid sensor mode' + '*' * 20 + '\n')
 
-    observation, reward, done, info = env.step(1)
+    env = GridUniverseEnv(grid_shape=(10, 15), sensor_mode='whole_grid', random_maze=True)
 
-    print(observation)
+    observation = env.reset()
+    for t in range(100):
+        # env.render(mode='graphic')  # set mode='graphic for pyglet render
+        action = env.action_space.sample()
+        observation, reward, done, info = env.step(action)
+        print(observation) # almost equivalent to env.render but with numbers and transpose
 
+        if done:
+            print("Episode finished after {} timesteps".format(t + 1))
+            print('Final states reward: ', reward)
+            break
+
+    print(observation.shape)
 
 if __name__ == '__main__':
     # Run random agent on environment variations
-    # run_default_griduniverse()
-    # run_griduniverse_from_text_file()
-    # run_random_maze()
-    # run_griduniverse_with_lava()
-
+    run_default_griduniverse()
+    run_griduniverse_from_text_file()
+    run_random_maze()
+    run_griduniverse_with_lava()
     run_griduniverse_whole_grid_sensor()

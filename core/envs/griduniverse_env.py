@@ -47,16 +47,16 @@ class GridUniverseEnv(gym.Env):
         self.possible_sensor_modes = ['current_state_index', 'whole_grid']
         if sensor_mode not in self.possible_sensor_modes:
             raise TypeError("sensor_mode parameter must be one of {}".format(self.possible_sensor_modes))
-        self.x_max = grid_shape[0] # num columns
-        self.y_max = grid_shape[1] # num rows
+        self.num_cols = grid_shape[0] # num columns
+        self.num_rows = grid_shape[1] # num rows
         self.world = self._generate_world()
         # set action space params
         self.action_space = spaces.Discrete(4)
         # main boundary check for edges of map done here.
-        # To get to another row, we subtract or add the width of the grid (self.x_max) since the state is an integer
-        self.action_state_to_next_state = [lambda s: s - self.x_max if self.world[s][1] > 0 else s,                # up
-                                           lambda s: s + 1 if self.world[s][0] < (self.x_max - 1) else s,          # right
-                                           lambda s: s + self.x_max if self.world[s][1] < (self.y_max - 1) else s, # down
+        # To get to another row, we subtract or add the width of the grid (self.num_cols) since the state is an integer
+        self.action_state_to_next_state = [lambda s: s - self.num_cols if self.world[s][1] > 0 else s,                # up
+                                           lambda s: s + 1 if self.world[s][0] < (self.num_cols - 1) else s,          # right
+                                           lambda s: s + self.num_cols if self.world[s][1] < (self.num_rows - 1) else s, # down
                                            lambda s: s - 1 if self.world[s][0] > 0 else s]                         # left
 
         self.action_descriptors = ['UP', 'RIGHT', 'DOWN', 'LEFT']
@@ -113,7 +113,7 @@ class GridUniverseEnv(gym.Env):
         if custom_world_fp:
             self._create_custom_world_from_file(custom_world_fp)
         if random_maze:
-            self._create_random_maze(self.x_max, self.y_max)
+            self._create_random_maze(self.num_cols, self.num_rows)
 
     def _generate_world(self):
         """
@@ -122,8 +122,8 @@ class GridUniverseEnv(gym.Env):
         The states are defined by their index and contain a tuple of uint16 values that represent the
         coordinates (x,y) of a state in the grid.
         """
-        world = np.fromiter(((x, y) for y in np.nditer(np.arange(self.y_max))
-                             for x in np.nditer(np.arange(self.x_max))), dtype='int64, int64')
+        world = np.fromiter(((x, y) for y in np.nditer(np.arange(self.num_rows))
+                             for x in np.nditer(np.arange(self.num_cols))), dtype='int64, int64')
         return world
 
     def _generate_walls(self, walls):
@@ -194,7 +194,7 @@ class GridUniverseEnv(gym.Env):
         Returns state index given x and y coordinates
         """
 
-        return y * self.x_max + x
+        return y * self.num_cols + x
 
     def _create_numpy_grid(self):
         """
@@ -210,7 +210,7 @@ class GridUniverseEnv(gym.Env):
         9: lava terminal state
         """
 
-        grid = np.zeros(self.world.shape).reshape((self.x_max, self.y_max))
+        grid = np.zeros(self.world.shape).reshape((self.num_cols, self.num_rows)) # will look like transpose but it's ok
 
         grid[self.state_idx_to_x_y(self.current_state)] = 1
         for state in self.wall_indices:
@@ -255,8 +255,8 @@ class GridUniverseEnv(gym.Env):
             return
 
         if mode == 'human' or mode == 'ansi':
-            new_world = np.fromiter(('o' for _ in np.nditer(np.arange(self.x_max))
-                                     for _ in np.nditer(np.arange(self.y_max))), dtype='S1')
+            new_world = np.fromiter(('o' for _ in np.nditer(np.arange(self.num_cols))
+                                     for _ in np.nditer(np.arange(self.num_rows))), dtype='S1')
             new_world[self.current_state] = 'x'
             for t_state in self.goal_states:
                 new_world[t_state] = 'G'
@@ -268,7 +268,7 @@ class GridUniverseEnv(gym.Env):
                 new_world[w_state] = '#'
 
             outfile = StringIO() if mode == 'ansi' else sys.stdout
-            for row in np.reshape(new_world, (self.y_max, self.x_max)):
+            for row in np.reshape(new_world, (self.num_rows, self.num_cols)):
                 for state in row:
                     outfile.write((state.decode('UTF-8') + ' '))
                 outfile.write('\n')
@@ -356,8 +356,8 @@ class GridUniverseEnv(gym.Env):
 
         self.reset()
 
-        self.y_max = len(text_world_lines)
-        self.x_max = width_of_grid
+        self.num_rows = len(text_world_lines)
+        self.num_cols = width_of_grid
         self.world = self._generate_world()
 
         self.wall_grid = np.zeros(self.world.shape)

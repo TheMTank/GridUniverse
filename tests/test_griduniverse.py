@@ -46,6 +46,9 @@ class TestGridUniverse(unittest.TestCase):
         with self.assertRaises(TypeError):
             GridUniverseEnv(grid_shape=2)
 
+        with self.assertRaises(TypeError):
+            GridUniverseEnv(sensor_mode='wrong_sensor_mode')
+
     def test_griduniverse_wall_not_trespassed(self):
         """
         Test whether agent is still in the same place after moving into a wall

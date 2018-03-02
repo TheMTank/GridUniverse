@@ -90,11 +90,11 @@ class Viewer(object):
 
         # must accommodate for the bigger dimension but also check smaller dimension so that it fits.
         num_tiles_to_fit_in_width = math.floor(width / self.tile_dim)
-        zoom_level_for_width = (self.env.x_max + self.num_extra_tiles) / num_tiles_to_fit_in_width
+        zoom_level_for_width = (self.env.num_cols + self.num_extra_tiles) / num_tiles_to_fit_in_width
         pixel_width_of_grid = math.floor(zoom_level_for_width * width) # why width?
 
         num_tiles_to_fit_in_height = math.floor(height / self.tile_dim)
-        zoom_level_for_height = (self.env.y_max + self.num_extra_tiles) / num_tiles_to_fit_in_height
+        zoom_level_for_height = (self.env.num_rows + self.num_extra_tiles) / num_tiles_to_fit_in_height
         pixel_height_of_grid = math.floor(zoom_level_for_height * height)
 
         self.zoom_level = np.max((zoom_level_for_width, zoom_level_for_height))
@@ -116,7 +116,7 @@ class Viewer(object):
             self.font_size = 50
 
         # have to flip pixel location. top-left is initial state = x, y = 0, 0 = state 0
-        self.pix_grid_height = (self.env.y_max) * self.tile_dim + (self.num_extra_tiles // 2) * self.tile_dim
+        self.pix_grid_height = (self.env.num_rows) * self.tile_dim + (self.num_extra_tiles // 2) * self.tile_dim
 
         for i, (x, y) in enumerate(self.env.world):
             x_pix_loc, y_pix_loc = self.get_x_y_pix_location(x, y)
