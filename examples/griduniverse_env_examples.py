@@ -113,6 +113,30 @@ def run_griduniverse_whole_grid_sensor():
 
     print(observation.shape)
 
+def run_griduniverse_directional_sensor():
+    """
+    Run a random agent on an environment with whole grid sensor observation
+    """
+
+    print('\n' + ('*' * 20) + 'Starting to run random agent on GridUniverse with directional sensor mode' + ('*' * 20) + '\n')
+
+    env = GridUniverseEnv(grid_shape=(10, 15), sensor_mode='directional', random_maze=True)
+
+    observation = env.reset()
+    for t in range(100):
+        # env.render(mode='graphic')  # set mode='graphic for pyglet render
+        action = env.action_space.sample()
+        observation, reward, done, info = env.step(action)
+        env.render()
+        print(observation)
+
+        if done:
+            print("Episode finished after {} timesteps".format(t + 1))
+            print('Final states reward: ', reward)
+            break
+
+    print(observation.shape)
+
 if __name__ == '__main__':
     # Run random agent on environment variations
     run_default_griduniverse()
@@ -120,3 +144,4 @@ if __name__ == '__main__':
     run_random_maze()
     run_griduniverse_with_lava()
     run_griduniverse_whole_grid_sensor()
+    run_griduniverse_directional_sensor()

@@ -27,7 +27,7 @@ class GridUniverseEnv(gym.Env):
         :param lava_states: Terminal states with negative reward
         :param walls: list of walls. These are blocked states where the agent can't enter/walk on
         :param sensor_mode: choose which type of observation returned by step function. Options are
-                            ['current_state_index', 'whole_grid']
+                            ['current_state_index', 'whole_grid', 'directional']
         :param custom_world_fp: optional parameter to create the grid from a text file.
         :param random_maze: optional parameter to randomly generate a maze from the algorithm within maze_generation.py
                             This will override the params initial_state, goal_states, lava_states,
@@ -44,7 +44,7 @@ class GridUniverseEnv(gym.Env):
                 or not isinstance(grid_shape[0], int) or not isinstance(grid_shape[1], int):
             raise TypeError("grid_shape parameter must be tuple/list of two integers")
 
-        self.possible_sensor_modes = ['current_state_index', 'whole_grid']
+        self.possible_sensor_modes = ['current_state_index', 'whole_grid', 'directional']
         if sensor_mode not in self.possible_sensor_modes:
             raise TypeError("sensor_mode parameter must be one of {}".format(self.possible_sensor_modes))
         self.num_cols = grid_shape[0] # num columns
@@ -196,7 +196,7 @@ class GridUniverseEnv(gym.Env):
 
         return y * self.num_cols + x
 
-    def _create_numpy_grid(self):
+    def _create_numpy_grid_observation(self):
         """
         0: unblocked walkable state with nothing in it
         1: agent's current location
@@ -224,6 +224,64 @@ class GridUniverseEnv(gym.Env):
 
         return grid
 
+    def _create_directional_observation(self):
+        """
+        up, right, down, left
+
+        0: unblocked walkable state with nothing in it
+        1: agent's current location
+        2: wall/blocked state
+        3: door
+        4: lemon
+        5: melon
+        6: apple
+        7: lever
+        8: terminal goal state
+        9: lava terminal state
+        """
+
+        states = []
+
+        def return_entity_in_state_idx(state_index):
+            if state_index == self.current_state:
+                return 1
+            if state_index in self.wall_indices:
+                return 2
+            if state_index in self.goal_states:
+                return 8
+            if state_index in self.lava_states:
+                return 9
+            else:
+                return 0
+
+        curr_x, curr_y = self.state_idx_to_x_y(self.current_state)
+
+        # UP
+        if curr_y - 1 > 0:
+            states.append(return_entity_in_state_idx(self.x_y_to_state_idx(curr_x, curr_y - 1)))
+        else:
+            states.append(1)
+
+        # RIGHT
+        if curr_x + 1 < self.num_cols:
+            states.append(return_entity_in_state_idx(self.x_y_to_state_idx(curr_x + 1, curr_y)))
+        else:
+            states.append(1)
+
+        # DOWN
+        if curr_y + 1 < self.num_rows:
+            states.append(return_entity_in_state_idx(self.x_y_to_state_idx(curr_x, curr_y + 1)))
+        else:
+            states.append(1)
+
+        # LEFT
+        if curr_x - 1 > 0:
+            states.append(return_entity_in_state_idx(self.x_y_to_state_idx(curr_x - 1, curr_y)))
+        else:
+            states.append(1)
+
+        return np.array(states)
+
     def _step(self, action):
         """
         Moves the agent one step according to the given action.
@@ -234,9 +292,12 @@ class GridUniverseEnv(gym.Env):
         if len(self.last_n_states) > self.num_previous_states_to_store:
             self.last_n_states.pop(0)
         if self.sensor_mode == 'whole_grid':
-            whole_grid = self._create_numpy_grid()
-
+            whole_grid = self._create_numpy_grid_observation()
             return whole_grid, reward, self.done, self.info
+        elif self.sensor_mode == 'directional':
+            directional_grid = self._create_directional_observation()
+            return directional_grid, reward, self.done, self.info
+
         return self.current_state, reward, self.done, self.info
 
     def _reset(self):
