@@ -26,7 +26,8 @@ class GridUniverseEnv(gym.Env):
         :param goal_states: Terminal states with positive reward
         :param lava_states: Terminal states with negative reward
         :param walls: list of walls. These are blocked states where the agent can't enter/walk on
-        :param sensor_mode: todo
+        :param sensor_mode: choose which type of observation returned by step function. Options are
+                            ['current_state_index', 'whole_grid']
         :param custom_world_fp: optional parameter to create the grid from a text file.
         :param random_maze: optional parameter to randomly generate a maze from the algorithm within maze_generation.py
                             This will override the params initial_state, goal_states, lava_states,
@@ -43,7 +44,9 @@ class GridUniverseEnv(gym.Env):
                 or not isinstance(grid_shape[0], int) or not isinstance(grid_shape[1], int):
             raise TypeError("grid_shape parameter must be tuple/list of two integers")
 
-        # todo sensor_mode check
+        self.possible_sensor_modes = ['current_state_index', 'whole_grid']
+        if sensor_mode not in self.possible_sensor_modes:
+            raise TypeError("sensor_mode parameter must be one of {}".format(self.possible_sensor_modes))
         self.x_max = grid_shape[0] # num columns
         self.y_max = grid_shape[1] # num rows
         self.world = self._generate_world()
@@ -198,17 +201,26 @@ class GridUniverseEnv(gym.Env):
         0: unblocked walkable state with nothing in it
         1: agent's current location
         2: wall/blocked state
-        3:
-        4:
-        5:
-        6:
-        7:
+        3: door
+        4: lemon
+        5: melon
+        6: apple
+        7: lever
+        8: terminal goal state
+        9: lava terminal state
         """
 
         grid = np.zeros(self.world.shape).reshape((self.x_max, self.y_max))
 
-        print(self.current_state)
         grid[self.state_idx_to_x_y(self.current_state)] = 1
+        for state in self.wall_indices:
+            grid[self.state_idx_to_x_y(state)] = 2
+
+        for state in self.goal_states:
+            grid[self.state_idx_to_x_y(state)] = 8
+
+        for state in self.lava_states:
+            grid[self.state_idx_to_x_y(state)] = 9
 
         return grid
 

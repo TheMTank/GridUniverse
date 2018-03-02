@@ -95,7 +95,7 @@ def run_griduniverse_whole_grid_sensor():
     Run a random agent on an environment with whole grid sensor observation
     """
 
-    env = GridUniverseEnv(grid_shape=(53, 11), sensor_mode='whole_grid')
+    env = GridUniverseEnv(grid_shape=(10, 10), sensor_mode='whole_grid1', random_maze=True)
 
     observation, reward, done, info = env.step(1)
 
