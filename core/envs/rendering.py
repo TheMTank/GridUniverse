@@ -67,9 +67,12 @@ class Viewer(object):
         self.terminal_goal_img = pyglet.resource.image('wbs_texture_05_resized_green.jpg')
         self.terminal_lava_img = pyglet.resource.image('wbs_texture_05_resized_red.jpg')
         self.wall_img = pyglet.resource.image('wbs_texture_05_resized_wall.jpg')
-        self.apple_img = pyglet.resource.image('apple-01-resized.png')
-        self.lemon_img = pyglet.resource.image('lemon-resized.png')
-        self.melon_img = pyglet.resource.image('melon-resized.png')
+        # self.apple_img = pyglet.resource.image('apple-01-resized.png')
+        self.apple_img = pyglet.resource.image('apple_cartoon.png')
+        # self.lemon_img = pyglet.resource.image('lemon-resized.png')
+        self.lemon_img = pyglet.resource.image('lemon_cartoon.png')
+        # self.melon_img = pyglet.resource.image('melon-resized.png')
+        self.melon_img = pyglet.resource.image('melon_cartoon.png')
 
         self.padding = 1
         self.tile_dim = self.ground_img.width + self.padding
