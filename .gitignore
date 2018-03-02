@@ -1,0 +1,8 @@
+
+\.idea/
+
+*.pyc
+
+*.xml
+
+*.iml

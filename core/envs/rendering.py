@@ -4,6 +4,7 @@ import os
 import math
 import time
 import random
+import warnings
 
 import pyglet
 
@@ -46,6 +47,7 @@ class Viewer(object):
         self.height = height
         self.window = pyglet.window.Window(width=width, height=height, display=display, resizable=True) # todo resizable remove or keep
         self.window.on_close = self.window_closed_by_user
+        self.is_closed = False
         self.FPS = 0
 
         script_dir = os.path.dirname(__file__)
@@ -65,7 +67,7 @@ class Viewer(object):
             self.face_img = self.shocked_face
         self.ground_img = pyglet.resource.image('wbs_texture_05_resized.jpg')
         self.terminal_goal_img = pyglet.resource.image('wbs_texture_05_resized_green.jpg')
-        self.terminal_lava_img = pyglet.resource.image('wbs_texture_05_resized_red.jpg')
+        self.terminal_lava_img = pyglet.resource.image('lava-resized.jpg')
         self.wall_img = pyglet.resource.image('wbs_texture_05_resized_wall.jpg')
         # self.apple_img = pyglet.resource.image('apple-01-resized.png')
         # self.apple_img = pyglet.resource.image('apple_cartoon.png')
@@ -123,12 +125,6 @@ class Viewer(object):
         else:
             self.font_size = 50
 
-        print('zoom_level_for_width: {}, zoom_level_for_height: {}, zoom_level: {}'.format(round(zoom_level_for_width, 4), round(zoom_level_for_height, 4), round(self.zoom_level)))
-        print('pixel_width_of_grid: {}, pixel_height_of_grid: {}'.format(pixel_width_of_grid, pixel_height_of_grid))
-        print('x_distance_to_move:', self.x_distance_to_move)
-        print('tile_dim: {}. grid_shape: {}'.format(self.tile_dim, [self.env.x_max, self.env.y_max]))
-        print('width: {}, height: {}, zoomed_width: {}, zoomed_height: {}'.format(width, height, round(self.zoomed_width, 2), round(self.zoomed_height, 2)))
-
         # have to flip pixel location. top-left is initial state = x, y = 0, 0 = state 0
         self.pix_grid_height = self.env.y_max * self.tile_dim + (self.num_extra_tiles // 2) * self.tile_dim
 
@@ -173,15 +169,6 @@ class Viewer(object):
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-        # cart = make_circle(500)
-        # cart.set_color(255, 0, 0)
-        # self.carttrans = Transform()
-        # cart.add_attr(self.carttrans)
-        # self.add_geom(cart)
-
-        # self.line = Line((0, 0), (500, 500))
-        # self.add_geom(self.line)
-
     def change_face_sprite(self):
         if self.face_img is self.awesome_face:
             self.face_img = self.shocked_face
@@ -195,9 +182,8 @@ class Viewer(object):
         return int(x_pix_loc), int(y_pix_loc)
 
     def render_policy_arrows(self, policy):
-        # todo show policy probabilities as well/value function
         # remove all previous arrows and recalculate
-        self.geoms = [] # todo only remove arrows
+        self.geoms = [] # todo make sure to only remove arrows
 
         for state_index, (x, y) in enumerate(self.env.world):
             x_pix_loc, y_pix_loc = self.get_x_y_pix_location(x, y)
@@ -254,6 +240,7 @@ class Viewer(object):
         self.window.close()
 
     def window_closed_by_user(self):
+        self.is_closed = True
         self.close()
 
     def set_bounds(self, left, right, bottom, top):
@@ -272,8 +259,10 @@ class Viewer(object):
 
     # def render(self, return_rgb_array=False):
     def render(self, return_rgb_array=False):
+        if self.is_closed:
+            return
+
         start_time = time.time()
-        # todo if close don't crash
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
 
@@ -351,7 +340,11 @@ class Viewer(object):
             glVertex2i(x_pix_loc, y_pix_loc + self.tile_dim)
         glEnd()
 
-        glPopMatrix()
+        try:
+            glPopMatrix()
+        except GLException as e:
+            warning_message = 'Tried glPopMatrix() after closing window, failed with Exception: {}'.format(e)
+            warnings.warn(warning_message, UserWarning)
 
         arr = None
         if return_rgb_array:

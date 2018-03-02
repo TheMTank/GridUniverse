@@ -11,30 +11,31 @@ from gym.utils import seeding
 from core.envs import config
 from core.envs import maze_generation
 
-class GridWorldEnv(gym.Env):
+
+class GridUniverseEnv(gym.Env):
     metadata = {'render.modes': ['human', 'ansi', 'graphic']}
 
-    def __init__(self, grid_shape=(4, 4), starting_state=0, terminal_goal_states=None, lava_states=None, walls=None,
+    def __init__(self, grid_shape=(4, 4), *, initial_state=0, goal_states=None, lava_states=None, walls=None,
                  lemons=None, melons=None, apples=None, custom_world_fp=None, random_maze=False):
         """
-        Main constructor to create a GridWorld environment. The default GridWorld is a square grid of 4x4 where the
-        agent starts at the top left corner and the terminal state is at the bottom right corner.
+        The constructor for creating a GridUniverse environment. The default GridUniverse is a square grid of 4x4 where the
+        agent starts in the top left corner and the terminal goal state is in the bottom right corner.
 
         :param grid_shape: Tuple of size 2 to specify (width, height) of grid
-        :param starting_state: int for single initial state or list of possible states chosen uniform randomly
-        :param terminal_goal_states: list of terminal goal states. If agent walks into, done = True,
-                                and no actions are possible. Positive reward.
-        :param lava_states: like terminal_goal_states (episode ends if agent reaches one of them),
-                            but agent receives negative reward
-        :param walls: list of walls. These are blocked states where the agent can't walk
+        :param initial_state: int for single initial state or list of possible states chosen uniform randomly
+        "Terminal states". The episode ends if the agent reaches this type of state (done = True).
+        :param goal_states: Terminal states with positive reward
+        :param lava_states: Terminal states with negative reward
+        :param walls: list of walls. These are blocked states where the agent can't enter/walk on
         :param lemons: If agent lands on a state containing a lemon: small negative reward
         :param melons: If agent lands on a state containing a melon: large reward
         :param apples: If agent lands on a state containing an apple: small reward
         :param custom_world_fp: optional parameter to create the grid from a text file.
         :param random_maze: optional parameter to randomly generate a maze from the algorithm within maze_generation.py
-                            This will override the terminal_goal_states, starting_state, walls and custom_world_fp params
+                            This will override the params initial_state, goal_states, lava_states,
+                            walls and custom_world_fp params
         """
-        self._check_param_types(grid_shape, starting_state, terminal_goal_states,
+        self._check_param_types(grid_shape, initial_state, goal_states,
                                 lava_states, walls, lemons, melons, apples)
         self.x_max = grid_shape[0] # num columns
         self.y_max = grid_shape[1] # num rows
@@ -52,19 +53,16 @@ class GridWorldEnv(gym.Env):
         self.action_descriptor_to_int = {desc: idx for idx, desc in enumerate(self.action_descriptors)}
         # set observed params: [current state, world state]
         self.observation_space = spaces.Discrete(self.world.size)
-        # set initial state for the agent. If starting_state is a list, choose randomly
-        if isinstance(starting_state, int):
-            starting_state = [starting_state] # convert to list
-        self.starting_states = starting_state
-        self.previous_state = self.current_state = self.starting_state = random.choice(self.starting_states)
+        # set initial state for the agent. If initial_state is a list, choose randomly
+        if isinstance(initial_state, int):
+            initial_state = [initial_state] # convert to list
+        self.initial_states = initial_state
+        self.previous_state = self.current_state = self.initial_state = random.choice(self.initial_states)
         # set terminal goal states state(s) and default terminal state if None given
-        if terminal_goal_states is None or len(terminal_goal_states) == 0:
-            self.terminal_goal_states = [self.world.size - 1]
+        if goal_states is None or len(goal_states) == 0:
+            self.goal_states = [self.world.size - 1]
         else:
-            self.terminal_goal_states = terminal_goal_states
-        for t_s in self.terminal_goal_states:
-            if t_s < 0 or t_s > (self.world.size - 1):
-                raise ValueError("Terminal goal state {} is out of grid bounds".format(t_s))
+            self.goal_states = goal_states
         # set lava terminal states
         if lava_states is None:
             self.lava_states = []
@@ -98,6 +96,16 @@ class GridWorldEnv(gym.Env):
         self.MOVEMENT_REWARD = config.default_rewards['MOVEMENT_REWARD']
         self.reward_matrix = np.full(self.world.shape, self.MOVEMENT_REWARD)
         self._generate_reward_matrix()
+        for terminal_state in self.goal_states:
+            try:
+                self.reward_matrix[terminal_state] = 10
+            except IndexError:
+                raise IndexError("Terminal goal state {} is out of grid bounds or is wrong type. Should be an integer.".format(terminal_state))
+        for terminal_state in self.lava_states:
+            try:
+                self.reward_matrix[terminal_state] = -10
+            except IndexError:
+                raise IndexError("Lava terminal state {} is out of grid bounds or is wrong type. Should be an integer.".format(terminal_state))
         # self.reward_range = [-inf, inf] # default values already
         self.num_previous_states_to_store = 500
         self.last_n_states = []
@@ -119,7 +127,7 @@ class GridWorldEnv(gym.Env):
         # After every entity has been placed, check collisions
         self._check_specific_collisions()
 
-    def _check_param_types(self, grid_shape, starting_state, terminal_goal_states,
+    def _check_param_types(self, grid_shape, initial_state, goal_states,
                                 lava_states, walls, lemons, melons, apples):
         """
         Check that each parameter is the correct type
@@ -127,10 +135,10 @@ class GridWorldEnv(gym.Env):
 
         if not isinstance(grid_shape, tuple) or len(grid_shape) != 2 or not isinstance(grid_shape[0], int):
             raise TypeError("grid_shape parameter must be tuple of two integers")
-        if not isinstance(starting_state, list) and not isinstance(starting_state, int):
-            raise TypeError("starting_state parameter must be a list or an int")
-        if terminal_goal_states is not None and not isinstance(terminal_goal_states, list):
-            raise TypeError("terminal_goal_states parameter must be a list of integer indices")
+        if not isinstance(initial_state, list) and not isinstance(initial_state, int):
+            raise TypeError("initial_state parameter must be a list or an int")
+        if goal_states is not None and not isinstance(goal_states, list):
+            raise TypeError("goal_states parameter must be a list of integer indices")
         if lava_states is not None and not isinstance(lava_states, list):
             raise TypeError("lava_states parameter must be a list of integer indices")
         if walls is not None and not isinstance(walls, list):
@@ -156,18 +164,18 @@ class GridWorldEnv(gym.Env):
             raise ValueError('Duplicate melons not allowed')
         if len(self.wall_indices) != len(set(self.wall_indices)):
             raise ValueError('Duplicate walls not allowed')
-        if len(self.starting_states) != len(set(self.starting_states)):
+        if len(self.initial_states) != len(set(self.initial_states)):
             raise ValueError('Duplicate starting states not allowed')
-        if len(self.terminal_goal_states) != len(set(self.terminal_goal_states)):
+        if len(self.goal_states) != len(set(self.goal_states)):
             raise ValueError('Duplicate goal states not allowed')
         if len(self.lava_states) != len(set(self.lava_states)):
             raise ValueError('Duplicate lava states not allowed')
 
         # Test that starting states, wall indices, terminal states don't collide
-        if len(set(self.starting_states) & set(self.wall_indices)) > 0:
+        if len(set(self.initial_states) & set(self.wall_indices)) > 0:
             raise ValueError('Collision between starting states and wall indices. Not allowed.')
 
-        if len(set(self.terminal_goal_states) & set(self.wall_indices)) > 0:
+        if len(set(self.goal_states) & set(self.wall_indices)) > 0:
             raise ValueError('Collision between goal state and wall indices. Not allowed.')
 
         if len(set(self.lava_states) & set(self.wall_indices)) > 0:
@@ -184,7 +192,7 @@ class GridWorldEnv(gym.Env):
 
     def _generate_world(self):
         """
-        Creates and returns the gridworld map as a numpy array.
+        Creates and returns the griduniverse map as a numpy array.
 
         The states are defined by their index and contain a tuple of uint16 values that represent the
         coordinates (x,y) of a state in the grid.
@@ -213,7 +221,7 @@ class GridWorldEnv(gym.Env):
         """
         Set reward matrix accordingly between non-terminal and terminal states.
         apples, lemons and melons (small positive, small negative, large positive respectively)
-        Terminal states: terminal_goal_states and lava_states
+        Terminal states: goal_states and lava_states
         Every walkable state (except terminal states) you lose -1 (self.MOVEMENT_REWARD)
         so if there is fruit you gain the fruit's reward added to -1 self.MOVEMENT_REWARD.
         """
@@ -225,7 +233,7 @@ class GridWorldEnv(gym.Env):
         for state in self.current_melons:
             self.reward_matrix[state] += self.MELON_REWARD
         # terminal states override melons, lemons and apples. Also no immediate reward obtained within them.
-        for terminal_state in self.terminal_goal_states:
+        for terminal_state in self.goal_states:
             self.reward_matrix[terminal_state] = self.TERMINAL_GOAL_REWARD
         for terminal_state in self.lava_states:
             self.reward_matrix[terminal_state] = self.LAVA_REWARD
@@ -294,30 +302,20 @@ class GridWorldEnv(gym.Env):
         """
         Checks if a given state is a wall or any other element that shall not be trespassed.
         """
-        if self.wall_grid[state] == 1:
-            return True
-        return False
+        return True if self.wall_grid[state] == 1 else False
 
     def is_terminal(self, state):
         """
         Check if the input state is terminal.
         Which can either be a lava (negative reward) or goal state (positive reward)
         """
-        if self.is_lava(state):
-            return True
-        if self.is_terminal_goal(state):
-            return True
-        return False
+        return True if self.is_lava(state) or self.is_terminal_goal(state) else False
 
     def is_lava(self, state):
-        if state in self.lava_states:
-            return True
-        return False
+        return True if state in self.lava_states else False
 
     def is_terminal_goal(self, state):
-        if state in self.terminal_goal_states:
-            return True
-        return False
+        return True if state in self.goal_states else False
 
     def _step(self, action):
         """
@@ -325,8 +323,6 @@ class GridWorldEnv(gym.Env):
         """
         self.previous_state = self.current_state
         self.current_state, reward, self.done = self.look_step_ahead(self.current_state, action)
-        # if done: # todo
-        #     env.render(mode='graphic')
         self.last_n_states.append(self.world[self.current_state])
         if len(self.last_n_states) > self.num_previous_states_to_store:
             self.last_n_states.pop(0)
@@ -334,7 +330,7 @@ class GridWorldEnv(gym.Env):
 
     def _reset(self):
         self.done = False
-        self.previous_state = self.current_state = self.starting_state = random.choice(self.starting_states)
+        self.previous_state = self.current_state = self.initial_state = random.choice(self.initial_states)
         self.last_n_states = []
         self.current_lemons = self.lemons[:]
         self.current_apples = self.apples[:]
@@ -351,23 +347,29 @@ class GridWorldEnv(gym.Env):
         return self.current_state
 
     def _render(self, mode='human', close=False):
-        new_world = np.fromiter(('o' for _ in np.nditer(np.arange(self.x_max))
-                                 for _ in np.nditer(np.arange(self.y_max))), dtype='S1')
-        new_world[self.current_state] = 'x'
-        for t_state in self.terminal_goal_states:
-            new_world[t_state] = 'G'
-        for t_state in self.lava_states:
-            new_world[t_state] = 'L'
-        for w_state in self.wall_indices:
-            new_world[w_state] = '#'
-        for m_state in self.current_melons:
-            new_world[m_state] = 'm'
-        for l_state in self.current_lemons:
-            new_world[l_state] = 'l'
-        for a_state in self.current_apples:
-            new_world[a_state] = 'a'
+        if close:
+            if self.viewer is not None:
+                self.viewer.close()
+                self.viewer = None
+            return
 
         if mode == 'human' or mode == 'ansi':
+            new_world = np.fromiter(('o' for _ in np.nditer(np.arange(self.x_max))
+                                     for _ in np.nditer(np.arange(self.y_max))), dtype='S1')
+            new_world[self.current_state] = 'x'
+            for t_state in self.goal_states:
+                new_world[t_state] = 'G'
+            for t_state in self.lava_states:
+                new_world[t_state] = 'L'
+            for w_state in self.wall_indices:
+                new_world[w_state] = '#'
+            for m_state in self.current_melons:
+                new_world[m_state] = 'm'
+            for l_state in self.current_lemons:
+                new_world[l_state] = 'l'
+            for a_state in self.current_apples:
+                new_world[a_state] = 'a'
+
             outfile = StringIO() if mode == 'ansi' else sys.stdout
             for row in np.reshape(new_world, (self.y_max, self.x_max)):
                 for state in row:
@@ -377,19 +379,13 @@ class GridWorldEnv(gym.Env):
             return outfile
 
         elif mode == 'graphic':
-            if close: # code needed for pressing x on window to close
-                if self.viewer is not None:
-                    self.viewer.close()
-                    self.viewer = None
-                return
-
             if self.viewer is None:
                 from core.envs import rendering
                 self.viewer = rendering.Viewer(self, self.screen_width, self.screen_height)
 
             return self.viewer.render(return_rgb_array=mode == 'rgb_array')
         else:
-            super(GridWorldEnv, self).render(mode=mode)
+            super(GridUniverseEnv, self).render(mode=mode)
 
     def render_policy_arrows(self, policy):
         if self.viewer is None:
@@ -432,9 +428,10 @@ class GridWorldEnv(gym.Env):
          "x" is a possible starting location. Chosen uniform randomly if multiple "x"s.
         """
 
-        self.terminal_goal_states = []
+        self.goal_states = []
+        self.initial_states = []
         self.lava_states = []
-        self.starting_states = []
+        self.initial_states = []
         self.lemons = []
         self.apples = []
         self.melons = []
@@ -448,7 +445,7 @@ class GridWorldEnv(gym.Env):
 
             for char in line:
                 if char == 'G':
-                    self.terminal_goal_states.append(curr_index)
+                    self.goal_states.append(curr_index)
                 elif char == 'L':
                     self.lava_states.append(curr_index)
                 elif char == 'l':
@@ -462,15 +459,15 @@ class GridWorldEnv(gym.Env):
                 elif char == '#':
                     walls_indices.append(curr_index)
                 elif char == 'x':
-                    self.starting_states.append(curr_index)
+                    self.initial_states.append(curr_index)
                 else:
                     raise ValueError('Invalid Character "{}". Returning'.format(char))
 
                 curr_index += 1
 
-        if len(self.starting_states) == 0:
+        if len(self.initial_states) == 0:
             raise ValueError("No starting states set in text file. Place \"x\" within grid. ")
-        if len(self.terminal_goal_states) == 0:
+        if len(self.goal_states) == 0:
             raise ValueError("No terminal goal states set in text file. Place \"T\" within grid. ")
 
         self.y_max = len(text_world_lines)
