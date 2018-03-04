@@ -245,34 +245,28 @@ class GridUniverseEnv(gym.Env):
 
         if collect:
             reward = self.reward_matrix[next_state]
-            # todo fruit function
-            if next_state in self.current_lemons:
-                print('Collecting lemon at:', next_state)
-                next_state_index = self.lemons.index(next_state)
-                reward = self.reward_matrix[next_state]
-                self.reward_matrix[next_state] = self.MOVEMENT_REWARD
-                self.current_lemons.remove(next_state)
+            if next_state in self.current_lemons or next_state in self.current_apples or next_state in self.current_melons:
+                print('Collecting fruit at: {} with reward: {}'.format(next_state, reward))
+                if next_state in self.current_lemons:
+                    next_state_index = self.lemons.index(next_state)
+                    self.current_lemons.remove(next_state)
 
-                if self.viewer:
-                    self.viewer.lemon_sprites[next_state_index].visible = False
-            elif next_state in self.current_apples:
-                print('Collecting apple at:', next_state)
-                next_state_index = self.apples.index(next_state)
-                reward = self.reward_matrix[next_state]
-                self.reward_matrix[next_state] = self.MOVEMENT_REWARD
-                self.current_apples.remove(next_state)
+                    if self.viewer:
+                        self.viewer.lemon_sprites[next_state_index].visible = False
+                elif next_state in self.current_apples:
+                    next_state_index = self.apples.index(next_state)
+                    self.current_apples.remove(next_state)
 
-                if self.viewer:
-                    self.viewer.apple_sprites[next_state_index].visible = False
-            elif next_state in self.current_melons:
-                print('Collecting melon at:', next_state)
-                next_state_index = self.melons.index(next_state)
-                reward = self.reward_matrix[next_state]
-                self.reward_matrix[next_state] = self.MOVEMENT_REWARD
-                self.current_melons.remove(next_state)
+                    if self.viewer:
+                        self.viewer.apple_sprites[next_state_index].visible = False
+                elif next_state in self.current_melons:
+                    next_state_index = self.melons.index(next_state)
+                    self.current_melons.remove(next_state)
 
-                if self.viewer:
-                    self.viewer.melon_sprites[next_state_index].visible = False
+                    if self.viewer:
+                        self.viewer.melon_sprites[next_state_index].visible = False
+
+                self.reward_matrix[next_state] = self.MOVEMENT_REWARD
             return reward
         else:
             return self.reward_matrix[next_state]
