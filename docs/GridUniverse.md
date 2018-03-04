@@ -39,6 +39,14 @@ Other options include where to place walls (un-walkable blocked areas):
 
 `env = GridUniverseEnv(walls=[7, 8, 10])`
 
+You can place certain types of fruit in different locations (no overlap allowed). 
+The default rewards for each are (can be changed in the core/envs/config.py file):
+lemons: -2
+melons: 10
+apples: 2
+
+`env = GridUniverseEnv(apples=[1, 2], melons=[3, 4], lemons=[5, 6])`
+
 ## The main interface: env.step()
 
 To sample a random action from the action_space:
