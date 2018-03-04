@@ -224,6 +224,15 @@ class GridUniverseEnv(gym.Env):
 
         return grid
 
+    def get_observation(self):
+        """
+        Returns the specific observation type depending on the current sensor_mode
+        """
+
+        if self.sensor_mode == 'whole_grid':
+            return self._create_numpy_grid()
+        return self.current_state
+
     def _step(self, action):
         """
         Moves the agent one step according to the given action.
@@ -233,11 +242,7 @@ class GridUniverseEnv(gym.Env):
         self.last_n_states.append(self.world[self.current_state])
         if len(self.last_n_states) > self.num_previous_states_to_store:
             self.last_n_states.pop(0)
-        if self.sensor_mode == 'whole_grid':
-            whole_grid = self._create_numpy_grid()
-
-            return whole_grid, reward, self.done, self.info
-        return self.current_state, reward, self.done, self.info
+        return self.get_observation(), reward, self.done, self.info
 
     def _reset(self):
         self.done = False
@@ -245,7 +250,7 @@ class GridUniverseEnv(gym.Env):
         self.last_n_states = []
         if self.viewer:
             self.viewer.change_face_sprite()
-        return self.current_state
+        return self.get_observation()
 
     def _render(self, mode='human', close=False):
         if close:
