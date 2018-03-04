@@ -47,6 +47,8 @@ apples: 2
 
 `env = GridUniverseEnv(apples=[1, 2], melons=[3, 4], lemons=[5, 6])`
 
+To see another example with fruit check the `run_griduniverse_filled_with_fruit()` function within griduniverse_env_examples.py
+
 ## The main interface: env.step()
 
 To sample a random action from the action_space:

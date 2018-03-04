@@ -1,4 +1,5 @@
 import time
+import random
 
 from core.envs.griduniverse_env import GridUniverseEnv
 
@@ -90,44 +91,46 @@ def run_griduniverse_with_lava():
                 print('Final states reward: ', reward)
                 break
 
-def run_griduniverse_with_fruit():
+def run_griduniverse_filled_with_fruit(grid_shape=(30, 30), fill_mode_random=True):
     """
     Run a random agent on an environment with fruit. Fill whole grid with fruit.
+
+    :param world_shape: the shape of the
+    :param fill_mode_random: if True the type of fruit is placed randomly on the grid.
+                             If False, it is placed in grids,
     """
 
     print('\n' + '*' * 20 + 'Starting to run random agent on GridWorld with fruit' + '*' * 20 + '\n')
-    #env = GridWorldEnv(grid_shape=(10, 10), apples=[4, 14, 24, 34, 44, 54, 64, 74])
-    # env = GridWorldEnv(grid_shape=(10, 10), apples=[i for i in range(100)])
+    world_size = grid_shape[0] * grid_shape[1]
 
-    world_shape = (10, 10)
-    # world_shape = (30, 30)
-    # world_shape = (100, 100)
-    world_size = world_shape[0] * world_shape[1]
+    num_of_each_fruit = world_size // 3
 
-    #todo random fill no replacement
-    apples = [i for i in range(world_size // 3)]
-    lemons = [i for i in range(world_size // 3, int(2 * world_size // 3))]
-    melons = [i for i in range(int(2 * world_size // 3), world_size)]
+    if fill_mode_random:
+        all_indices = list(range(0, world_size))
+        apples = [all_indices.pop(random.randrange(len(all_indices))) for _ in range(num_of_each_fruit)]
+        lemons = [all_indices.pop(random.randrange(len(all_indices))) for _ in range(num_of_each_fruit)]
+        melons = [all_indices.pop(random.randrange(len(all_indices))) for _ in range(num_of_each_fruit)]
+    else:
+        apples = [i for i in range(world_size // 3)]
+        lemons = [i for i in range(world_size // 3, int(2 * world_size // 3))]
+        melons = [i for i in range(int(2 * world_size // 3), world_size)]
 
-    # first_time = True
-
-    # env = GridWorldEnv(grid_shape=world_shape, apples=[5, 4, 3], melons=[10, 15, 22], lemons=[55, 33, 22])
-    env = GridUniverseEnv(grid_shape=world_shape, apples=apples, melons=melons, lemons=lemons)
-    string_actions_to_take = (['DOWN'] * world_shape[1] + ['RIGHT'] + ['UP'] * world_shape[1] + ['RIGHT']) * world_shape[1]
+    env = GridUniverseEnv(grid_shape=grid_shape, initial_state=world_size//2 + grid_shape[0],apples=apples, melons=melons, lemons=lemons)
+    string_actions_to_take = (['DOWN'] * grid_shape[1] + ['RIGHT'] + ['UP'] * grid_shape[1] + ['RIGHT']) * grid_shape[1]
 
     actions_to_take = [env.action_descriptor_to_int[action_desc] for action_desc in string_actions_to_take]
+    first_time = True
     for i_episode in range(5):
         observation = env.reset()
         # for t in range(1000):
         for t, action in enumerate(actions_to_take):
             env.render(mode='graphic')  # set mode='graphic for pyglet render
 
-            # if first_time:
-            #     first_time = False
-            #     time.sleep(7)
-            # action = env.action_space.sample()
+            if first_time:
+                first_time = False
+                # time.sleep(5) # for preparing video software
+            action = env.action_space.sample()
             observation, reward, done, info = env.step(action)
-            # time.sleep(1)
             if done:
                 print("Episode finished after {} timesteps".format(t + 1))
                 print('Final states reward: ', reward)
@@ -138,5 +141,5 @@ if __name__ == '__main__':
     run_default_griduniverse()
     run_griduniverse_from_text_file()
     run_random_maze()
-    run_griduniverse_with_fruit()
+    run_griduniverse_filled_with_fruit()  # fill_mode_random=False if you want different fruit to be placed in order
     run_griduniverse_with_lava()
