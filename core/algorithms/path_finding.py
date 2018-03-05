@@ -8,6 +8,10 @@ from queue import Queue
 from core.envs.griduniverse_env import GridUniverseEnv
 
 
+# vertex_visited = {} # needed for DFS?
+# global_stack = []
+# global_found = False
+
 def depth_first_search_recursive(graph, state):
     vertex_visited[state] = 1
 
@@ -55,8 +59,11 @@ def calculate_action(parent_state, next_state):
 
 
 def breadth_first_search(graph, start_state):
+    """
+    Breadth First Search checks depth of graph 1 level at a time
+    """
+
     # a FIFO open_set
-    # open_set = Queue()
     open_set = []  # list queue
     # an empty set to maintain visited nodes
     closed_set = set()
@@ -64,28 +71,21 @@ def breadth_first_search(graph, start_state):
     meta = dict()  # key -> (parent state, action to reach child)
 
     # initialize
-    # start = problem.get_start_state()
     meta[start_state] = (None, None)  # todo rename to pathways?
-    # open_set.enqueue(start)
-    # open_set.put(start)
     open_set.append(start_state)
 
-    # while not open_set.is_empty():
-    # while not open_set.empty():
     while len(open_set) > 0:
-        # parent_state = open_set.dequeue()
-        # parent_state = open_set.get()
         parent_state = open_set.pop(0)
 
         print('Parent State: {}, edges: {}'.format(parent_state, graph[parent_state]))
         # print(meta)
-        # if problem.is_goal(parent_state):
         if env.is_terminal(parent_state):
             print('Calling construct_path. meta:', meta)
             return construct_path(parent_state, meta)
         # print('Within while: ', graph[parent_state])
 
-        # for (child_state, action) in graph[parent_state]: #problem.get_successors(parent_state):
+        # todo check if path to goal is possible
+
         for child_state in graph[parent_state]:
             if child_state in closed_set:
                 continue
@@ -93,19 +93,18 @@ def breadth_first_search(graph, start_state):
             if child_state not in open_set:
                 action = calculate_action(parent_state, child_state)
                 meta[child_state] = (parent_state, action)
-                # meta[child_state] = (parent_state)
-                # open_set.enqueue(child_state)
-                # open_set.put(child_state)
                 open_set.append(child_state)
 
         closed_set.add(parent_state)
 
     construct_path(parent_state, meta)
 
-
 def construct_path(state, meta):
+    """
+    Construct path from goal state to start state and then reverse it
+    """
+
     action_list = []
-    # print('Action List: ', end='')
     print('Action List: ')
     while True:
         print(state)
@@ -122,7 +121,6 @@ def construct_path(state, meta):
         else:
             break
 
-        # print(action_list)
     action_list.reverse()
     print(action_list)
     return action_list
@@ -154,10 +152,6 @@ if __name__ == '__main__':
 
         nodes_and_edges = create_graph(env)
         print(nodes_and_edges)
-
-        # vertex_visited = {} # needed for DFS?
-        # global_stack = []
-        # global_found = False
 
         # print(list(nodes_and_edges.keys()))
         root_vertex = env.initial_state
