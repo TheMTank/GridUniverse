@@ -13,7 +13,7 @@ from core.envs import maze_generation
 class GridWorldEnv(gym.Env):
     metadata = {'render.modes': ['human', 'ansi', 'graphic']}
 
-    def __init__(self, grid_shape=(4, 4), initial_state=0, terminal_states=None, walls=None, custom_world_fp=None, random_maze=False):
+    def __init__(self, grid_shape=(4, 4), initial_state=0, terminal_states=None, walls=None, custom_world_fp=None, random_maze=False, human_control=False):
         """
         Main constructor to create a GridWorld environment. The default GridWorld is a square grid of 4x4 where the
         agent starts at the top left corner and the terminal state is at the bottom right corner.
@@ -26,6 +26,9 @@ class GridWorldEnv(gym.Env):
         :param custom_world_fp: optional parameter to create the grid from a text file.
         :param random_maze: optional parameter to randomly generate a maze from the algorithm within maze_generation.py
                             This will override the terminal_states, initial_state, walls and custom_world_fp params
+        :param human_control: if set to True, environment takes over and an infinite loop takes over to let a human player take over
+                              and move the agent with the with the WASD and up, left, down, right keys.
+                              Needs to be rendered in pyglet graphics mode.
         """
         # check state space params
         if terminal_states is not None and not isinstance(terminal_states, list):
@@ -88,6 +91,22 @@ class GridWorldEnv(gym.Env):
             self._create_custom_world_from_file(custom_world_fp)
         if random_maze:
             self._create_random_maze(self.x_max, self.y_max)
+        if human_control:
+            t = 0
+            while True:
+                self.render(mode='graphic')
+                action = self.get_human_action()
+                if not isinstance(action, int) or action > 3 or action < 0:
+                    print('Continue')
+                    continue
+                print('go ' + self.action_descriptors[action])
+                observation, reward, done, info = self.step(action)
+                t += 1
+
+                if done:
+                    print("Episode finished after {} timesteps".format(t + 1))
+                    # todo delete environment?
+                    break
 
     def _generate_world(self):
         """
@@ -168,13 +187,12 @@ class GridWorldEnv(gym.Env):
         return self.current_state, reward, self.done, self.info
 
     def get_human_action(self):
-        # todo do it with ascii and raw input?
         # todo check 10-30 a second (e.g. in render loop) and then hold outer loop somehow??? Maybe impossible
         # todo needs to be pyglet viewer
-        # todo can it be done?
+        # todo can it be done? todo fix sticky keys
 
         # while True:
-        for i in range(100000):
+        for i in range(10000):
             action = self.viewer.check_keys()
             if isinstance(action, int) and action < 4 and action >= 0:
                 return action

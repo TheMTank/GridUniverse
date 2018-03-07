@@ -233,27 +233,15 @@ class Viewer(object):
 
     def arrow_key_release(self, symbol, modifiers):#
         self.env.waiting_for_human = False
-        # if symbol == pyglet.window.key.W:
-        #     print('W was pressed')
-        # elif symbol == pyglet.window.key.S:
-        #     print('S was pressed')
-        # elif symbol == pyglet.window.key.A:
-        #     print('A was pressed')
-        # elif symbol == pyglet.window.key.D:
-        #     print('D was pressed')
 
     def check_keys(self):
-        if self.keys[key.W]:
-            print('Return up')
+        if self.keys[key.W] or self.keys[key.UP]:
             return self.env.action_descriptor_to_int['UP']
-        elif self.keys[key.S]:
-            print('Return down')
+        elif self.keys[key.S] or self.keys[key.DOWN]:
             return self.env.action_descriptor_to_int['DOWN']
-        elif self.keys[key.A]:
-            print('Return left')
+        elif self.keys[key.A] or self.keys[key.LEFT]:
             return self.env.action_descriptor_to_int['LEFT']
-        elif self.keys[key.D]:
-            print('Return right')
+        elif self.keys[key.D] or self.keys[key.RIGHT]:
             return self.env.action_descriptor_to_int['RIGHT']
         return None
 
