@@ -195,6 +195,7 @@ class GridWorldEnv(gym.Env):
         for i in range(10000):
             action = self.viewer.check_keys()
             if isinstance(action, int) and action < 4 and action >= 0:
+                time.sleep(0.15)
                 return action
 
         return None

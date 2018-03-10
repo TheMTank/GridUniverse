@@ -71,30 +71,30 @@ def run_random_maze():
 
 def run_human_control():
     print('\n' + '*' * 20 + 'Starting to run human controlled agent on GridWorld' + '*' * 20 + '\n')
-    env = GridWorldEnv((100, 100), random_maze=True, human_control=True)
+    env = GridWorldEnv((20, 20), random_maze=True, human_control=True)
 
     # environment takes over and no further actions are possible until human exits.
 
-    env = GridWorldEnv((100, 100), random_maze=True)
-    # env = GridWorldEnv((100, 100))
-
-    for t in range(1000000):
-        env.render(mode='graphic')
-        action = env.get_human_action()
-        # todo remove below
-        if not isinstance(action, int) or action > 3 or action < 0:
-            print('Continue')
-            continue
-        print('go ' + env.action_descriptors[action])
-        observation, reward, done, info = env.step(action)
-
-        if done:
-            print("Episode finished after {} timesteps".format(t + 1))
-            break
+    # env = GridWorldEnv((100, 100), random_maze=True)
+    # # env = GridWorldEnv((100, 100))
+    #
+    # for t in range(1000000):
+    #     env.render(mode='graphic')
+    #     action = env.get_human_action()
+    #     # todo remove below
+    #     if not isinstance(action, int) or action > 3 or action < 0:
+    #         print('Continue')
+    #         continue
+    #     print('go ' + env.action_descriptors[action])
+    #     observation, reward, done, info = env.step(action)
+    #
+    #     if done:
+    #         print("Episode finished after {} timesteps".format(t + 1))
+    #         break
 
 if __name__ == '__main__':
     # Run random agent on environment variations
-    # run_default_gridworld()
-    # run_gridworld_from_text_file()
-    # run_random_maze()
+    run_default_gridworld()
+    run_gridworld_from_text_file()
+    run_random_maze()
     run_human_control()
