@@ -169,7 +169,7 @@ class TestGridUniverse(unittest.TestCase):
 
     def test_lever_textworld_created_from_text_file_with_wrong_and_right_lever_metadata(self):
         """
-        Test whether we can complete the GridWorld created from the text file
+        Test whether we can complete this griduniverse created from a text file
         within textworld_map_files folder. This level contains levers so it also tests that the
         functionality of levers works correctly. If anything changes anywhere, this test will fail.
         """

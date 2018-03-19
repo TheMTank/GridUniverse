@@ -127,9 +127,12 @@ class Viewer(object):
 
         for state, (x, y) in enumerate(self.env.world):
             x_pix_loc, y_pix_loc = self.get_x_y_pix_location(x, y)
-            if self.env.is_terminal(state):  # if terminal
-                self.terminal_sprites.append(
+            if self.env.is_terminal_goal(state):  # if terminal
+                self.terminal_goal_sprites.append(
                     pyglet.sprite.Sprite(self.terminal_goal_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
+            elif self.env.is_lava(state):
+                self.terminal_lava_sprites.append(
+                    pyglet.sprite.Sprite(self.terminal_lava_img, x=x_pix_loc, y=y_pix_loc, batch=self.batch, group=background))
             elif self.env._is_wall(state):
                 # only if lever is connected to this wall place ground underneath
                 if self.env.levers and state in list(self.env.levers.values()):

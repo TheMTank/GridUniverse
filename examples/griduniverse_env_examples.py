@@ -96,7 +96,7 @@ def run_lever_griduniverse():
     """
 
     # test if random agent ever opens door to terminal and then goes to terminal
-    print('\n' + '*' * 20 + 'Starting to run random agent on GridWorld with levers' + '*' * 20 + '\n')
+    print('\n' + '*' * 20 + 'Starting to run random agent on GridUniverse with levers' + '*' * 20 + '\n')
     env = GridUniverseEnv((7, 7), walls=[47, 47 - 7, 48 - 7], levers={42: 47})
     for i_episode in range(1):
         observation = env.reset()
@@ -118,7 +118,7 @@ def run_lever_griduniverse_from_text_file():
 
     for i_episode in range(1):
         observation = env.reset()
-        for t in range(1000000000):
+        for t in range(1000000):
             #env.render()  # set mode='graphic' for pyglet render
             env.render(mode='graphic')  # set mode='graphic' for pyglet render
             action = env.action_space.sample()

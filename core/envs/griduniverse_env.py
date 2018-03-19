@@ -17,8 +17,8 @@ class GridUniverseEnv(gym.Env):
     def __init__(self, grid_shape=(4, 4), *, initial_state=0, goal_states=None, lava_states=None, walls=None,
                  levers=None, textworld_fp=None, random_maze=False):
         """
-        The constructor for creating a GridUniverse environment. The default GridUniverse is a square grid of 4x4 where the
-        agent starts in the top left corner and the terminal goal state is in the bottom right corner.
+        The constructor for creating a GridUniverse environment. The default GridUniverse is a square grid of 4x4 where
+        the agent starts in the top left corner and the terminal goal state is in the bottom right corner.
 
         :param grid_shape: Tuple of size 2 to specify (width, height) of grid
         :param initial_state: int for single initial state or list of possible states chosen uniform randomly
@@ -31,7 +31,7 @@ class GridUniverseEnv(gym.Env):
         :param textworld_fp: optional parameter to create the grid from a text file.
         :param random_maze: optional parameter to randomly generate a maze from the algorithm within maze_generation.py
                             This will override the params initial_state, goal_states, lava_states,
-                            walls and textworld_fp params
+                            walls, levers, and textworld_fp params
         """
         # check state space params
         if goal_states is not None and not isinstance(goal_states, list):
