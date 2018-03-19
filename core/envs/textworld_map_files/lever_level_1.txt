@@ -4,6 +4,6 @@ ooooooo
 ooooooo
 ooooooo
 ooooo##
-ooooo#T
+ooooo#G
 -----------
 {42: 47}

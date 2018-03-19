@@ -13,7 +13,7 @@
 #o#o###o#o#######o#o#
 #o#ooo#ooooooooo#o#o#
 #o#####o#####o###o#o#
-#o#ooT#ooooo#o#ooo#o#
+#o#ooG#ooooo#o#ooo#o#
 #o#o###o###o###o###o#
 #o#ooooo#o#o#ooo#ooo#
 #o#######o###o###o#o#

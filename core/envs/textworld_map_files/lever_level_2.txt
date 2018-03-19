@@ -4,6 +4,6 @@ oo#####
 oo#oooo
 oo#oooo
 oo#oo##
-oo#oo#T
+oo#oo#G
 -----------
 {13: 44, 34: 47}
