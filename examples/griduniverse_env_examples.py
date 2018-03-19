@@ -48,17 +48,14 @@ def run_griduniverse_from_text_file():
                 break
 
 
-def run_random_maze():
+def run_random_maze(grid_shape=(11, 11)):
     """
     Run a random agent on a randomly generated maze. If random_maze parameter is set to True,
     a maze generation algorithm will place walls to form the maze in the requested shape.
     """
 
     print('\n' + '*' * 20 + 'Creating a random GridUniverse and running random agent on it' + '*' * 20 + '\n')
-    env = GridUniverseEnv(grid_shape=(11, 11), random_maze=True)
-    # env = GridUniverseEnv(grid_shape=(101, 101), random_maze=True)
-    # env = GridUniverseEnv(grid_shape=(49, 51), random_maze=True)
-    # env = GridUniverseEnv(grid_shape=(51, 49), random_maze=True)
+    env = GridUniverseEnv(grid_shape=grid_shape, random_maze=True)
     for i_episode in range(1):
         observation = env.reset()
         for t in range(1000):
@@ -91,7 +88,7 @@ def run_griduniverse_with_lava():
                 print('Final states reward: ', reward)
                 break
 
-def run_griduniverse_filled_with_fruit(grid_shape=(30, 30), fill_mode_random=True):
+def run_griduniverse_filled_with_fruit(grid_shape=(30, 30), fill_mode_random=True, random_actions=True):
     """
     Run a random agent on an environment with fruit. Fill whole grid with fruit.
 
@@ -115,21 +112,19 @@ def run_griduniverse_filled_with_fruit(grid_shape=(30, 30), fill_mode_random=Tru
         lemons = [i for i in range(world_size // 3, int(2 * world_size // 3))]
         melons = [i for i in range(int(2 * world_size // 3), world_size)]
 
-    env = GridUniverseEnv(grid_shape=grid_shape, initial_state=world_size//2 + grid_shape[0],apples=apples, melons=melons, lemons=lemons)
+    env = GridUniverseEnv(grid_shape=grid_shape, initial_state=world_size//2 + grid_shape[0], apples=apples, melons=melons, lemons=lemons)
     string_actions_to_take = (['DOWN'] * grid_shape[1] + ['RIGHT'] + ['UP'] * grid_shape[1] + ['RIGHT']) * grid_shape[1]
 
     actions_to_take = [env.action_descriptor_to_int[action_desc] for action_desc in string_actions_to_take]
-    first_time = True
     for i_episode in range(5):
         observation = env.reset()
-        # for t in range(1000):
-        for t, action in enumerate(actions_to_take):
+        for t in range(1000):
             env.render(mode='graphic')  # set mode='graphic for pyglet render
 
-            if first_time:
-                first_time = False
-                # time.sleep(5) # for preparing video software
-            action = env.action_space.sample()
+            if random_actions:
+                action = env.action_space.sample()
+            else:
+                action = actions_to_take[t]
             observation, reward, done, info = env.step(action)
             if done:
                 print("Episode finished after {} timesteps".format(t + 1))
