@@ -131,10 +131,33 @@ def run_griduniverse_filled_with_fruit(grid_shape=(30, 30), fill_mode_random=Tru
                 print('Final states reward: ', reward)
                 break
 
+def run_lemon_or_apple():
+    """
+    Run a random agent on an environment that was save via ascii text file
+    """
+
+    print('\n' + '*' * 20 + 'Creating a pre-made GridUniverse from text file and running random agent on it' + '*' * 20 + '\n')
+
+    env = GridUniverseEnv(custom_world_fp='../core/envs/maze_text_files/lemon_or_apple.txt', task_mode=True)
+    for i_episode in range(5):
+        observation = env.reset()
+        time.sleep(0.8)
+        for t in range(1000):
+            env.render(mode='graphic')
+            action = env.action_space.sample()
+            # print('go ' + env.action_descriptors[action])
+            # time.sleep(0.1) # uncomment to watch slower
+            observation, reward, done, info = env.step(action)
+            if done:
+                print("Episode finished after {} timesteps".format(t + 1))
+                break
+
 if __name__ == '__main__':
     # Run random agent on environment variations
-    run_default_griduniverse()
-    run_griduniverse_from_text_file()
-    run_random_maze()
-    run_griduniverse_filled_with_fruit()  # fill_mode_random=False if you want different fruit to be placed in order
-    run_griduniverse_with_lava()
+    # run_default_griduniverse()
+    # run_griduniverse_from_text_file()
+    # run_random_maze()
+    # run_griduniverse_filled_with_fruit()  # fill_mode_random=False if you want different fruit to be placed in order
+    # run_griduniverse_with_lava()
+
+    run_lemon_or_apple()

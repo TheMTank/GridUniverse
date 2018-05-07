@@ -16,7 +16,7 @@ class GridUniverseEnv(gym.Env):
     metadata = {'render.modes': ['human', 'ansi', 'graphic']}
 
     def __init__(self, grid_shape=(4, 4), *, initial_state=0, goal_states=None, lava_states=None, walls=None,
-                 lemons=None, melons=None, apples=None, custom_world_fp=None, random_maze=False):
+                 lemons=None, melons=None, apples=None, custom_world_fp=None, task_mode=False, random_maze=False):
         """
         The constructor for creating a GridUniverse environment. The default GridUniverse is a square grid of 4x4 where the
         agent starts in the top left corner and the terminal goal state is in the bottom right corner.
@@ -31,6 +31,8 @@ class GridUniverseEnv(gym.Env):
         :param melons: If agent lands on a state containing a melon: large reward
         :param apples: If agent lands on a state containing an apple: small reward
         :param custom_world_fp: optional parameter to create the grid from a text file.
+        :param task_mode: optional parameter to have the environment output instructions
+                          and enable the setting where the end goal location can change.
         :param random_maze: optional parameter to randomly generate a maze from the algorithm within maze_generation.py
                             This will override the params initial_state, goal_states, lava_states,
                             walls and custom_world_fp params
@@ -106,6 +108,12 @@ class GridUniverseEnv(gym.Env):
                 self.reward_matrix[terminal_state] = -10
             except IndexError:
                 raise IndexError("Lava terminal state {} is out of grid bounds or is wrong type. Should be an integer.".format(terminal_state))
+
+        # task mode
+        self.task_mode = task_mode
+        if self.task_mode:
+            self.right = True
+
         # self.reward_range = [-inf, inf] # default values already
         self.num_previous_states_to_store = 500
         self.last_n_states = []
@@ -303,6 +311,18 @@ class GridUniverseEnv(gym.Env):
         Check if the input state is terminal.
         Which can either be a lava (negative reward) or goal state (positive reward)
         """
+
+        if self.task_mode:
+            if self.right and state == 6:
+                print('Episode over with object on {}'.format('right' if self.right else 'left'))
+                self.right = False
+                return True
+            elif not self.right and state == 0:
+                print('Episode over with object on {}'.format('right' if self.right else 'left'))
+                self.right = True
+                return True
+
+
         return True if self.is_lava(state) or self.is_terminal_goal(state) else False
 
     def is_lava(self, state):
@@ -320,6 +340,8 @@ class GridUniverseEnv(gym.Env):
         self.last_n_states.append(self.world[self.current_state])
         if len(self.last_n_states) > self.num_previous_states_to_store:
             self.last_n_states.pop(0)
+        if self.task_mode:
+            return (self.current_state, self.right), reward, self.done, self.info
         return self.current_state, reward, self.done, self.info
 
     def _reset(self):
@@ -461,8 +483,8 @@ class GridUniverseEnv(gym.Env):
 
         if len(self.initial_states) == 0:
             raise ValueError("No starting states set in text file. Place \"x\" within grid. ")
-        if len(self.goal_states) == 0:
-            raise ValueError("No terminal goal states set in text file. Place \"T\" within grid. ")
+        # if len(self.goal_states) == 0:
+        #     raise ValueError("No terminal goal states set in text file. Place \"T\" within grid. ")
 
         self.y_max = len(text_world_lines)
         self.x_max = width_of_grid
