@@ -112,7 +112,7 @@ class GridUniverseEnv(gym.Env):
         # task mode
         self.task_mode = task_mode
         if self.task_mode:
-            self.right = True
+            self.right = np.array([1]).astype(int)
 
         # self.reward_range = [-inf, inf] # default values already
         self.num_previous_states_to_store = 500
@@ -254,7 +254,7 @@ class GridUniverseEnv(gym.Env):
         if collect:
             reward = self.reward_matrix[next_state]
             if next_state in self.current_lemons or next_state in self.current_apples or next_state in self.current_melons:
-                print('Collecting fruit at: {} with reward: {}'.format(next_state, reward))
+                # print('Collecting fruit at: {} with reward: {}'.format(next_state, reward))
                 if next_state in self.current_lemons:
                     next_state_index = self.lemons.index(next_state)
                     self.current_lemons.remove(next_state)
@@ -279,6 +279,36 @@ class GridUniverseEnv(gym.Env):
         else:
             return self.reward_matrix[next_state]
 
+
+
+    def _is_wall(self, state):
+        """
+        Checks if a given state is a wall or any other element that shall not be trespassed.
+        """
+        return True if self.wall_grid[state] == 1 else False
+
+    def is_terminal(self, state):
+        """
+        Check if the input state is terminal.
+        Which can either be a lava (negative reward) or goal state (positive reward)
+        """
+
+        if self.task_mode:
+            if state == 6:
+                # print('Episode over, agent at right: {}'.format('success' if self.right[0] == 1 else 'fail'))
+                return True
+            elif state == 0:
+                # print('Episode over, agent at left: {}'.format('success' if self.right[0] == 0 else 'fail'))
+                return True
+
+        return True if self.is_lava(state) or self.is_terminal_goal(state) else False
+
+    def is_lava(self, state):
+        return True if state in self.lava_states else False
+
+    def is_terminal_goal(self, state):
+        return True if state in self.goal_states else False
+
     def look_step_ahead(self, state, action, care_about_terminal=True):
         """
         Computes the results of a hypothetical action taking place at the given state.
@@ -298,38 +328,19 @@ class GridUniverseEnv(gym.Env):
             next_state = self.action_state_to_next_state[action](state)
             next_state = next_state if not self._is_wall(next_state) else state
 
-        return next_state, self.reward_function(next_state, collect=True), self.is_terminal(next_state)
-
-    def _is_wall(self, state):
-        """
-        Checks if a given state is a wall or any other element that shall not be trespassed.
-        """
-        return True if self.wall_grid[state] == 1 else False
-
-    def is_terminal(self, state):
-        """
-        Check if the input state is terminal.
-        Which can either be a lava (negative reward) or goal state (positive reward)
-        """
-
         if self.task_mode:
-            if self.right and state == 6:
-                print('Episode over with object on {}'.format('right' if self.right else 'left'))
-                self.right = False
-                return True
-            elif not self.right and state == 0:
-                print('Episode over with object on {}'.format('right' if self.right else 'left'))
-                self.right = True
-                return True
+            reward = -1
+            done = False
+            if self.is_terminal(state):
+                done = True
+                if (state == 6 and self.right[0] == 1) or (state == 0 and self.right[0] == 0):
+                    reward = 10
+                else:
+                    reward = -10
 
+            return next_state, reward, done
 
-        return True if self.is_lava(state) or self.is_terminal_goal(state) else False
-
-    def is_lava(self, state):
-        return True if state in self.lava_states else False
-
-    def is_terminal_goal(self, state):
-        return True if state in self.goal_states else False
+        return next_state, self.reward_function(next_state, collect=True), self.is_terminal(next_state)
 
     def _step(self, action):
         """
@@ -341,11 +352,18 @@ class GridUniverseEnv(gym.Env):
         if len(self.last_n_states) > self.num_previous_states_to_store:
             self.last_n_states.pop(0)
         if self.task_mode:
-            return (self.current_state, self.right), reward, self.done, self.info
+            return np.array([self.current_state, self.right]), reward, self.done, self.info
         return self.current_state, reward, self.done, self.info
 
     def _reset(self):
         self.done = False
+        if self.task_mode:
+            if self.right[0] == 1 and self.current_state == 6:
+                print('Episode over with object on {}'.format('right' if self.right[0] == 1 else 'left'))
+                self.right[0] = 0
+            elif self.right[0] == 0 and self.current_state == 0:
+                print('Episode over with object on {}'.format('left' if self.right[0] == 0 else 'right'))
+                self.right[0] = 1
         self.previous_state = self.current_state = self.initial_state = random.choice(self.initial_states)
         self.last_n_states = []
         self.current_lemons = self.lemons[:]
@@ -360,6 +378,9 @@ class GridUniverseEnv(gym.Env):
                 sprite.visible = True
             for sprite in self.viewer.melon_sprites:
                 sprite.visible = True
+        if self.task_mode:
+            # print('returning: {}. {}'.format(np.array([self.current_state, self.right]), np.array([self.current_state, self.right]).shape))
+            return np.array([self.current_state, self.right])
         return self.current_state
 
     def _render(self, mode='human', close=False):

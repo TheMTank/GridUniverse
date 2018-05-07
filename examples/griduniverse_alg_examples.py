@@ -1,6 +1,14 @@
 import time
+from collections import deque
+import random
 
 import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+from torch.autograd import Variable
+import gym
 
 from core.envs.griduniverse_env import GridUniverseEnv
 from core.algorithms.monte_carlo import run_episode, monte_carlo_evaluation
@@ -129,7 +137,127 @@ def run_monte_carlo_evaluation():
             break
 
 
+
+
+
+
+
+class DQN(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super(DQN, self).__init__()
+
+        self.linear1 = nn.Linear(input_dim, 120)
+        self.linear2 = nn.Linear(120, output_dim)
+
+    def forward(self, input):
+        out = self.linear1(input)
+        out = F.relu(out)
+        out = self.linear2(out)
+        return out
+
+
+EPISODES = 1000
+
+
+class DQNAgent:
+    def __init__(self, state_size, action_size):
+
+        self.state_size = state_size
+        self.action_size = action_size
+        self.memory = deque(maxlen=2000)
+        self.gamma = 0.95  # discount rate
+        self.epsilon = 1.0  # exploration rate
+        self.epsilon_min = 0.01
+        self.epsilon_decay = 0.995
+        self.learning_rate = 0.001
+
+        # Our DQN
+        self.model = DQN(state_size, action_size)
+        self.criteria = nn.MSELoss()
+        self.opt = optim.Adam(self.model.parameters(), lr=self.learning_rate)
+
+    def remember(self, state, action, reward, next_state, done):
+        self.memory.append((state, action, reward, next_state, done))
+
+    def act(self, state):
+
+        if np.random.rand() <= self.epsilon:
+            return random.randrange(self.action_size)
+
+        act_values = self.model(Variable(torch.Tensor(state))).data.numpy()
+        return np.argmax(act_values[0])  # returns action
+
+    def replay(self, batch_size):
+        minibatch = random.sample(self.memory, batch_size)
+
+        for state, action, reward, next_state, done in minibatch:
+
+            target = reward
+
+            if not done:
+                next_state_v = Variable(torch.Tensor(next_state))
+                target = (reward + self.gamma * np.amax(self.model(next_state_v).data.numpy()[0]))
+
+            target_actual = self.model(Variable(torch.Tensor(state))).data.numpy()
+            target_actual[0][action] = target
+
+            self.opt.zero_grad()
+            out = self.model(Variable(torch.Tensor(state)))
+            loss = self.criteria(out, Variable(torch.Tensor(target_actual)))
+            loss.backward()
+            self.opt.step()
+
+        if self.epsilon > self.epsilon_min:
+            self.epsilon *= self.epsilon_decay
+
+    def load(self, name):
+        self.model.load_weights(name)
+
+    def save(self, name):
+        self.model.save_weights(name)
+
+
+def run_lemon_or_apple():
+    """
+    Run a random agent on an environment that was save via ascii text file
+    """
+
+    print('\n' + '*' * 20 + 'Creating the lemon_or_apple map and running DQN agent on it' + '*' * 20 + '\n')
+    env = GridUniverseEnv(custom_world_fp='../core/envs/maze_text_files/lemon_or_apple.txt', task_mode=True)
+    # env = gym.make('CartPole-v1')
+    print(env.observation_space)
+    print(env.observation_space.shape)
+    state_size = 2 #env.observation_space.shape[0]
+    action_size = env.action_space.n
+    agent = DQNAgent(state_size, action_size)
+    # agent.load("./save/cartpole-dqn.h5")
+    done = False
+    batch_size = 32
+
+    for e in range(EPISODES):
+        state = env.reset()
+        state = state.reshape((1, state_size))
+        print(state)
+
+        for t in range(500):
+            env.render(mode='graphic')
+            action = agent.act(state)
+            next_state, reward, done, _ = env.step(action)
+            state = next_state.reshape((1, state_size))
+            agent.remember(state, action, reward, next_state, done)
+            state = next_state
+
+            if done:
+                print("episode: {}/{}, score: {}, e: {:.2}"
+                      .format(e, EPISODES, t, agent.epsilon))
+                time.sleep(1)
+                break
+        if len(agent.memory) > batch_size:
+            agent.replay(batch_size)
+
 if __name__ == '__main__':
     # Run specific algorithms on GridUniverse
-    run_policy_and_value_iteration()
-    run_monte_carlo_evaluation()
+    # run_policy_and_value_iteration()
+    # run_monte_carlo_evaluation()
+
+    run_lemon_or_apple()
