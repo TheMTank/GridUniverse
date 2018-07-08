@@ -90,10 +90,35 @@ def run_griduniverse_with_lava():
                 print('Final states reward: ', reward)
                 break
 
+def run_griduniverse_with_movable_blocks():
+    """
+    Run a random agent on an environment with lava
+    """
+
+    print('\n' + '*' * 20 + 'Starting to run random agent on default GridUniverse' + '*' * 20 + '\n')
+    env = GridUniverseEnv(grid_shape=(4, 4), movable_blocks=[2, 9])
+    actions_to_take = [env.action_descriptor_to_int['RIGHT'], env.action_descriptor_to_int['RIGHT'], env.action_descriptor_to_int['RIGHT'], env.action_descriptor_to_int['LEFT'], env.action_descriptor_to_int['DOWN'], env.action_descriptor_to_int['DOWN'], env.action_descriptor_to_int['DOWN']]
+    for i_episode in range(1):
+        observation = env.reset()
+        # for t in range(100):
+        for t, action in enumerate(actions_to_take):
+            # env.render(mode='graphic')  # set mode='graphic for pyglet render
+
+            env.render()  # set mode='graphic for pyglet render
+            # action = env.action_space.sample()
+            observation, reward, done, info = env.step(action)
+            print('go:', env.action_descriptors[action])
+
+            if done:
+                print("Episode finished after {} timesteps".format(t + 1))
+                print('Final states reward: ', reward)
+                break
 
 if __name__ == '__main__':
     # Run random agent on environment variations
-    run_default_griduniverse()
-    run_griduniverse_from_text_file()
-    run_random_maze()
-    run_griduniverse_with_lava()
+    # run_default_griduniverse()
+    # run_griduniverse_from_text_file()
+    # run_random_maze()
+    # run_griduniverse_with_lava()
+
+    run_griduniverse_with_movable_blocks()

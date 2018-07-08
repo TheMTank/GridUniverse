@@ -15,6 +15,7 @@ class GridUniverseEnv(gym.Env):
     metadata = {'render.modes': ['human', 'ansi', 'graphic']}
 
     def __init__(self, grid_shape=(4, 4), *, initial_state=0, goal_states=None, lava_states=None, walls=None,
+                 movable_blocks=None,
                  custom_world_fp=None, random_maze=False):
         """
         The constructor for creating a GridUniverse environment. The default GridUniverse is a square grid of 4x4 where the
@@ -72,6 +73,11 @@ class GridUniverseEnv(gym.Env):
             self.lava_states = []
         else:
             self.lava_states = lava_states
+        # set movable blocks
+        # todo check input and do bookkeeping
+        self.movable_blocks = movable_blocks
+
+        # self.movable_blocks =
         # set walls
         self.wall_indices = []
         self.wall_grid = np.zeros(self.world.shape)
@@ -179,6 +185,45 @@ class GridUniverseEnv(gym.Env):
         """
         self.previous_state = self.current_state
         self.current_state, reward, self.done = self.look_step_ahead(self.current_state, action)
+
+        # If you move into a block, the block should move in the corresponding direction and should reject movements
+        # that move it into where it can't go e.g. a wall
+        if self.movable_blocks and len(self.movable_blocks) > 0:
+            for idx, mb in enumerate(self.movable_blocks):
+                block_moved_to_state = None
+                # if you move into a block
+                if self.current_state == mb:
+                    # if agent moves from the left
+                    if self.previous_state == mb - 1:
+                        # block_moved_to_state = self.current_state + 1
+                        block_moved_to_state = self.action_state_to_next_state[self.action_descriptor_to_int['RIGHT']](self.current_state)
+                    # if agent moves from the right
+                    elif self.previous_state == mb + 1:
+                        # block_moved_to_state = self.current_state - 1
+                        block_moved_to_state = self.action_state_to_next_state[self.action_descriptor_to_int['LEFT']](self.current_state)
+                    # if agent moves from the south
+                    elif self.previous_state == mb + self.y_max:
+                        # block_moved_to_state = self.current_state - self.y_max
+                        block_moved_to_state = self.action_state_to_next_state[self.action_descriptor_to_int['UP']](self.current_state)
+                    # if agent moves from the north
+                    elif self.previous_state == mb - self.y_max:
+                        # block_moved_to_state = self.current_state - self.y_max
+                        block_moved_to_state = self.action_state_to_next_state[self.action_descriptor_to_int['DOWN']](self.current_state)
+
+                    # todo check that it doesn't crash on None
+                    if self._is_wall(block_moved_to_state) or self.current_state == block_moved_to_state:
+                        # if block can't move, move block back to where it was
+                        block_moved_to_state = self.current_state
+                        # if block can't move, you move back to where you were.
+                        self.current_state = self.previous_state
+                    else:
+                        # actually change that block to a different state number
+                        self.movable_blocks[idx] = block_moved_to_state
+
+                    # impossible to move two blocks in one turn if everything else is right
+                    if block_moved_to_state:
+                        break
+
         self.last_n_states.append(self.world[self.current_state])
         if len(self.last_n_states) > self.num_previous_states_to_store:
             self.last_n_states.pop(0)
@@ -211,6 +256,9 @@ class GridUniverseEnv(gym.Env):
 
             for w_state in self.wall_indices:
                 new_world[w_state] = '#'
+
+            for m_b_state in self.movable_blocks:
+                new_world[m_b_state] = '#'
 
             outfile = StringIO() if mode == 'ansi' else sys.stdout
             for row in np.reshape(new_world, (self.y_max, self.x_max)):
