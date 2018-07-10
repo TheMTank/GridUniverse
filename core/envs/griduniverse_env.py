@@ -15,7 +15,7 @@ class GridUniverseEnv(gym.Env):
     metadata = {'render.modes': ['human', 'ansi', 'graphic']}
 
     def __init__(self, grid_shape=(4, 4), *, initial_state=0, goal_states=None, lava_states=None, walls=None,
-                 movable_blocks=None,
+                 movable_blocks=None, movable_blocks_goal_states=None,
                  custom_world_fp=None, random_maze=False):
         """
         The constructor for creating a GridUniverse environment. The default GridUniverse is a square grid of 4x4 where the
@@ -76,6 +76,10 @@ class GridUniverseEnv(gym.Env):
         # set movable blocks
         # todo check input and do bookkeeping
         self.movable_blocks = movable_blocks
+        self.movable_blocks_goal_states = movable_blocks_goal_states
+        self.movable_blocks_goal_states_full = []
+        for m_b_g_s in self.movable_blocks_goal_states:
+            self.movable_blocks_goal_states_full.append(False)
 
         # self.movable_blocks =
         # set walls
@@ -171,7 +175,8 @@ class GridUniverseEnv(gym.Env):
         Check if the input state is terminal.
         Which can either be a lava (negative reward) or goal state (positive reward)
         """
-        return True if self.is_lava(state) or self.is_terminal_goal(state) else False
+        return False # todo only for Sokoban or we could just allow no Terminal states
+        # return True if self.is_lava(state) or self.is_terminal_goal(state) else False
 
     def is_lava(self, state):
         return True if state in self.lava_states else False
@@ -223,6 +228,18 @@ class GridUniverseEnv(gym.Env):
                     # impossible to move two blocks in one turn if everything else is right
                     if block_moved_to_state:
                         break
+
+        # todo two blocks can't collide
+        # self.movable_blocks_goal_states
+        # self.movable_blocks_goal_states_full
+        for idx, m_b_g_s in enumerate(self.movable_blocks_goal_states):
+            self.movable_blocks_goal_states_full[idx] = False
+            for m_b in self.movable_blocks:
+                if m_b == m_b_g_s:
+                    self.movable_blocks_goal_states_full[idx] = True
+
+        if all(self.movable_blocks_goal_states_full):
+            self.done = True
 
         self.last_n_states.append(self.world[self.current_state])
         if len(self.last_n_states) > self.num_previous_states_to_store:

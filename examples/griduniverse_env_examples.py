@@ -96,8 +96,14 @@ def run_griduniverse_with_movable_blocks():
     """
 
     print('\n' + '*' * 20 + 'Starting to run random agent on default GridUniverse' + '*' * 20 + '\n')
-    env = GridUniverseEnv(grid_shape=(4, 4), movable_blocks=[2, 9])
-    actions_to_take = [env.action_descriptor_to_int['RIGHT'], env.action_descriptor_to_int['RIGHT'], env.action_descriptor_to_int['RIGHT'], env.action_descriptor_to_int['LEFT'], env.action_descriptor_to_int['DOWN'], env.action_descriptor_to_int['DOWN'], env.action_descriptor_to_int['DOWN']]
+    env = GridUniverseEnv(grid_shape=(4, 4), movable_blocks=[5], movable_blocks_goal_states=[15])
+    #movable_blocks=[2, 9]
+    #actions_to_take = [env.action_descriptor_to_int['RIGHT'], env.action_descriptor_to_int['RIGHT'], env.action_descriptor_to_int['RIGHT'], env.action_descriptor_to_int['LEFT'],
+    #                   env.action_descriptor_to_int['DOWN'], env.action_descriptor_to_int['DOWN'], env.action_descriptor_to_int['DOWN'], env.action_descriptor_to_int['DOWN']]
+    actions_to_take = [env.action_descriptor_to_int['RIGHT'], env.action_descriptor_to_int['DOWN'], env.action_descriptor_to_int['DOWN'],
+                       env.action_descriptor_to_int['LEFT'], env.action_descriptor_to_int['DOWN'],
+                       env.action_descriptor_to_int['RIGHT'],
+                       env.action_descriptor_to_int['RIGHT'], env.action_descriptor_to_int['RIGHT'], env.action_descriptor_to_int['RIGHT'], env.action_descriptor_to_int['RIGHT']]
     for i_episode in range(1):
         observation = env.reset()
         # for t in range(100):
@@ -112,6 +118,7 @@ def run_griduniverse_with_movable_blocks():
             if done:
                 print("Episode finished after {} timesteps".format(t + 1))
                 print('Final states reward: ', reward)
+                env.render()
                 break
 
 if __name__ == '__main__':
