@@ -8,6 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable
+from torch.distributions import Categorical
 import gym
 
 from core.envs.griduniverse_env import GridUniverseEnv
@@ -136,12 +137,6 @@ def run_monte_carlo_evaluation():
             time.sleep(5)
             break
 
-
-
-
-
-
-
 class DQN(nn.Module):
     def __init__(self, input_dim, output_dim):
         super(DQN, self).__init__()
@@ -155,10 +150,6 @@ class DQN(nn.Module):
         out = self.linear2(out)
         return out
 
-
-EPISODES = 1000
-
-
 class DQNAgent:
     def __init__(self, state_size, action_size):
 
@@ -167,9 +158,10 @@ class DQNAgent:
         self.memory = deque(maxlen=2000)
         self.gamma = 0.95  # discount rate
         self.epsilon = 1.0  # exploration rate
-        self.epsilon = 0.5  # exploration rate
+        # self.epsilon = 0.5  # exploration rate
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.995
+        # self.epsilon_decay = 0.995
+        self.epsilon_decay = 0.93
         self.learning_rate = 0.001
 
         # Our DQN
@@ -184,6 +176,7 @@ class DQNAgent:
 
         if np.random.rand() <= self.epsilon:
             return random.randrange(self.action_size)
+            # return random.choice([1, 3])
 
         act_values = self.model(Variable(torch.Tensor(state))).data.numpy()
         return np.argmax(act_values[0])  # returns action
@@ -218,7 +211,7 @@ class DQNAgent:
         self.model.save_weights(name)
 
 
-def run_lemon_or_apple():
+def run_lemon_or_apple_dqn():
     """
     Run a random agent on an environment that was save via ascii text file
     """
@@ -234,6 +227,7 @@ def run_lemon_or_apple():
     # agent.load("./save/cartpole-dqn.h5")
     done = False
     batch_size = 32
+    EPISODES = 1000
 
     for e in range(EPISODES):
         state = env.reset()
@@ -256,9 +250,138 @@ def run_lemon_or_apple():
         if len(agent.memory) > batch_size:
             agent.replay(batch_size)
 
+
+class Policy(nn.Module):
+    def __init__(self, input_dim, output_dim, hidden_size=128):
+        super(Policy, self).__init__()
+        self.affine1 = nn.Linear(input_dim, 128)
+        self.affine2 = nn.Linear(128, output_dim)
+
+        self.saved_log_probs = []
+        self.rewards = []
+
+    def forward(self, x):
+        x = F.relu(self.affine1(x))
+        action_scores = self.affine2(x)
+        return F.softmax(action_scores, dim=1)
+
+
+def select_action(state, policy, act_greedily=False):
+    state = torch.from_numpy(state).float().unsqueeze(0)
+    probs = policy(Variable(state))
+    m = Categorical(probs)
+    if act_greedily:
+        action = m.probs.argmax() #np.argmax(m.probs)
+    else:
+        action = m.sample()
+    policy.saved_log_probs.append(m.log_prob(action))
+    # return action.item()
+    return 1 if action.item() == 0 else 3
+
+def finish_episode(policy, optimizer, gamma=0.99, eps=np.finfo(np.float32).eps.item()):
+    R = 0
+    policy_loss = []
+    rewards = []
+    for r in policy.rewards[::-1]:
+        # R = r + args.gamma * R
+        R = r + gamma * R
+        rewards.insert(0, R)
+    rewards = torch.tensor(rewards)
+    rewards = (rewards - rewards.mean()) / (rewards.std() + eps)
+    # rewards = (rewards - ) / (rewards.std() + eps) # todo try self-critical and compare against greedy
+    for log_prob, reward in zip(policy.saved_log_probs, rewards):
+        policy_loss.append(-log_prob * reward)
+    optimizer.zero_grad()
+    policy_loss = torch.cat(policy_loss).sum()
+    policy_loss.backward()
+    optimizer.step()
+    del policy.rewards[:]
+    del policy.saved_log_probs[:]
+
+def run_lemon_or_apple_reinforce():
+    """
+    Run a random agent on an environment that was save via ascii text file
+    """
+
+    print('\n' + '*' * 20 + 'Creating the lemon_or_apple map and running PG agent on it' + '*' * 20 + '\n')
+    env = GridUniverseEnv(custom_world_fp='../core/envs/maze_text_files/lemon_or_apple.txt', task_mode=True)
+    # env = gym.make('CartPole-v1')
+    print(env.observation_space)
+    print(env.observation_space.shape)
+    state_size = 2 #env.observation_space.shape[0]
+    action_size = env.action_space.n
+    action_size = 2
+
+    # policy = Policy(state_size, action_size)
+    # optimizer = optim.Adam(policy.parameters(), lr=1e-3)
+    eps = np.finfo(np.float32).eps.item()
+
+    done = False
+    batch_size = 32
+    hidden_size = 32
+    running_reward = 10
+    TRAIN_EPISODES = 1001
+    TEST_EPISODES = 100
+    num_policies_to_try = 40
+    num_policies_to_try = 1
+
+    number_of_successes = []
+    num_success_altogether = 0
+
+    for new_policy_iteration in range(num_policies_to_try):
+        policy = Policy(state_size, action_size, hidden_size=hidden_size)
+        optimizer = optim.Adam(policy.parameters(), lr=3e-5)
+        for episode in range(TRAIN_EPISODES):
+            state = env.reset()
+            for t in range(10000):
+                action = select_action(state, policy)
+                state, reward, done, _ = env.step(action)
+                # if args.render:
+                #     env.render()
+                policy.rewards.append(reward)
+                if episode > 500:
+                    a = 5
+                if done:
+                    if reward == 10:
+                        number_of_successes.append(1)
+                        # print('Episode over with object on {}'.format('right' if env.right[0] == 1 else 'left'))
+                    break
+
+            running_reward = running_reward * 0.99 + t * 0.01
+            finish_episode(policy, optimizer)
+            # if episode % 1 == 0:
+                # print('Episode {}\tLast length: {:5d}\tAverage length: {:.2f}'.format(
+                #     episode, t, running_reward))
+            # if running_reward > env.spec.reward_threshold:
+            #     print("Solved! Running reward is now {} and "
+            #           "the last episode runs to {} time steps!".format(running_reward, t))
+            #     break
+
+        print('Num success/num episodes in train: {}/{}'.format(sum(number_of_successes), TRAIN_EPISODES))
+        num_success_altogether += sum(number_of_successes)
+        number_of_successes = []
+
+        for episode in range(TEST_EPISODES):
+            state = env.reset()
+            for t in range(200):
+                action = select_action(state, policy, act_greedily=True)
+                state, reward, done, _ = env.step(action)
+                # if args.render:
+                #     env.render()
+                if done:
+                    if reward == 10:
+                        number_of_successes.append(1)
+                        # print('Episode over with object on {}'.format('right' if env.right[0] == 1 else 'left'))
+                    break
+
+        print('Num success/num episodes in test: {}/{}'.format(sum(number_of_successes), TEST_EPISODES))
+    print('Number successes altogether/number episodes altogether: {}/{}'.format(num_success_altogether, num_policies_to_try * TRAIN_EPISODES))
+
+
 if __name__ == '__main__':
     # Run specific algorithms on GridUniverse
     # run_policy_and_value_iteration()
     # run_monte_carlo_evaluation()
 
-    run_lemon_or_apple()
+    # run_lemon_or_apple_dqn()
+    run_lemon_or_apple_reinforce()

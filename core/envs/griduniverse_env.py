@@ -333,10 +333,12 @@ class GridUniverseEnv(gym.Env):
             done = False
             if self.is_terminal(state):
                 done = True
+                # If on right and right is goal, or at left and left is goal you win.
                 if (state == 6 and self.right[0] == 1) or (state == 0 and self.right[0] == 0):
                     reward = 10
                 else:
                     reward = -10
+                # print('Reward {}'.format(reward))
 
             return next_state, reward, done
 
@@ -358,11 +360,14 @@ class GridUniverseEnv(gym.Env):
     def _reset(self):
         self.done = False
         if self.task_mode:
+            # todo Change if you get it wrong?
+            # todo try variation with only 3 states?
+            pass
             if self.right[0] == 1 and self.current_state == 6:
-                print('Episode over with object on {}'.format('right' if self.right[0] == 1 else 'left'))
+                # print('Episode over with object on {}'.format('right' if self.right[0] == 1 else 'left'))
                 self.right[0] = 0
             elif self.right[0] == 0 and self.current_state == 0:
-                print('Episode over with object on {}'.format('left' if self.right[0] == 0 else 'right'))
+                # print('Episode over with object on {}'.format('left' if self.right[0] == 0 else 'right'))
                 self.right[0] = 1
         self.previous_state = self.current_state = self.initial_state = random.choice(self.initial_states)
         self.last_n_states = []
