@@ -362,7 +362,8 @@ class GridUniverseEnv(gym.Env):
         if self.task_mode:
             # todo Change if you get it wrong?
             # todo try variation with only 3 states?
-            pass
+            # pass
+
             if self.right[0] == 1 and self.current_state == 6:
                 # print('Episode over with object on {}'.format('right' if self.right[0] == 1 else 'left'))
                 self.right[0] = 0

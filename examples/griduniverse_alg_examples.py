@@ -298,6 +298,27 @@ def finish_episode(policy, optimizer, gamma=0.99, eps=np.finfo(np.float32).eps.i
     del policy.rewards[:]
     del policy.saved_log_probs[:]
 
+def finish_episode_self_critical(policy, optimizer, self_critical_reward_mean, gamma=0.99, eps=np.finfo(np.float32).eps.item()):
+    R = 0
+    policy_loss = []
+    rewards = []
+    for r in policy.rewards[::-1]:
+        # R = r + args.gamma * R
+        R = r + gamma * R
+        rewards.insert(0, R)
+    rewards = torch.tensor(rewards)
+    rewards = (rewards - rewards.mean()) / (rewards.std() + eps)
+    # rewards = (rewards - self_critical_reward_mean) / (rewards.std() + eps) # todo try self-critical and compare against greedy
+    for log_prob, reward in zip(policy.saved_log_probs, rewards):
+        # policy_loss.append(-log_prob * reward)
+        policy_loss.append(-log_prob * (reward - self_critical_reward_mean))
+    optimizer.zero_grad()
+    policy_loss = torch.cat(policy_loss).sum()
+    policy_loss.backward()
+    optimizer.step()
+    del policy.rewards[:]
+    del policy.saved_log_probs[:]
+
 def run_lemon_or_apple_reinforce():
     """
     Run a random agent on an environment that was save via ascii text file
@@ -321,6 +342,7 @@ def run_lemon_or_apple_reinforce():
     hidden_size = 32
     running_reward = 10
     TRAIN_EPISODES = 1001
+    TRAIN_EPISODES = 5001
     TEST_EPISODES = 100
     num_policies_to_try = 40
     num_policies_to_try = 1
@@ -330,10 +352,10 @@ def run_lemon_or_apple_reinforce():
 
     for new_policy_iteration in range(num_policies_to_try):
         policy = Policy(state_size, action_size, hidden_size=hidden_size)
-        optimizer = optim.Adam(policy.parameters(), lr=3e-5)
+        optimizer = optim.Adam(policy.parameters(), lr=5e-5)
         for episode in range(TRAIN_EPISODES):
             state = env.reset()
-            for t in range(10000):
+            for t in range(250):
                 action = select_action(state, policy)
                 state, reward, done, _ = env.step(action)
                 # if args.render:
@@ -347,8 +369,24 @@ def run_lemon_or_apple_reinforce():
                         # print('Episode over with object on {}'.format('right' if env.right[0] == 1 else 'left'))
                     break
 
+            # self-critical inference run
+            inference_rewards = []
+            state = env.reset()
+            for t in range(250):
+                action = select_action(state, policy, act_greedily=True)
+                state, reward, done, _ = env.step(action)
+                # if args.render:
+                #     env.render()
+                inference_rewards.append(reward)
+                if done:
+                    if reward == 10:
+                        number_of_successes.append(1)
+                        # print('Episode over with object on {}'.format('right' if env.right[0] == 1 else 'left'))
+                    break
+
             running_reward = running_reward * 0.99 + t * 0.01
-            finish_episode(policy, optimizer)
+            # finish_episode(policy, optimizer)
+            finish_episode_self_critical(policy, optimizer, sum(inference_rewards) / float(len(inference_rewards)))
             # if episode % 1 == 0:
                 # print('Episode {}\tLast length: {:5d}\tAverage length: {:.2f}'.format(
                 #     episode, t, running_reward))
@@ -361,6 +399,7 @@ def run_lemon_or_apple_reinforce():
         num_success_altogether += sum(number_of_successes)
         number_of_successes = []
 
+        # Test greedy algorithm
         for episode in range(TEST_EPISODES):
             state = env.reset()
             for t in range(200):
