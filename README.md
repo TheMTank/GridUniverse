@@ -13,6 +13,12 @@ Eventually, it will also allow large scale experimentation in exciting new areas
 
 ![GIF](docs/maze_solver_BFS_10_times.gif)
 
+![GIF](docs/SUPER-COLLAGE-ACTUAL-GIF.gif)
+
+<p align="center">
+    <img src="docs/SUPER-COLLAGE-ACTUAL-GIF.gif" />
+</p>
+
 ## GridUniverse features and plans
 
 While there have been plenty of grid world and maze RL environments created in the past, 
