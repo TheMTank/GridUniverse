@@ -157,12 +157,13 @@ class GridUniverseEnv(gym.Env):
 
     def _setup_levers(self, lever_dict):
         """
-        Setup levers
+        lever_dict should contain keys and values representing lever location and wall/door to be
+        opened respectively. E.g.
+        {lever_state_index: wall_state_index} e.g. {5: 3, 7: 6}.
+        Opening lever on state 5 will open door/wall on state 3
+                break
         """
-        if not lever_dict:
-            self.levers = {}
-        else:
-            self.levers = lever_dict
+        self.levers = lever_dict if lever_dict else {}
 
         self.unactivated_levers = {k: v for k, v in self.levers.items()}
         # Parameter checks to see if correct
@@ -278,7 +279,7 @@ class GridUniverseEnv(gym.Env):
                 self.viewer = None
             return
 
-        if mode == 'human' or mode == 'ansi':
+        if mode in ('human', 'ansi'):
             new_world = np.fromiter(('o' for _ in np.nditer(np.arange(self.x_max))
                                      for _ in np.nditer(np.arange(self.y_max))), dtype='S1')
             new_world[self.current_state] = 'x'
@@ -308,7 +309,7 @@ class GridUniverseEnv(gym.Env):
             outfile.write('\n')
             return outfile
 
-        elif mode == 'graphic' or mode == 'rgb_array':
+        elif mode in ('graphic', 'rgb_array'):
             if self.viewer is None:
                 from core.envs import rendering
                 self.viewer = rendering.Viewer(self, self.screen_width, self.screen_height)
